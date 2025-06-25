@@ -7,14 +7,13 @@ import {
 
 $(document).ready(() => {
 
-    // 🔘 Submit test data to Firestore
+
     $('#testSubmitBtn').click(async () => {
         const firstName = $('#firstName').val().trim();
         const middleName = $('#middleName').val().trim();
         const lastName = $('#lastName').val().trim();
         const age = $('#age').val().trim();
 
-        // Basic validations
         const nameRegex = /^[A-Za-z\s'-]+$/;
         const ageRegex = /^\d+$/;
 
@@ -40,7 +39,6 @@ $(document).ready(() => {
             return;
         }
 
-        // If all is good, save to Firestore
         try {
             const entriesRef = collection(db, 'client', 'testDoc', 'entries');
             await addDoc(entriesRef, {
