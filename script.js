@@ -10,8 +10,6 @@ import {
     getDoc
 } from './firebase-config.js';
 
-
-
 $(document).ready(() => {
 
     $('#registerBtn').click(() => {
@@ -51,7 +49,10 @@ $(document).ready(() => {
                     }
 
                     alert('Login successful!');
-                    // TODO: Redirect to dashboard
+
+                    // Redirect to the dashboard
+                    // window.location.href = 'main.html';
+
                 } else {
                     alert('Please verify your emil before logging in.');
                     await signOut(auth);
