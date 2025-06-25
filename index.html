@@ -4,15 +4,48 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RSC - Login or Sign Up</title>
+
+  <!-- jQuery CDN -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+  <!-- Firebase Logic -->
   <script type="module" src="script.js"></script>
-  
+  <script type="module" src="test-input.js"></script>
 </head>
 <body>
+  <h2>Test Input</h2>
+
+  <input type="text" id="firstName" placeholder="First Name"><br>
+  <input type="text" id="middleName" placeholder="Middle Name"><br>
+  <input type="text" id="lastName" placeholder="Last Name"><br>
+  <input type="number" id="age" placeholder="Age"><br>
+  <button id="testSubmitBtn">Submit</button>
+  <button id="refresh">Refresh</button>
+
+  <h3>Submitted Entries</h3>
+  <table border="1" id="entriesTable">
+    <thead>
+      <tr>
+        <th>First Name</th>
+        <th>Middle Name</th>
+        <th>Last Name</th>
+        <th>Age</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- rows will be added here -->
+    </tbody>
+  </table>
+  
+
+  <hr>
+
   <h2>Register</h2>
   <input type="email" id="registerEmail" placeholder="Email"><br>
   <input type="password" id="registerPassword" placeholder="Password"><br>
   <button id="registerBtn">Register</button>
+
+  <hr>
 
   <h2>Login</h2>
   <input type="email" id="loginEmail" placeholder="Email"><br>

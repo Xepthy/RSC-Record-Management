@@ -4,7 +4,7 @@ import {
     createUserWithEmailAndPassword,
     sendEmailVerification,
     signInWithEmailAndPassword,
-    signOut,
+    signOut
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
 import {
@@ -13,7 +13,8 @@ import {
     addDoc,
     setDoc,
     getDoc,
-    doc,
+    getDocs,
+    doc
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
 
@@ -41,5 +42,6 @@ export {
     addDoc,
     setDoc,
     getDoc,
+    getDocs,
     doc
 };
