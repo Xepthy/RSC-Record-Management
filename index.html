@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RSC - Login or Sign Up</title>
 
-  <link rel="stylesheet" href="css/style.css">
-
-  <!-- jQuery CDN -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
-  <!-- Firebase Logic -->
+  <!-- Firebase -->
   <script type="module" src="script.js"></script>
   <script type="module" src="test-input.js"></script>
 </head>
@@ -25,20 +25,18 @@
   <button id="refresh">Refresh</button>
 
   <h3>Submitted Entries</h3>
-  <table border="1" id="entriesTable">
-    <thead>
-      <tr>
-        <th>First Name</th>
-        <th>Middle Name</th>
-        <th>Last Name</th>
-        <th>Age</th>
-      </tr>
-    </thead>
-    <tbody>
-    
-      
-    </tbody>
-  </table>
+  <table id="entriesTable" class="display">
+  <thead>
+    <tr>
+      <th>First Name</th>
+      <th>Middle Name</th>
+      <th>Last Name</th>
+      <th>Age</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
   
 
   <hr>
