@@ -6,8 +6,6 @@ import {
 } from './firebase-config.js';
 
 $(document).ready(() => {
-
-
     $('#testSubmitBtn').click(async () => {
         const firstName = $('#firstName').val().trim();
         const middleName = $('#middleName').val().trim();
@@ -22,20 +20,13 @@ $(document).ready(() => {
             return;
         }
 
-        if (!nameRegex.test(firstName)) {
-            alert('First name must contain only letters.');
+        if (!nameRegex.test(firstName) || !nameRegex.test(middleName) || !nameRegex.test(lastName)) {
+            alert('Names must contain only letters, spaces, or hyphens.');
             return;
         }
-        if (!nameRegex.test(middleName)) {
-            alert('Middle name must contain only letters.');
-            return;
-        }
-        if (!nameRegex.test(lastName)) {
-            alert('Last name must contain only letters.');
-            return;
-        }
+
         if (!ageRegex.test(age) || parseInt(age) < 1 || parseInt(age) > 120) {
-            alert('Age must be a number between 1 and 120.');
+            alert('Age must be a valid number between 1 and 120.');
             return;
         }
 
@@ -49,38 +40,61 @@ $(document).ready(() => {
             });
 
             alert('Saved! Click Refresh to view in table.');
+            $('#firstName, #middleName, #lastName, #age').val('');
         } catch (error) {
             alert('Failed to save: ' + error.message);
             console.error(error);
         }
     });
 
+    let dataTableInstance;
 
-    // 🔄 Load and safely render entries to the table
     async function loadEntries() {
         const entriesRef = collection(db, 'client', 'testDoc', 'entries');
         const snapshot = await getDocs(entriesRef);
 
-        $('#entriesTable tbody').empty();
+        if ($.fn.DataTable.isDataTable('#entriesTable')) {
+            $('#entriesTable').DataTable().clear().destroy();
+        }
+
+        const tableBody = $('#entriesTable tbody');
+        tableBody.empty();
 
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
+            const viewBtn = `<button class="viewBtn" data-firstname="${data.firstName}" data-lastname="${data.lastName}">View</button>`;
 
-            const row = $('<tr>');
-            $('<td>').text(data.firstName).appendTo(row);
-            $('<td>').text(data.middleName).appendTo(row);
-            $('<td>').text(data.lastName).appendTo(row);
-            $('<td>').text(data.age).appendTo(row);
+            const row = `
+            <tr>
+                <td>${data.firstName}</td>
+                <td>${data.middleName}</td>
+                <td>${data.lastName}</td>
+                <td>${data.age}</td>
+                <td>${viewBtn}</td>
+            </tr>
+        `;
 
-            $('#entriesTable tbody').append(row);
+            tableBody.append(row);
+        });
+
+        dataTableInstance = $('#entriesTable').DataTable({
+            pageLength: 5,
+            lengthMenu: [5, 10, 20],
+            ordering: true,
+            searching: true
         });
     }
 
-    // 🔘 Refresh button to reload the table
     $('#refresh').click(() => {
         loadEntries();
     });
 
-    // Optional: auto-load on page start
+
+    $(document).on('click', '.viewBtn', function () {
+        const firstName = $(this).data('firstname');
+        const lastName = $(this).data('lastname');
+        alert(`First Name: ${firstName}\nLast Name: ${lastName}`);
+    });
+
     loadEntries();
 });
