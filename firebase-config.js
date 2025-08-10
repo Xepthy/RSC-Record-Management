@@ -5,7 +5,8 @@ import {
     sendEmailVerification,
     signInWithEmailAndPassword,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
 import {
@@ -45,5 +46,5 @@ export {
     getDoc,
     getDocs,
     doc,
-    onAuthStateChanged
+    onAuthStateChanged,
 };

@@ -1,0 +1,134 @@
+/* Table styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  margin-bottom: 30px;
+}
+
+th {
+  background-color: #e8f4fc;
+  padding: 12px 10px;
+  text-align: left;
+  font-size: 14px;
+  border: 1px solid #ccc;
+}
+
+td {
+  padding: 12px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  vertical-align: top;
+}
+
+.completed {
+  color: green;
+  font-weight: bold;
+}
+
+.pending {
+  color: #f87c1f;
+  font-weight: bold;
+}
+
+
+
+/* 
+Edit Inquiry Modal
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+form label {
+  font-weight: bold;
+  font-size: 13px;
+}
+
+form input[type="text"],
+form select {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  width: 100%;
+}
+
+form .form-row {
+  display: flex;
+  gap: 10px;
+}
+
+form .form-row > div {
+  flex: 1;
+}
+
+fieldset {
+  padding: 10px 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+legend {
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.types-of-service {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.types-of-service li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.upload-box {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+  background-color: #f9f9f9;
+  color: #555;
+}
+
+.upload-box a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+form button[type="submit"] {
+  background-color: #d2ecff;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.icon-circle-inquiry {
+  position: relative;
+  display: inline-block;
+  width: 15px;
+  height: 17px;
+  background-color: #e6f4ff;
+  border: 1px solid #007bff;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 17px;
+  font-weight: bold;
+  font-size: 11px;
+  color: #007bff;
+  cursor: pointer;
+  left: 0px;
+} */
