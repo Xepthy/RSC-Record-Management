@@ -24,6 +24,16 @@ export function sanitizeInput(input) {
 }
 
 /**
+ * Check if classification is a standard predefined option
+ * @param {string} classification - The classification to check
+ * @returns {boolean} - True if it's a standard classification
+ */
+function isStandardClassification(classification) {
+    const standardClassifications = ['Agent', 'Buyer', 'Seller', 'SPA', 'Owner'];
+    return standardClassifications.includes(classification);
+}
+
+/**
  * Validates form data with comprehensive checks
  * @param {Object} formData - The form data to validate
  * @returns {Object} - Validation result with isValid and errors
@@ -39,6 +49,22 @@ export function validateFormData(formData) {
         }
     });
 
+    // Classification validation - FIXED: Only check for 'Others' if it's actually 'Others'
+    if (!formData.classification || formData.classification.trim() === '') {
+        errors.push('Classification is required');
+    } else if (formData.classification.trim() === 'Others') {
+        errors.push('Please specify a custom classification when selecting "Others"');
+    }
+
+    // Representative classification validation (only if representative is enabled)
+    if (formData.representative && formData.representative !== 'None' && formData.representative.trim() !== '') {
+        if (!formData.repClassification || formData.repClassification.trim() === '' || formData.repClassification === 'None') {
+            errors.push('Representative classification is required when representative is specified');
+        } else if (formData.repClassification.trim() === 'Others') {
+            errors.push('Please specify a custom representative classification when selecting "Others"');
+        }
+    }
+
     // Length validation
     const lengthLimits = {
         requestDescription: 500,
@@ -46,7 +72,9 @@ export function validateFormData(formData) {
         representative: 100,
         location: 200,
         contact: 11,
-        remarks: 1000
+        remarks: 1000,
+        classification: 100,
+        repClassification: 100
     };
 
     Object.keys(lengthLimits).forEach(field => {
@@ -79,6 +107,21 @@ export function validateFormData(formData) {
         }
     }
 
+    // Custom classification validation (allow alphanumeric, spaces, and common punctuation)
+    const classificationRegex = /^[a-zA-Z0-9\s\-\.\,\&\/\(\)]+$/;
+
+    if (formData.classification && !isStandardClassification(formData.classification)) {
+        if (!classificationRegex.test(formData.classification)) {
+            errors.push('Classification contains invalid characters');
+        }
+    }
+
+    if (formData.repClassification && formData.repClassification !== 'None' && !isStandardClassification(formData.repClassification)) {
+        if (!classificationRegex.test(formData.repClassification)) {
+            errors.push('Representative classification contains invalid characters');
+        }
+    }
+
     // Services validation
     if (!formData.selectedServices || formData.selectedServices.length === 0) {
         errors.push('At least one service must be selected');
@@ -99,7 +142,7 @@ export function sanitizeFormData(formData) {
     const sanitized = {};
 
     // Sanitize string fields
-    const stringFields = ['requestDescription', 'clientName', 'representative', 'location', 'contact', 'remarks'];
+    const stringFields = ['requestDescription', 'clientName', 'representative', 'location', 'contact', 'remarks', 'classification', 'repClassification'];
     stringFields.forEach(field => {
         if (formData[field]) {
             sanitized[field] = sanitizeInput(formData[field]);
@@ -109,7 +152,7 @@ export function sanitizeFormData(formData) {
     });
 
     // Copy non-string fields as is
-    const otherFields = ['classification', 'repClassification', 'selectedServices', 'dateSubmitted', 'status', 'lastUpdated'];
+    const otherFields = ['selectedServices', 'dateSubmitted', 'status', 'lastUpdated'];
     otherFields.forEach(field => {
         sanitized[field] = formData[field];
     });
@@ -222,5 +265,10 @@ export const fieldValidators = {
     name: (name) => {
         const nameRegex = /^[a-zA-Z\s\-\'\.]+$/;
         return nameRegex.test(name);
+    },
+
+    classification: (classification) => {
+        const classificationRegex = /^[a-zA-Z0-9\s\-\.\,\&\/\(\)]+$/;
+        return classificationRegex.test(classification);
     }
 };

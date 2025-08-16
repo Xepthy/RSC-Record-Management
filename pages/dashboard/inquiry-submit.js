@@ -7,17 +7,35 @@ import {
     doc
 } from '../../firebase-config.js';
 import { sanitizeFormData, validateFormData, rateLimiter, handleError } from './inquiry-submit-utils.js';
+import fileUploadHandler from './file-upload.js';
 
 function collectFormData() {
     // Check if representative fields are enabled
     const isRepresentativeEnabled = !$('#representative').prop('disabled');
 
+    // Handle main classification
+    let classification = $('#classification').val();
+    if (classification === 'Others') {
+        const customValue = $('#classificationCustom').val().trim();
+        classification = customValue || 'Others'; // fallback to 'Others' if custom input is empty
+    }
+
+    // Handle rep classification
+    let repClassification = 'None';
+    if (isRepresentativeEnabled) {
+        repClassification = $('#repClassification').val();
+        if (repClassification === 'Others') {
+            const customValue = $('#repClassificationCustom').val().trim();
+            repClassification = customValue || 'Others'; // fallback to 'Others' if custom input is empty
+        }
+    }
+
     const formData = {
         requestDescription: $('#requestDescription').val(),
         clientName: $('#clientName').val(),
-        classification: $('#classification').val(),
+        classification: classification,
         representative: isRepresentativeEnabled ? $('#representative').val() : 'None',
-        repClassification: isRepresentativeEnabled ? $('#repClassification').val() : 'None',
+        repClassification: repClassification,
         location: $('#location').val(),
         contact: $('#contact').val(),
         dateSubmitted: new Date().toISOString(),
@@ -51,7 +69,6 @@ function collectFormData() {
 }
 
 // Function to submit form data to Firestore
-// Replace your existing submitFormData function with this:
 async function submitFormData() {
     try {
         // Get current user
@@ -81,6 +98,43 @@ async function submitFormData() {
         // Sanitize form data using security utils
         const formData = sanitizeFormData(rawFormData);
 
+        // Handle file uploads if any files are selected
+        let uploadedFiles = [];
+        const fileValidation = fileUploadHandler.getValidationStatus();
+
+        if (fileValidation.hasFiles) {
+            if (fileValidation.hasPendingUploads) {
+                // Show progress indication
+                const submitButton = document.querySelector('#requestForm button[type="submit"]');
+                const originalText = submitButton.textContent;
+                submitButton.textContent = 'Uploading files...';
+                submitButton.disabled = true;
+
+                try {
+                    uploadedFiles = await fileUploadHandler.uploadAllFiles();
+                    console.log('Files uploaded successfully:', uploadedFiles);
+                } catch (uploadError) {
+                    console.error('File upload failed:', uploadError);
+                    alert('Failed to upload files. Please try again.');
+
+                    // Reset button
+                    submitButton.textContent = originalText;
+                    submitButton.disabled = false;
+                    return false;
+                } finally {
+                    // Reset button
+                    submitButton.textContent = originalText;
+                    submitButton.disabled = false;
+                }
+            } else {
+                // Files already uploaded, get URLs
+                uploadedFiles = fileUploadHandler.getUploadedUrls();
+            }
+        }
+
+        // Add uploaded files to form data
+        formData.attachments = uploadedFiles;
+
         // Record rate limit attempt
         rateLimiter.recordAttempt(currentUser.uid);
 
@@ -95,7 +149,7 @@ async function submitFormData() {
         alert('Form submitted successfully!');
 
         // Reset form and close modal using jQuery
-        $('#requestForm')[0].reset();
+        resetForm();
         $('#modal').hide();
 
         // Refresh the table if you have a function for that
@@ -113,8 +167,29 @@ async function submitFormData() {
     }
 }
 
+// Function to reset form with custom input handling
+function resetForm() {
+    // Reset the form
+    $('#requestForm')[0].reset();
+
+    // Hide custom input fields
+    $('#classificationCustom').hide().val('');
+    $('#repClassificationCustom').hide().val('');
+
+    // Reset representative fields
+    $('#representative').prop('disabled', true);
+    $('#repClassification').prop('disabled', true);
+    $('#repClassificationCustom').prop('disabled', true);
+
+    // Clear uploaded files
+    fileUploadHandler.clearFiles();
+}
+
 // jQuery document ready with async/await for form submission
 $(document).ready(function () {
+    // Initialize file upload component
+    fileUploadHandler.initializeUpload('fileUploadContainer');
+
     $('#requestForm').on('submit', async function (e) {
         e.preventDefault(); // Prevent default form submission
         await submitFormData();

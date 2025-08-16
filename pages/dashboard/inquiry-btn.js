@@ -16,9 +16,41 @@ $(document).ready(function () {
         }
     });
 
+    // Handle representative checkbox
     $('#enableRepresentative').on('change', function () {
-        $('#representative').prop('disabled', !this.checked);
-        $('#repClassification').prop('disabled', !this.checked);
+        const isEnabled = this.checked;
+        $('#representative').prop('disabled', !isEnabled);
+        $('#repClassification').prop('disabled', !isEnabled);
+        $('#repClassificationCustom').prop('disabled', !isEnabled);
+
+        // Reset rep classification when disabled
+        if (!isEnabled) {
+            $('#repClassification').val('Agent');
+            $('#repClassificationCustom').hide().val('');
+        }
     });
 
+    // Handle main classification dropdown
+    $('#classification').on('change', function () {
+        const selectedValue = $(this).val();
+        const customInput = $('#classificationCustom');
+
+        if (selectedValue === 'Others') {
+            customInput.show().focus();
+        } else {
+            customInput.hide().val('');
+        }
+    });
+
+    // Handle rep classification dropdown
+    $('#repClassification').on('change', function () {
+        const selectedValue = $(this).val();
+        const customInput = $('#repClassificationCustom');
+
+        if (selectedValue === 'Others') {
+            customInput.show().focus();
+        } else {
+            customInput.hide().val('');
+        }
+    });
 });
