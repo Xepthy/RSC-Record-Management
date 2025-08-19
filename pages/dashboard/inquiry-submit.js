@@ -7,7 +7,7 @@ import {
     doc
 } from '../../firebase-config.js';
 import { sanitizeFormData, validateFormData, rateLimiter, handleError } from './inquiry-submit-utils.js';
-import fileUploadHandler from './file-upload.js';
+
 
 function collectFormData() {
     // Check if representative fields are enabled
@@ -98,42 +98,6 @@ async function submitFormData() {
         // Sanitize form data using security utils
         const formData = sanitizeFormData(rawFormData);
 
-        // Handle file uploads if any files are selected
-        let uploadedFiles = [];
-        const fileValidation = fileUploadHandler.getValidationStatus();
-
-        if (fileValidation.hasFiles) {
-            if (fileValidation.hasPendingUploads) {
-                // Show progress indication
-                const submitButton = document.querySelector('#requestForm button[type="submit"]');
-                const originalText = submitButton.textContent;
-                submitButton.textContent = 'Uploading files...';
-                submitButton.disabled = true;
-
-                try {
-                    uploadedFiles = await fileUploadHandler.uploadAllFiles();
-                    console.log('Files uploaded successfully:', uploadedFiles);
-                } catch (uploadError) {
-                    console.error('File upload failed:', uploadError);
-                    alert('Failed to upload files. Please try again.');
-
-                    // Reset button
-                    submitButton.textContent = originalText;
-                    submitButton.disabled = false;
-                    return false;
-                } finally {
-                    // Reset button
-                    submitButton.textContent = originalText;
-                    submitButton.disabled = false;
-                }
-            } else {
-                // Files already uploaded, get URLs
-                uploadedFiles = fileUploadHandler.getUploadedUrls();
-            }
-        }
-
-        // Add uploaded files to form data
-        formData.attachments = uploadedFiles;
 
         // Record rate limit attempt
         rateLimiter.recordAttempt(currentUser.uid);
@@ -145,8 +109,8 @@ async function submitFormData() {
         // Add document to pending collection (Firestore will auto-generate the random ID)
         const docRef = await addDoc(pendingCollectionRef, formData);
 
-        console.log('Document written with ID: ', docRef.id);
-        alert('Form submitted successfully!');
+        // console.log('Document written with ID: ', docRef.id); FOR TESTING 
+        // alert('Form submitted successfully!');
 
         // Reset form and close modal using jQuery
         resetForm();
@@ -181,14 +145,11 @@ function resetForm() {
     $('#repClassification').prop('disabled', true);
     $('#repClassificationCustom').prop('disabled', true);
 
-    // Clear uploaded files
-    fileUploadHandler.clearFiles();
 }
 
 // jQuery document ready with async/await for form submission
 $(document).ready(function () {
-    // Initialize file upload component
-    fileUploadHandler.initializeUpload('fileUploadContainer');
+
 
     $('#requestForm').on('submit', async function (e) {
         e.preventDefault(); // Prevent default form submission
