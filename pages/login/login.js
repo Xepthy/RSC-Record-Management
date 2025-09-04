@@ -22,7 +22,7 @@ $(document).ready(() => {
             if (remainingTime > 0) {
                 alert(`Too many failed attempts. Please wait ${remainingTime} minutes before trying again.`);
             } else {
-                alert("Please wait a moment before trying again.");
+                alert("Please wait 1 minute before trying again.");
             }
             return;
         }

@@ -1,6 +1,8 @@
 // securityUtils.js
 // Utility functions for input validation and security
 
+import { validateDocumentData, sanitizeDocumentData } from './pdf-utils.js';
+
 /**
  * Sanitizes user input by removing potentially harmful content
  * @param {string} input - The input string to sanitize
@@ -127,6 +129,14 @@ export function validateFormData(formData) {
         errors.push('At least one service must be selected');
     }
 
+    // Document validation using PDF utils
+    if (formData.documents) {
+        const documentValidation = validateDocumentData(formData.documents);
+        if (!documentValidation.isValid) {
+            errors.push(...documentValidation.errors);
+        }
+    }
+
     return {
         isValid: errors.length === 0,
         errors: errors
@@ -151,8 +161,15 @@ export function sanitizeFormData(formData) {
         }
     });
 
-    // Copy non-string fields as is
-    const otherFields = ['selectedServices', 'dateSubmitted', 'status', 'lastUpdated'];
+    // Sanitize documents using PDF utils
+    if (formData.documents) {
+        sanitized.documents = sanitizeDocumentData(formData.documents);
+    } else {
+        sanitized.documents = [];
+    }
+
+    // Copy other non-string fields as is
+    const otherFields = ['selectedServices', 'dateSubmitted', 'status', 'lastUpdated', 'documentCount', 'totalDocumentSize'];
     otherFields.forEach(field => {
         sanitized[field] = formData[field];
     });

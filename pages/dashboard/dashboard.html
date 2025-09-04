@@ -106,8 +106,12 @@
         </div>
 
         <label>Documents</label>
-        <div id="fileUploadContainer"></div>
-
+        <div id="fileUploadContainer">
+          <button type="button" id="uploadDocumentsBtn" class="upload-btn">Upload Documents</button>
+          <input type="file" id="documentUpload" accept=".pdf" multiple style="display: none;" />
+          <div id="uploadedFilesList" class="uploaded-files-list"></div>
+          <small class="file-info">Only PDF files allowed. Maximum 5MB per file.</small>
+        </div>
         <br>
 
         <button type="submit">Submit</button>
