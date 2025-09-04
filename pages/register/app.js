@@ -70,9 +70,10 @@ $(document).ready(function () {
             sessionStorage.setItem("emailForVerification", email);
             sessionStorage.setItem("tempUserData", JSON.stringify(tempUserData));
 
-            $('#verifySection').show();
-            $('#registerSection').hide();
+            $('#verifySection').slideDown();
             $('#password').val('');
+            $('#registerBtn').hide();
+
 
         } catch (error) {
             alert(ErrorHandler.getSecureMessage(error));
