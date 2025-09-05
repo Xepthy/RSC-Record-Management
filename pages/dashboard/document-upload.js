@@ -189,16 +189,18 @@ $(document).ready(() => {
                     background-color: #dc3545;
                     color: white;
                     border: none;
-                    border-radius: 50%;
-                    width: 24px;
-                    height: 24px;
+                    width: 20px;              
+                    height: 20px;            
+                    border-radius: 50%;   
                     cursor: pointer;
-                    font-size: 16px;
+                    font-size: 14px;
                     line-height: 1;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    padding: 0;    
                 }
+
                 
                 .remove-file-btn:hover {
                     background-color: #c82333;
