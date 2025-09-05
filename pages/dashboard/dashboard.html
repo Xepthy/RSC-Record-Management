@@ -12,6 +12,7 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   
   <!-- js -->
+  <script type="module" src="document-upload.js" defer></script>
   <script type="module" src="inquiry-btn.js" defer></script>
   <script type="module" src="inquiry-submit.js" defer></script>
   <script type="module" src="welcomeUser.js" defer></script>
@@ -58,6 +59,7 @@
 
         <label>Classification</label>
         <select id="classification">
+          <option value="noValue">--</option>
           <option value="Agent">Agent</option>
           <option value="Buyer">Buyer</option>
           <option value="Seller">Seller</option>
@@ -78,6 +80,7 @@
 
         <label>Rep. Classification</label>
         <select id="repClassification" disabled>
+          <option value="noValue">--</option>
           <option value="Agent">Agent</option>
           <option value="Buyer">Buyer</option>
           <option value="Seller">Seller</option>
