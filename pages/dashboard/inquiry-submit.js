@@ -1,13 +1,15 @@
-// inquiry-submit.js
-// Simplified form submission
-
 import {
     db,
     auth,
     collection,
     addDoc,
-    doc
+    doc,
+    ref,
+    uploadBytes,
+    getDownloadURL,
+    storage
 } from '../../firebase-config.js';
+
 import { sanitizeFormData, validateFormData, rateLimiter, handleError } from './inquiry-submit-utils.js';
 
 function collectFormData() {
@@ -99,6 +101,29 @@ async function submitFormData() {
         // Sanitize and submit
         const formData = sanitizeFormData(rawFormData);
         rateLimiter.recordAttempt(currentUser.uid);
+
+        const uploadedFiles = window.documentUpload ? window.documentUpload.getUploadedFiles() : [];
+        const storageRefs = [];
+
+        for (const file of uploadedFiles) {
+            if (!file.rawFile) {
+                console.warn("Missing raw File object for upload:", file.name);
+                continue;
+            }
+            const fileRef = ref(storage, `documents/${currentUser.uid}/${Date.now()}_${file.name}`);
+            await uploadBytes(fileRef, file.rawFile);
+            const url = await getDownloadURL(fileRef);
+
+            storageRefs.push({
+                name: file.name,
+                size: file.size,
+                uploadDate: file.uploadDate,
+                url
+            });
+        }
+
+        formData.documents = storageRefs;
+        formData.documentCount = storageRefs.length;
 
         const userDocRef = doc(db, 'client', currentUser.uid);
         const pendingCollectionRef = collection(userDocRef, 'pending');

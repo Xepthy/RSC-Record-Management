@@ -25,7 +25,8 @@ $(document).ready(function () {
 
         // Reset rep classification when disabled
         if (!isEnabled) {
-            $('#repClassification').val('Agent');
+            $('#representative').val('');
+            $('#repClassification').val('noValue'); // Reset to default
             $('#repClassificationCustom').hide().val('');
         }
     });

@@ -1,5 +1,5 @@
 // document-upload.js
-// Simplified PDF upload handling
+// Enhanced PDF upload handling with raw file storage
 
 class DocumentUpload {
     constructor() {
@@ -43,12 +43,13 @@ class DocumentUpload {
                 return;
             }
 
-            // Store minimal data only
+            // Store file data INCLUDING raw file for upload
             this.uploadedFiles.push({
                 id: Date.now() + Math.random(),
                 name: file.name,
                 size: file.size,
-                uploadDate: new Date().toISOString()
+                uploadDate: new Date().toISOString(),
+                rawFile: file // Store the actual File object for upload
             });
         });
 
@@ -105,9 +106,19 @@ class DocumentUpload {
         return this.uploadedFiles;
     }
 
+    // Get files count for validation
+    getFileCount() {
+        return this.uploadedFiles.length;
+    }
+
     clearAllFiles() {
         this.uploadedFiles = [];
         this.updateDisplay();
+    }
+
+    // Check if any files are uploaded
+    hasFiles() {
+        return this.uploadedFiles.length > 0;
     }
 }
 
@@ -200,7 +211,7 @@ $(document).ready(() => {
                     margin: 20px 0;
                 }
                 
-                .file-info {
+                .file-info.description {
                     font-size: 0.85em;
                     color: #666;
                     margin-top: 5px;
