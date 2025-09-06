@@ -254,7 +254,7 @@ function showInquiryModal(inquiry, accountData) {
 
                     <br>
                     
-                    <h3>Basic Information</h3>
+                    <h3>Client Basic Information</h3>
                     <p><strong>Client Name:</strong> ${inquiry.clientName || 'N/A'}</p>
                     <p><strong>Classification:</strong> ${inquiry.classification || 'N/A'}</p>
                     <p><strong>Representative:</strong> ${inquiry.representative || 'None'}</p>
