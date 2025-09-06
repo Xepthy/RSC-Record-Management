@@ -117,3 +117,37 @@ td {
         font-size: 11px;
     }
 }
+
+.fake-checkbox-label {
+  display: block;
+  margin-bottom: 5px;
+  cursor: default;
+}
+
+.fake-checkbox {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border: 2px solid #007bff;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.fake-checkbox.checked {
+  background-color: #007bff;
+  position: relative;
+}
+
+.fake-checkbox.checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+

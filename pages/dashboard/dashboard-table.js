@@ -1,10 +1,11 @@
-// dashboard-table.js (jQuery Version)
+// dashboard-table.js (jQuery Version) - Updated with Account Details
 import {
     db,
     auth,
     collection,
     getDocs,
     doc,
+    getDoc,
     onSnapshot,
     query,
     orderBy
@@ -12,6 +13,7 @@ import {
 
 let currentUser = null;
 let unsubscribe = null;
+let userAccountData = null; // Cache user account data
 
 // Initialize dashboard table
 async function initDashboardTable() {
@@ -22,6 +24,9 @@ async function initDashboardTable() {
             return;
         }
 
+        // Load user account data first
+        await loadUserAccountData();
+
         // Load initial data
         await loadInquiries();
 
@@ -31,6 +36,24 @@ async function initDashboardTable() {
     } catch (error) {
         console.error('Error initializing dashboard table:', error);
         showError('Failed to load inquiries');
+    }
+}
+
+// Load user account data
+async function loadUserAccountData() {
+    try {
+        const userDocRef = doc(db, 'client', currentUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+            userAccountData = userDocSnap.data();
+        } else {
+            console.warn('User account data not found');
+            userAccountData = null;
+        }
+    } catch (error) {
+        console.error('Error loading user account data:', error);
+        userAccountData = null;
     }
 }
 
@@ -161,6 +184,10 @@ function truncateText(text, maxLength) {
 
 async function viewInquiry(inquiryId) {
     try {
+        // Debug: Check if userAccountData is available
+        console.log('userAccountData when viewing inquiry:', userAccountData);
+        console.log('userAccountData mobileNumber:', userAccountData?.mobileNumber);
+
         // Get inquiry details
         const userDocRef = doc(db, 'client', currentUser.uid);
         const pendingCollectionRef = collection(userDocRef, 'pending');
@@ -178,8 +205,8 @@ async function viewInquiry(inquiryId) {
             return;
         }
 
-        // Create and show modal
-        showInquiryModal(inquiryData);
+        // Show modal with both inquiry and account data
+        showInquiryModal(inquiryData, userAccountData);
 
     } catch (error) {
         console.error('Error showing inquiry details:', error);
@@ -187,11 +214,20 @@ async function viewInquiry(inquiryId) {
     }
 }
 
-function showInquiryModal(inquiry) {
+function showInquiryModal(inquiry, accountData) {
     const servicesText = inquiry.selectedServices ? inquiry.selectedServices.join(', ') : 'None';
     const documentsText = inquiry.documents && inquiry.documents.length > 0
         ? inquiry.documents.map(doc => `<a href="${doc.url}" target="_blank">${doc.name}</a>`).join('<br>')
         : 'No documents';
+
+    // Format account data with fallbacks
+    const firstName = accountData?.firstName || 'N/A';
+    const middleName = accountData?.middleName || 'N/A';
+    const lastName = accountData?.lastName || 'N/A';
+    const contactNo = accountData?.mobileNumber || 'N/A'; // Fixed: using mobileNumber
+    const classification = accountData?.classification || 'N/A';
+    const email = accountData?.email || 'N/A';
+    const suffix = accountData?.suffix || 'N/A';
 
     const modalHtml = `
         <div class="modal" id="inquiryDetailsModal">
@@ -200,6 +236,24 @@ function showInquiryModal(inquiry) {
                 <h2>Inquiry Details</h2>
                 
                 <div class="inquiry-details">
+                    <h3 class="account-toggle" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+                        <span>Account Information</span>
+                        <span class="dropdown-arrow" style="transition: transform 0.3s ease; transform: rotate(-90deg);">▼</span>
+                    </h3>
+                    <div class="account-content" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #007bff;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <p><strong>First Name:</strong> ${firstName}</p>
+                            <p><strong>Middle Name:</strong> ${middleName}</p>
+                            <p><strong>Last Name:</strong> ${lastName}</p>
+                            <p><strong>Suffix:</strong> ${suffix}</p>
+                            <p><strong>Contact No.:</strong> ${contactNo}</p>
+                            <p><strong>Classification:</strong> ${classification}</p>
+                            <p><strong>Email:</strong> ${email}</p>
+                        </div>
+                    </div>
+
+                    <br>
+                    
                     <h3>Basic Information</h3>
                     <p><strong>Client Name:</strong> ${inquiry.clientName || 'N/A'}</p>
                     <p><strong>Classification:</strong> ${inquiry.classification || 'N/A'}</p>
@@ -208,20 +262,31 @@ function showInquiryModal(inquiry) {
                     <p><strong>Location:</strong> ${inquiry.location || 'N/A'}</p>
                     <p><strong>Contact:</strong> ${inquiry.contact || 'N/A'}</p>
                     
+                    <br>
+
                     <h3>Request Details</h3>
                     <p><strong>Description:</strong></p>
                     <p style="background: #f5f5f5; padding: 10px; border-radius: 4px;">${inquiry.requestDescription || 'N/A'}</p>
                     
                     <p><strong>Selected Services:</strong></p>
-                    <p style="background: #f5f5f5; padding: 10px; border-radius: 4px;">${servicesText}</p>
+                    <div class="service-checkboxes" style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
+                        ${renderServiceCheckboxes(inquiry.selectedServices)}
+                    </div>
                     
+                    <br>
+
                     <h3>Status Information</h3>
                     <p><strong>Current Status:</strong> <span class="${inquiry.status}">${formatStatus(inquiry.status)}</span></p>
                     <p><strong>Date Submitted:</strong> ${formatDate(inquiry.dateSubmitted)}</p>
                     <p><strong>Last Updated:</strong> ${formatDate(inquiry.lastUpdated)}</p>
+
+                    <br>
+                    
                     <p><strong>Remarks:</strong></p>
                     <p style="background: #f5f5f5; padding: 10px; border-radius: 4px;">${inquiry.remarks || 'No remarks'}</p>
                     
+                    <br>
+
                     <h3>Documents</h3>
                     <div style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
                         ${documentsText}
@@ -281,6 +346,30 @@ async function refreshTable() {
     await loadInquiries();
 }
 
+function renderServiceCheckboxes(selectedServices = []) {
+    const allServices = [
+        'Relocation Survey',
+        'Boundary Survey',
+        'Subdivision Survey',
+        'Topographic Survey',
+        'Engineering Services',
+        'As-Built Survey',
+        'Tilting Assistance',
+        'All'
+    ];
+
+    return allServices.map(service => {
+        const checked = selectedServices.includes(service) ? 'checked' : '';
+        return `
+            <label class="fake-checkbox-label">
+                <span class="fake-checkbox ${checked}"></span> ${service}
+            </label>
+        `;
+    }).join('');
+}
+
+
+
 // Cleanup method
 function destroyDashboardTable() {
     if (unsubscribe) {
@@ -299,6 +388,22 @@ $(document).ready(function () {
     // Event delegation for close modal
     $(document).on('click', '.close-btn', function () {
         $(this).closest('.modal').remove();
+    });
+
+    // Event delegation for account information toggle
+    $(document).on('click', '.account-toggle', function () {
+        const $content = $(this).next('.account-content');
+        const $arrow = $(this).find('.dropdown-arrow');
+
+        $content.slideToggle(150, function () {
+            if ($content.is(':visible')) {
+                // Expanded → arrow down
+                $arrow.css('transform', 'rotate(0deg)');
+            } else {
+                // Collapsed → arrow right
+                $arrow.css('transform', 'rotate(-90deg)');
+            }
+        });
     });
 
     // Event delegation for retry button
