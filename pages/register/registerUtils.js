@@ -1,4 +1,5 @@
 // Input sanitization and validation
+// Input sanitization and validation
 const SecurityUtils = {
     sanitizeInput: function (input) {
         return input.trim().replace(/[<>]/g, '');
@@ -25,6 +26,11 @@ const SecurityUtils = {
 
     validateMobileNumber: function (mobile) {
         return /^09[0-9]{9}$/.test(mobile);
+    },
+
+    // Add classification validation
+    validateClassification: function (classification) {
+        return classification && classification !== "" && classification !== null;
     }
 };
 
