@@ -18,6 +18,7 @@ $(document).ready(function () {
     ValidationHandlers.initializeValidation();
 
     // Registration button handler
+    // Registration button handler
     $('#registerBtn').on('click', async function (e) {
         e.preventDefault();
 
@@ -52,6 +53,39 @@ $(document).ready(function () {
             return;
         }
 
+        // Add classification validation
+        if (!classification || classification === "" || classification === null) {
+            alert("Please select a classification.");
+            $('#classification').focus();
+            return;
+        }
+
+        // Add name validation
+        if (!SecurityUtils.validateName(firstName)) {
+            alert("Please enter a valid first name.");
+            $('#firstName').focus();
+            return;
+        }
+
+        if (!SecurityUtils.validateName(lastName)) {
+            alert("Please enter a valid last name.");
+            $('#lastName').focus();
+            return;
+        }
+
+        // Optional fields validation (only if they have values)
+        if (middleName && !SecurityUtils.validateName(middleName)) {
+            alert("Please enter a valid middle name.");
+            $('#middleName').focus();
+            return;
+        }
+
+        if (suffix && !SecurityUtils.validateName(suffix)) {
+            alert("Please enter a valid suffix.");
+            $('#suffix').focus();
+            return;
+        }
+
         const $registerBtn = $('#registerBtn');
         $registerBtn.prop('disabled', true).text('Creating Account...');
 
@@ -73,7 +107,6 @@ $(document).ready(function () {
             $('#verifySection').slideDown();
             $('#password').val('');
             $('#registerBtn').hide();
-
 
         } catch (error) {
             alert(ErrorHandler.getSecureMessage(error));
