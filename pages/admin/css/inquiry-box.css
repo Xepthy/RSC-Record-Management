@@ -1,0 +1,40 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+.inquiry-box {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.inquiry-header {
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-bottom: 8px;
+}
+
+.status {
+  font-size: 0.9em;
+  padding: 4px 8px;
+  border-radius: 5px;
+  display: inline-block;
+}
+
+.status.pending {
+  background: #ffecb3;
+  color: #8a6d3b;
+}
+
+.status.approved {
+  background: #c8e6c9;
+  color: #256029;
+}
+
+.status.rejected {
+  background: #ffcdd2;
+  color: #b71c1c;
+}

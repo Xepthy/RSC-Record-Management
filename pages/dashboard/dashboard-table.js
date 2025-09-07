@@ -184,10 +184,6 @@ function truncateText(text, maxLength) {
 
 async function viewInquiry(inquiryId) {
     try {
-        // Debug: Check if userAccountData is available
-        console.log('userAccountData when viewing inquiry:', userAccountData);
-        console.log('userAccountData mobileNumber:', userAccountData?.mobileNumber);
-
         // Get inquiry details
         const userDocRef = doc(db, 'client', currentUser.uid);
         const pendingCollectionRef = collection(userDocRef, 'pending');
