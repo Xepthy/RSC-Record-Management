@@ -230,9 +230,9 @@ function showInquiryModal(inquiry, accountData) {
     const suffix = accountData?.suffix || 'N/A';
 
     const modalHtml = `
-        <div class="modal" id="inquiryDetailsModal">
+        <div class="modal inquiry-modal" id="inquiryDetailsModal">
             <div class="modal-content">
-                <span class="close-btn">&times;</span>
+                <span class="close-btn inquiry-close">&times;</span>
                 <h2>Inquiry Details</h2>
                 
                 <div class="inquiry-details">
@@ -385,9 +385,9 @@ $(document).ready(function () {
         viewInquiry(inquiryId);
     });
 
-    // Event delegation for close modal
-    $(document).on('click', '.close-btn', function () {
-        $(this).closest('.modal').remove();
+    // Event delegation for close modal - ONLY for inquiry detail modals
+    $(document).on('click', '.inquiry-close', function () {
+        $(this).closest('.inquiry-modal').remove();
     });
 
     // Event delegation for account information toggle
@@ -411,8 +411,8 @@ $(document).ready(function () {
         loadInquiries();
     });
 
-    // Close modal when clicking outside
-    $(document).on('click', '.modal', function (e) {
+    // Close inquiry modal when clicking outside - ONLY for inquiry modals
+    $(document).on('click', '.inquiry-modal', function (e) {
         if (e.target === this) {
             $(this).remove();
         }
