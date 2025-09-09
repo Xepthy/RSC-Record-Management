@@ -5,7 +5,7 @@ import {
     getDoc,
     signOut,
     onAuthStateChanged
-} from '../../firebase-config.js';
+} from '../../../firebase-config.js';
 
 class AuthManager {
     constructor(parentInstance) {
@@ -109,7 +109,7 @@ class AuthManager {
         `);
 
         setTimeout(() => {
-            window.location.href = 'adminLogin.html';
+            window.location.href = '../login/adminLogin.html';
         }, 1500);
     }
 }

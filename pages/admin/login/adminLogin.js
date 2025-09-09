@@ -6,7 +6,7 @@ import {
     db,
     doc,
     getDoc
-} from '../../firebase-config.js';
+} from '../../../firebase-config.js';
 
 class AdminLogin {
     constructor() {
@@ -168,7 +168,7 @@ class AdminLogin {
         this.showSuccess('Login successful! Redirecting...');
 
         setTimeout(() => {
-            window.location.href = 'inquiries.html';
+            window.location.href = '../inquiries/inquiries.html';
         }, 1000);
     }
 

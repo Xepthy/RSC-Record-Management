@@ -2,7 +2,7 @@ import {
     db,
     auth,
     onAuthStateChanged
-} from '../../firebase-config.js';
+} from '../../../firebase-config.js';
 import AuthManager from './auth-manager.js';
 import InquiryManager from './inquiry-manager.js';
 import UIRenderer from './ui-renderer.js';

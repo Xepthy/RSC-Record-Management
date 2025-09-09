@@ -22,6 +22,7 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--bg-gray);
   min-height: 100vh;
+  overflow-x: hidden; /* Prevent horizontal scroll on body */
 }
 
 /* Header */
@@ -162,6 +163,9 @@ body {
   flex: 1;
   padding: 30px;
   min-height: calc(100vh - 70px);
+  width: calc(100vw - 250px); /* Prevent content from expanding beyond viewport */
+  max-width: calc(100vw - 250px);
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .content-header {
@@ -189,11 +193,16 @@ body {
   border-radius: 15px;
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 .inquiry-content {
   min-height: 400px;
   padding: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden; /* Prevent horizontal scroll in content */
 }
 
 /* State Styles */
@@ -235,12 +244,14 @@ body {
   transform: translateY(-1px);
 }
 
-/* Table Styles */
+/* FIXED TABLE STYLES - No More Horizontal Scroll */
 .inquiries-table-container {
   background: var(--white);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 .table-header {
@@ -274,13 +285,17 @@ body {
 }
 
 .table-wrapper {
-  overflow-x: auto;
+  overflow-x: hidden; /* FIXED: Changed from auto to hidden */
+  width: 100%;
+  max-width: 100%;
 }
 
 .inquiries-table {
   width: 100%;
+  max-width: 100%; /* ADDED: Prevent table from expanding */
   border-collapse: collapse;
   font-size: 14px;
+  table-layout: fixed; /* ADDED: Fixed table layout to prevent expansion */
 }
 
 .inquiries-table thead th {
@@ -291,51 +306,73 @@ body {
   color: var(--dark-gray);
   border-bottom: 2px solid var(--medium-gray);
   white-space: nowrap;
+  box-sizing: border-box; /* ADDED */
 }
 
-.from-header { width: 30%; }
-.subject-header { width: 50%; }
-.sent-header { width: 20%; }
+/* FIXED: Proper column widths that total 100% */
+.from-header, .from-column { 
+  width: 35%; 
+  min-width: 0; /* ADDED: Allow shrinking */
+}
+.subject-header, .subject-column { 
+  width: 45%; 
+  min-width: 0; /* ADDED: Allow shrinking */
+}
+.sent-header, .sent-column { 
+  width: 20%; 
+  min-width: 0; /* ADDED: Allow shrinking */
+}
 
-/* Fixed Table Row Styles - No Background Color Changes on Hover */
+/* Fixed Table Row Styles - CLEANER HOVER EFFECTS */
 .inquiries-table tbody tr {
   border-bottom: 1px solid var(--medium-gray);
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: all 0.2s ease; /* SIMPLIFIED transition */
+  background-color: var(--white); /* Default background */
 }
 
-/* Unread rows have a light orange background and left border */
+/* Unread rows styling */
 .inquiries-table tbody tr.unread {
-  background-color: #fff8f0;
+  background-color: #fff8f0 !important;
   font-weight: 500;
   border-left: 4px solid #ff7f50;
 }
 
-/* Read rows have white background */
+/* Read rows styling */
 .inquiries-table tbody tr.read {
-  background-color: var(--white);
+  background-color: var(--white) !important;
 }
 
-/* Hover effects - ONLY change opacity and transform, NOT background color */
+/* FIXED HOVER EFFECTS - Only opacity and subtle transform */
 .inquiries-table tbody tr:hover {
-  opacity: 0.8;
-  transform: translateX(2px);
+  opacity: 0.85 !important;
+  transform: translateX(1px) !important; /* REDUCED from 2px to 1px */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important; /* ADDED subtle shadow */
 }
 
 .inquiries-table td {
   padding: 14px 18px;
   vertical-align: middle;
+  box-sizing: border-box; /* ADDED */
+  max-width: 0; /* ADDED: Allow text truncation */
+  overflow: hidden; /* ADDED: Prevent text overflow */
 }
 
 .client-name {
   font-weight: 600;
   color: #212529;
   margin-bottom: 2px;
+  white-space: nowrap; /* ADDED */
+  overflow: hidden; /* ADDED */
+  text-overflow: ellipsis; /* ADDED */
 }
 
 .client-email {
   font-size: 12px;
   color: var(--primary-gray);
+  white-space: nowrap; /* ADDED */
+  overflow: hidden; /* ADDED */
+  text-overflow: ellipsis; /* ADDED */
 }
 
 .subject-column {
@@ -348,7 +385,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 450px;
+  max-width: 100%; /* CHANGED from 450px to 100% */
   display: block;
 }
 
@@ -367,9 +404,10 @@ body {
   font-size: 13px;
   line-height: 1.4;
   font-style: italic;
+  white-space: nowrap; /* ADDED */
 }
 
-/* Responsive Design */
+/* IMPROVED Responsive Design */
 @media (max-width: 768px) {
   .sidebar {
     width: 200px;
@@ -378,6 +416,8 @@ body {
   .main-content {
     margin-left: 200px;
     padding: 20px;
+    width: calc(100vw - 200px); /* UPDATED */
+    max-width: calc(100vw - 200px); /* UPDATED */
   }
   
   .table-header {
@@ -395,12 +435,18 @@ body {
     padding: 8px 12px;
   }
   
-  .from-header, .from-column { width: 25%; }
-  .subject-header, .subject-column { width: 55%; }
+  /* BETTER mobile column widths */
+  .from-header, .from-column { width: 30%; }
+  .subject-header, .subject-column { width: 50%; }
   .sent-header, .sent-column { width: 20%; }
   
   .client-email { display: none; }
-  .sent-date { font-size: 10px; }
+  .sent-date { font-size: 11px; }
+  
+  /* REDUCED transform on mobile */
+  .inquiries-table tbody tr:hover {
+    transform: none !important; /* Remove transform on mobile */
+  }
 }
 
 @media (max-width: 480px) {
@@ -413,9 +459,24 @@ body {
   .main-content {
     margin-left: 0;
     margin-top: 0;
+    width: 100vw; /* UPDATED */
+    max-width: 100vw; /* UPDATED */
+    padding: 15px; /* REDUCED padding */
   }
   
   .user-header {
     position: relative;
+  }
+  
+  /* STACK table stats vertically on small screens */
+  .table-stats {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  /* Further reduce padding on very small screens */
+  .inquiries-table thead th,
+  .inquiries-table tbody td {
+    padding: 6px 8px;
   }
 }

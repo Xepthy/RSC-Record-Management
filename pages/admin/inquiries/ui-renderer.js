@@ -17,7 +17,7 @@ class UIRenderer {
         this.parent.currentInquiryId = null;
         // Remove the updateHeaderMarkReadButton call since we removed that method
 
-        if (this.parent.inquiries.length === 0) {
+        if (!this.parent.inquiries.length === 0) {
             $('#inquiryContent').html(`
                 <div class="empty-state">
                     <h3>🔭 No inquiries yet</h3>
@@ -185,7 +185,7 @@ class UIRenderer {
             <div class="error-state">
                 <h3>🚫 Access Denied</h3>
                 <p>You need admin privileges to view inquiries.</p>
-                <button onclick="window.location.href='adminLogin.html'" style="margin-top: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                <button onclick="window.location.href='../login/adminLogin.html'" style="margin-top: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
                     Back to Login
                 </button>
             </div>

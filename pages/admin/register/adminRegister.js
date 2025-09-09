@@ -8,7 +8,7 @@ import {
     doc,
     setDoc,
     getDoc
-} from '../../firebase-config.js';
+} from '../../../firebase-config.js';
 
 // Import admin utilities
 import {
@@ -153,7 +153,7 @@ $(document).ready(function () {
                 AdminSessionManager.clearTempData();
                 AdminInputUtils.clearSensitiveFields();
                 alert("Admin account created successfully! Redirecting to admin dashboard...");
-                window.location.href = "../admin/inquiry-box.html";
+                window.location.href = "../inquiries/inquiries.html";
 
                 // Reset rate limiter on success
                 AdminRateLimiter.reset();
