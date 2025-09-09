@@ -19,7 +19,9 @@ import {
     doc,
     onSnapshot,
     orderBy,
-    query
+    query,
+    serverTimestamp,
+    updateDoc
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
 
@@ -67,5 +69,8 @@ export {
     deleteObject,
     onSnapshot,
     orderBy,
-    query
+    query,
+    serverTimestamp,
+    updateDoc
+
 };

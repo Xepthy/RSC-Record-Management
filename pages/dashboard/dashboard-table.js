@@ -152,11 +152,25 @@ function createTableRow(inquiry) {
     return row;
 }
 
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
+function formatDate(dateValue) {
+    if (!dateValue) return 'N/A';
 
     try {
-        const date = new Date(dateString);
+        let date;
+
+        // Firestore Timestamp object
+        if (dateValue.toDate) {
+            date = dateValue.toDate();
+        }
+        // If it’s already a JS Date
+        else if (dateValue instanceof Date) {
+            date = dateValue;
+        }
+        // If it’s a string or number
+        else {
+            date = new Date(dateValue);
+        }
+
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -165,6 +179,7 @@ function formatDate(dateString) {
             minute: '2-digit'
         });
     } catch (error) {
+        console.error('Date formatting error:', error, dateValue);
         return 'Invalid Date';
     }
 }

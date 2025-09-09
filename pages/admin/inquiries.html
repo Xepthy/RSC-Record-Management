@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Inquiries</title>
+  
+  <link rel="stylesheet" href="css/main-layout.css">
+  <link rel="stylesheet" href="css/inquiry-details.css">
+  
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  
+  <script type="module" src="inquiries.js" defer></script>
+  
+</head>
+<body>
+  <!-- User Info Header -->
+  <div class="user-header">
+    <div class="user-info">
+      <span class="user-name" id="userName">Admin User</span>
+      <span class="user-email" id="userEmail">admin@example.com</span>
+    </div>
+    <button class="logout-btn" id="logoutBtn">
+      <span>🚪 Logout</span>
+    </button>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>🛠️ Admin Panel</h2>
+    </div>
+    
+    <nav>
+      <div class="nav-item active" id="inquiriesNav">
+        <div class="nav-item-content">
+          <span class="nav-icon">📥</span>
+          <span class="nav-text">Inquiries</span>
+        </div>
+        <span class="notification-badge" id="inquiryCount" style="display: none;">0</span>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="content-header">
+      <h1>Inquiry Management</h1>
+      <p>Manage and respond to customer inquiries. Click on any inquiry to view details and automatically mark it as read.</p>
+    </div>
+    
+    <div class="inquiry-container">
+      <div class="inquiry-content" id="inquiryContent">
+        <!-- Inquiry content will be loaded here -->
+        <div class="loading-state">
+          <h3>Loading inquiries...</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

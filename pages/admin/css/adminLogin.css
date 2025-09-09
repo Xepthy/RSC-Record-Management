@@ -1,326 +1,165 @@
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
 }
 
-.admin-container {
-    background: white;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 400px;
+/* Login Styles */
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
 }
 
-.admin-header {
-    text-align: center;
-    margin-bottom: 2rem;
+.login-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  animation: slideUp 0.6s ease-out;
 }
 
-.admin-header h1 {
-    color: #333;
-    font-size: 28px;
-    margin-bottom: 0.5rem;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.admin-header p {
-    color: #666;
-    font-size: 14px;
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
 }
 
-.admin-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 1.5rem;
+.login-header h1 {
+  color: #2c3e50;
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.login-header p {
+  color: #7f8c8d;
+  font-size: 1rem;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .form-group {
-    margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #333;
-    font-weight: 500;
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 0.9rem;
 }
 
-.form-control {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid #e1e5e9;
-    border-radius: 8px;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    background: #f8f9fa;
+.form-group input {
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: #f8f9fa;
 }
 
-.form-control:focus {
-    outline: none;
-    border-color: #667eea;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.form-control.invalid {
-    border-color: #dc3545;
-    background: #fff5f5;
+.login-btn {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
-.btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
-.btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.security-notice {
-    background: #d1ecf1;
-    border: 1px solid #bee5eb;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    font-size: 13px;
-    color: #0c5460;
-}
-
-.security-notice h4 {
-    margin-bottom: 0.5rem;
-    font-size: 14px;
-}
-
-.admin-links {
-    text-align: center;
-    margin-top: 1.5rem;
-}
-
-.admin-links a {
-    color: #667eea;
-    text-decoration: none;
-    font-size: 14px;
-    display: block;
-    margin-bottom: 0.5rem;
-    padding: 0.5rem;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-}
-
-.admin-links a:hover {
-    text-decoration: underline;
-    background-color: #f8f9fa;
-}
-
-.divider {
-    border: 0;
-    border-top: 1px solid #e9ecef;
-    margin: 1rem 0;
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 480px) {
-    .admin-container {
-        margin: 1rem;
-        padding: 1.5rem;
-    }
-    
-    .admin-header h1 {
-        font-size: 24px;
-    }
-    
-    .form-control {
-        font-size: 16px; /* Prevents zoom on iOS */
-    }
-}
-
-@media (max-width: 360px) {
-    .admin-container {
-        padding: 1rem;
-    }
-    
-    .admin-header h1 {
-        font-size: 22px;
-    }
-}
-
-/* Form validation states */
-.form-control.valid {
-    border-color: #28a745;
-    background: #f8fff9;
-}
-
-.form-control:invalid:not(:focus):not(:placeholder-shown) {
-    border-color: #dc3545;
-    background: #fff5f5;
-}
-
-/* Loading states */
-.btn.loading {
-    position: relative;
-    color: transparent;
-}
-
-.btn.loading::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid transparent;
-    border-top-color: #ffffff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Accessibility improvements */
-.form-control:focus {
-    outline: 2px solid #667eea;
-    outline-offset: 2px;
+.error-message {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 15px;
+  border-left: 4px solid;
+  font-size: 0.9rem;
 }
 
-.btn:focus {
-    outline: 2px solid #667eea;
-    outline-offset: 2px;
+.error-message.error {
+  background: #fff5f5;
+  color: #e53e3e;
+  border-left-color: #e53e3e;
 }
 
-/* Admin badge animations */
-.admin-badge {
-    animation: pulse 2s infinite;
+.error-message.success {
+  background: #f0fff4;
+  color: #38a169;
+  border-left-color: #38a169;
 }
 
-@keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
-    }
-}
-
-/* Security notice styling */
-.security-notice {
-    position: relative;
-    overflow: hidden;
-}
-
-.security-notice::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-    animation: security-shine 3s infinite;
-}
-
-@keyframes security-shine {
-    0% {
-        left: -100%;
-    }
-    100% {
-        left: 100%;
-    }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .admin-container {
-        background: #1a1a1a;
-        color: #e0e0e0;
-    }
-    
-    .admin-header h1 {
-        color: #e0e0e0;
-    }
-    
-    .admin-header p {
-        color: #b0b0b0;
-    }
-    
-    .form-group label {
-        color: #e0e0e0;
-    }
-    
-    .form-control {
-        background: #2a2a2a;
-        border-color: #404040;
-        color: #e0e0e0;
-    }
-    
-    .form-control:focus {
-        background: #2a2a2a;
-        border-color: #667eea;
-    }
-    
-    .security-notice {
-        background: #1e3a3f;
-        border-color: #2d5a5f;
-        color: #b8e6eb;
-    }
-    
-    .security-notice h4 {
-        color: #b8e6eb;
-    }
-    
-    .admin-links a:hover {
-        background-color: #2a2a2a;
-    }
-    
-    .divider {
-        border-top-color: #404040;
-    }
-}
-
-/* Focus trap for better accessibility */
-.admin-container:focus-within {
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(102, 126, 234, 0.3);
+/* Responsive Design */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 30px 20px;
+    margin: 20px;
+  }
+  
+  .login-header h1 {
+    font-size: 1.5rem;
+  }
 }

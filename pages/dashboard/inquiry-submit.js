@@ -7,7 +7,9 @@ import {
     ref,
     uploadBytes,
     getDownloadURL,
-    storage
+    storage,
+    getDoc,
+    serverTimestamp  // Add this import
 } from '../../firebase-config.js';
 
 import { sanitizeFormData, validateFormData, rateLimiter, handleError } from './inquiry-submit-utils.js';
@@ -37,9 +39,14 @@ function collectFormData() {
         repClassification,
         location: $('#location').val(),
         contact: $('#contact').val(),
-        dateSubmitted: new Date().toISOString(),
+
+        // Use server timestamp for proper Firestore ordering
+        dateSubmitted: serverTimestamp(),
+        lastUpdated: serverTimestamp(),
+
+        // Add missing fields that admin expects
+        read: false,  // Initialize as unread
         status: 'pending',
-        lastUpdated: new Date().toISOString(),
         remarks: ''
     };
 
@@ -74,6 +81,48 @@ function collectFormData() {
     return formData;
 }
 
+async function getAccountInformation(uid) {
+    try {
+        const userDocRef = doc(db, 'client', uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            return {
+                uid: userData.uid || uid,
+                firstName: userData.firstName || '',
+                lastName: userData.lastName || '',
+                middleName: userData.middleName || '',
+                suffix: userData.suffix || '',
+                email: userData.email || '',
+                mobileNumber: userData.mobileNumber || '',
+                classification: userData.classification || '',
+                createdAt: userData.createdAt || null,
+                lastLoginAt: userData.lastLoginAt || null
+            };
+        } else {
+            console.warn('User document not found');
+            return {
+                uid: uid,
+                firstName: '',
+                lastName: '',
+                middleName: '',
+                suffix: '',
+                email: '',
+                mobileNumber: '',
+                classification: '',
+                emailVerified: false,
+                profileComplete: false,
+                createdAt: null,
+                lastLoginAt: null
+            };
+        }
+    } catch (error) {
+        console.error('Error fetching account information:', error);
+        throw error;
+    }
+}
+
 async function submitFormData() {
     try {
         const currentUser = auth.currentUser;
@@ -102,6 +151,9 @@ async function submitFormData() {
         const formData = sanitizeFormData(rawFormData);
         rateLimiter.recordAttempt(currentUser.uid);
 
+        // Get account information
+        const accountInfo = await getAccountInformation(currentUser.uid);
+
         const uploadedFiles = window.documentUpload ? window.documentUpload.getUploadedFiles() : [];
         const storageRefs = [];
 
@@ -125,10 +177,27 @@ async function submitFormData() {
         formData.documents = storageRefs;
         formData.documentCount = storageRefs.length;
 
+        // Submit to client/{uid}/pending collection
         const userDocRef = doc(db, 'client', currentUser.uid);
         const pendingCollectionRef = collection(userDocRef, 'pending');
+        const pendingDocRef = await addDoc(pendingCollectionRef, formData);
 
-        await addDoc(pendingCollectionRef, formData);
+        // Prepare data for inquiries collection (includes account information)
+        const inquiryData = {
+            ...formData,
+            accountInfo: accountInfo,
+            clientUid: currentUser.uid,
+            pendingDocId: pendingDocRef.id, // Reference to the pending document
+
+            // Ensure these fields are present for admin compatibility
+            read: false,
+            dateSubmitted: serverTimestamp(),
+            lastUpdated: serverTimestamp()
+        };
+
+        // Submit to root inquiries collection
+        const inquiriesCollectionRef = collection(db, 'inquiries');
+        await addDoc(inquiriesCollectionRef, inquiryData);
 
         // Success message
         const docCount = formData.documentCount;
@@ -149,6 +218,7 @@ async function submitFormData() {
         return true;
 
     } catch (error) {
+        console.error('Form submission error:', error);
         alert(handleError(error));
         return false;
     }
