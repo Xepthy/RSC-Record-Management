@@ -1,12 +1,12 @@
 /* Inquiry Details Variables */
 :root {
-  --primary-gray: #6c757d;
+  --primary-gray: #050607;
   --light-gray: #f8f9fa;
   --medium-gray: #e9ecef;
   --dark-gray: #495057;
   --accent-gray: #adb5bd;
   --white: #ffffff;
-  --success: #28a745;
+  --success: #3ef368;
   --warning: #ffc107;
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   --transition: all 0.3s ease;
@@ -312,4 +312,22 @@
     width: 100%;
     min-width: auto;
   }
+}
+
+.services-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.service-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.service-checkbox input[type="checkbox"] {
+    margin: 0;
 }

@@ -5,72 +5,213 @@ import {
     orderBy,
     onSnapshot,
     doc,
-    updateDoc
+    updateDoc,
+    where,
+    writeBatch,
+    serverTimestamp
 } from '../../../firebase-config.js';
+
+// Note: ung recent service sa client side wala pa yun pero dagdagin yun sa HULI fucntions dito
 
 class InquiryManager {
     constructor(parentInstance) {
         this.parent = parentInstance;
     }
 
-    async handleRemarksApply() {
-        const remarks = $('#remarksInput').val().trim();
+    autoSaveProgress() {
+        const progressData = {
+            inquiryId: this.parent.currentInquiryId,
+            remarks: $('#remarksInput').val(),
+            status: $('#statusDropdown').val(),
+            selectedServices: this.getSelectedServices(),
+            timestamp: Date.now()
+        };
 
-        if (!remarks) {
-            alert('Remarks is required');
+        localStorage.setItem('inquiryProgress', JSON.stringify(progressData));
+    }
+
+    // Load saved progress
+    loadSavedProgress(inquiryId) {
+        const saved = localStorage.getItem('inquiryProgress');
+        if (!saved) return;
+
+        const progressData = JSON.parse(saved);
+
+        // Only restore if it's for the same inquiry and recent (within 24 hours)
+        const isRecent = Date.now() - progressData.timestamp < 24 * 60 * 60 * 1000;
+
+        if (progressData.inquiryId === inquiryId && isRecent) {
+            $('#remarksInput').val(progressData.remarks || '');
+            $('#statusDropdown').val(progressData.status || '');
+
+            // Restore selected services
+            $('.service-checkbox input[type="checkbox"]').prop('checked', false);
+            progressData.selectedServices?.forEach(service => {
+                $(`.service-checkbox input[value="${service}"]`).prop('checked', true);
+            });
+
+            // Show notification
+            this.showToast('Previous work restored!', 'success');
+        }
+    }
+
+    // Clear saved progress after successful save
+    clearSavedProgress() {
+        localStorage.removeItem('inquiryProgress');
+    }
+
+
+
+    async batchUpdateInquiryAndPending(updates) {
+        try {
+            const batch = writeBatch(db);
+            const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
+
+            // Always update main inquiries collection
+            const inquiryDocRef = doc(db, 'inquiries', this.parent.currentInquiryId);
+            batch.update(inquiryDocRef, updates);
+
+            // Update pending collection if it exists
+            if (inquiry?.pendingDocId && inquiry.accountInfo?.uid) {
+                const pendingDocRef = doc(db, 'client', inquiry.accountInfo.uid, 'pending', inquiry.pendingDocId);
+                batch.update(pendingDocRef, updates);
+            }
+
+            await batch.commit();
+            console.log('Batch update completed successfully');
+        } catch (error) {
+            console.error('Error in batch update:', error);
+            throw error;
+        }
+    }
+
+    async updateServices(services) {
+        await this.batchUpdateInquiryAndPending({ selectedServices: services });
+    }
+
+    async updateStatus(status) {
+        await this.batchUpdateInquiryAndPending({ status: status });
+    }
+
+    async updateRemarks(remarks) {
+        await this.batchUpdateInquiryAndPending({ remarks: remarks });
+    }
+
+
+    getUserInquiries(userId) {
+        const userInquiriesQuery = query(
+            collection(db, 'inquiries'),
+            where('accountInfo.uid', '==', userId),
+            orderBy('dateSubmitted', 'desc')
+        );
+
+        return onSnapshot(userInquiriesQuery, (snapshot) => {
+            const userInquiries = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            // Handle user inquiries display
+            console.log('User inquiries loaded:', userInquiries.length);
+        });
+    }
+
+    getSelectedServices() {
+        const selectedServices = [];
+        $('.service-checkbox input[type="checkbox"]:checked').each(function () {
+            selectedServices.push($(this).val());
+        });
+        return selectedServices;
+    }
+
+    buildServicesCheckboxes(selectedServices) {
+        const allServices = [
+            'Relocation Survey',
+            'Boundary Survey',
+            'Subdivision Survey',
+            'Engineering Services',
+            'Topographic Survey',
+            'As-Built Survey',
+            'Tilting Assistance',
+            'All'
+        ];
+
+        return allServices.map(service => {
+            const isChecked = selectedServices.includes(service) ? 'checked' : '';
+            return `
+            <label class="service-checkbox">
+                <input type="checkbox" value="${service}" ${isChecked}>
+                <span>${service}</span>
+            </label>
+        `;
+        }).join('');
+    }
+
+    showToast(message, type = 'info') {
+        const toast = $(`<div class="toast ${type}">${message}</div>`);
+        $('body').append(toast);
+
+        setTimeout(() => toast.addClass('show'), 100);
+        setTimeout(() => {
+            toast.removeClass('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    async handleStatusUpdate() {
+        const status = $('#statusDropdown').val();
+
+        if (!status) {
+            alert('Please select a status');
             return;
         }
 
-        // Prevent multiple clicks
+        try {
+            await this.updateStatus(status);
+            console.log('Status updated successfully to:', status);
+        } catch (error) {
+            console.error('Error updating status:', error);
+            throw error;
+        }
+    }
+
+    async handleRemarksApply() {
+        const remarks = $('#remarksInput').val().trim();
+        const status = $('#statusDropdown').val();
+        const selectedServices = this.getSelectedServices();
+
+        if (!remarks) return this.showToast('Please select a status before applying', 'warning');
+
+        if (!status) return this.showToast('Please select a status before applying', 'warning');
+
         if ($('#applyRemarksBtn').prop('disabled')) {
             return;
         }
 
         try {
-            // Disable button while updating
             $('#applyRemarksBtn').prop('disabled', true).text('Applying...');
 
-            const inquiryDocRef = doc(db, 'inquiries', this.parent.currentInquiryId);
-
-            if (inquiryDocRef.remarks === remarks) alert('The input are the same!');
-
-            await updateDoc(inquiryDocRef, {
-                remarks: remarks
+            // Single batched update instead of multiple calls
+            await this.batchUpdateInquiryAndPending({
+                remarks: remarks,
+                status: status,
+                selectedServices: selectedServices,
+                lastUpdated: serverTimestamp()
             });
 
-            // Also update the pending inquiry
-            await this.updatePendingInquiry(remarks);
+            this.clearSavedProgress();
 
-            console.log('Remarks updated successfully');
-            alert('Remarks applied successfully!');
+            console.log('Updates completed successfully');
+            this.showToast('Applied successfully!', 'success');
 
         } catch (error) {
-            console.error('Error updating remarks:', error);
-            alert('Failed to apply remarks. Please try again.');
+            console.error('Error updating:', error);
+            alert('Failed to apply changes. Please try again.');
         } finally {
-            // Add a small delay before re-enabling
             setTimeout(() => {
                 $('#applyRemarksBtn').prop('disabled', false).text('Apply');
             }, 500);
         }
     }
-
-    async updatePendingInquiry(remarks) {
-        const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
-
-        if (!inquiry) {
-            console.log('Inquiry not found');
-            return;
-        }
-
-        if (inquiry.pendingDocId && inquiry.accountInfo?.uid) {
-            const pendingDocRef = doc(db, 'client', inquiry.accountInfo.uid, 'pending', inquiry.pendingDocId);
-            await updateDoc(pendingDocRef, { remarks: remarks });
-            console.log('Updated pending document');
-        }
-    }
-
-
 
     async setupInquiryListener() {
         try {
@@ -232,8 +373,11 @@ class InquiryManager {
 
                                 <div class="info-row">
                                     <span class="label">Services:</span>
-                                    <span class="value services-list">${services}</span>
+                                    <div class="value services-checkboxes">
+                                        ${this.buildServicesCheckboxes(inquiry.selectedServices || [])}
+                                    </div>
                                 </div>
+                                
                                 <div class="info-row">
                                     <span class="label">Submitted:</span>
                                     <span class="value">${dateStr}</span>
@@ -264,22 +408,40 @@ class InquiryManager {
                         </div>
                     </div>
                 </div>
+
                 <div class="remarks-section">
                     <div class="card-header">
-                        <h3>Remarks</h3>
+                        <h4>Remarks</h4>
                     </div>
                     <div class="card-body">
+
                         <textarea id="remarksInput" placeholder="Enter your remarks here..." rows="4">${inquiry.remarks || ''}</textarea>
+
+                        <select id="statusDropdown">
+                            <option value="">Select Status</option>
+                            <option value="Approved" ${inquiry.status === 'Approved' ? 'selected' : ''} >Approved</option>
+                            <option value="Rejected" ${inquiry.status === 'Rejected' ? 'selected' : ''} >Rejected</option>
+                        </select>
+
                         <button id="applyRemarksBtn" class="apply-btn">Apply</button>
                     </div>
                 </div>
+
             </div>
         `;
 
+        // Load any saved progress
         $('#inquiryContent').html(detailsHTML);
+        this.loadSavedProgress(inquiryId);
+
+        $('#remarksInput').on('input', () => this.autoSaveProgress());
+        $('#statusDropdown').on('change', () => this.autoSaveProgress());
+        $('.service-checkbox input').on('change', () => this.autoSaveProgress());
+
         $('#applyRemarksBtn').on('click', () => {
             this.handleRemarksApply();
         });
+
         console.log('Inquiry details loaded for:', inquiryId);
     }
 

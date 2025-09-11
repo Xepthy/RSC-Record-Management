@@ -26,8 +26,18 @@ td {
   font-weight: bold;
 }
 
+.approved {
+  color: #4cd169;
+  font-weight: bold;
+}
+
 .pending {
   color: #f87c1f;
+  font-weight: bold;
+}
+
+.rejected {
+  color: red;
   font-weight: bold;
 }
 
