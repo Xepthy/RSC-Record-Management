@@ -41,6 +41,11 @@ td {
   font-weight: bold;
 }
 
+.status-badge[data-status="Update Documents"] {
+    color: #8E44AD;
+    font-weight: bold;
+}
+
 
 
 /* View button styling */

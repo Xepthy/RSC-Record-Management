@@ -8,7 +8,10 @@ import {
     updateDoc,
     where,
     writeBatch,
-    serverTimestamp
+    serverTimestamp,
+    auth,
+    EmailAuthProvider,
+    reauthenticateWithCredential
 } from '../../../firebase-config.js';
 
 // Note: ung recent service sa client side wala pa yun pero dagdagin yun sa HULI fucntions dito
@@ -16,6 +19,168 @@ import {
 class InquiryManager {
     constructor(parentInstance) {
         this.parent = parentInstance;
+    }
+
+    checkForChanges() {
+        const currentRemarks = $('#remarksInput').val();
+        const currentServices = this.getSelectedServices();
+
+        // Check remarks changes
+        const remarksChanged = currentRemarks !== this.originalValues.remarks;
+
+        // Update remarks header
+        const remarksHeader = $('.remarks-section .card-header h4');
+        if (remarksChanged) {
+            if (!remarksHeader.html().includes('*')) {
+                remarksHeader.html('Remarks <span style="color: red;">*</span>');
+            }
+        } else {
+            remarksHeader.html('Remarks');
+        }
+
+        // Check individual service changes
+        const originalServices = this.originalValues.selectedServices;
+        let anyServiceChanged = false;
+
+        $('.service-checkbox').each(function () {
+            const checkbox = $(this).find('input');
+            const serviceName = checkbox.val();
+            const isCurrentlyChecked = checkbox.is(':checked');
+            const wasOriginallyChecked = originalServices.includes(serviceName);
+            const isChanged = isCurrentlyChecked !== wasOriginallyChecked;
+
+            const label = $(this).find('span');
+
+            if (isChanged) {
+                // Add red asterisk to individual service
+                if (!label.html().includes('*')) {
+                    label.html(serviceName + ' <span style="color: red;">*</span>');
+                }
+                anyServiceChanged = true;
+            } else {
+                // Remove red asterisk
+                label.html(serviceName);
+            }
+        });
+
+        // Update main Services label
+        const servicesRow = $('.info-row').filter(function () {
+            return $(this).find('.label').text().includes('Services');
+        });
+
+        const servicesLabel = servicesRow.find('.label');
+        if (anyServiceChanged) {
+            if (!servicesLabel.html().includes('*')) {
+                servicesLabel.html('Services: <span style="color: red;">*</span>');
+            }
+        } else {
+            servicesLabel.html('Services:');
+        }
+    }
+
+    showPasswordModal(onConfirm) {
+        const modalHTML = `
+        <div id="passwordModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Confirm Changes</h3>
+                    <button class="modal-close" id="modalCloseBtn">×</button>
+                </div>
+                <div class="modal-body">
+                    <p>Please enter your password to confirm these changes:</p>
+                    <div class="password-field">
+                        <input type="password" id="confirmPassword" placeholder="Enter your password">
+                        <div id="passwordError" class="error-message" style="display: none;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" id="cancelBtn">Cancel</button>
+                    <button class="btn-confirm" id="confirmBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+        // Store the callback for later use
+        this.onPasswordConfirm = onConfirm;
+
+        $('body').append(modalHTML);
+        $('#confirmPassword').focus();
+
+        // Add event listeners AFTER HTML is added to DOM
+        $('#cancelBtn').on('click', () => this.closePasswordModal());
+        $('#modalCloseBtn').on('click', () => this.closePasswordModal());
+        $('#confirmBtn').on('click', () => this.confirmPassword());
+
+        // Handle Enter key and Escape key
+        $('#confirmPassword').on('keypress', (e) => {
+            if (e.which === 13) {
+                this.confirmPassword();
+            }
+        });
+
+        // Close modal on Escape key
+        $(document).on('keydown.passwordModal', (e) => {
+            if (e.which === 27) { // Escape key
+                this.closePasswordModal();
+            }
+        });
+    }
+
+
+    closePasswordModal() {
+        // Remove the modal and unbind document event listener
+        $('#passwordModal').remove();
+        $(document).off('keydown.passwordModal');
+        this.onPasswordConfirm = null;
+
+        // Re-enable the apply button
+        $('#applyRemarksBtn').prop('disabled', false).text('Apply');
+    }
+
+
+    async confirmPassword() {
+        const enteredPassword = $('#confirmPassword').val();
+        const errorDiv = $('#passwordError');
+
+        if (!enteredPassword) {
+            errorDiv.text('Password is required').show();
+            return;
+        }
+
+        try {
+            $('.btn-confirm').prop('disabled', true).text('Verifying...');
+
+            const user = auth.currentUser;
+            if (!user) {
+                throw new Error('User not authenticated');
+            }
+
+            // Re-authenticate user with their password
+            const credential = EmailAuthProvider.credential(user.email, enteredPassword);
+            await reauthenticateWithCredential(user, credential);
+
+            // Password is correct - store callback BEFORE closing modal
+            const callback = this.onPasswordConfirm;
+            this.closePasswordModal();
+
+            // Execute the callback after modal is closed
+            if (callback) {
+                await callback();
+            }
+
+        } catch (error) {
+            console.error('Password verification failed:', error);
+
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                errorDiv.text('Incorrect password. Please try again.').show();
+            } else {
+                errorDiv.text('Authentication failed. Please try again.').show();
+            }
+
+            $('.btn-confirm').prop('disabled', false).text('Confirm');
+            $('#confirmPassword').focus().select();
+        }
     }
 
     autoSaveProgress() {
@@ -64,17 +229,21 @@ class InquiryManager {
 
     async batchUpdateInquiryAndPending(updates) {
         try {
+            console.log('Starting batch update with:', updates); // ADD THIS
             const batch = writeBatch(db);
             const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
+            console.log('Found inquiry:', inquiry?.id); // ADD THIS
 
             // Always update main inquiries collection
             const inquiryDocRef = doc(db, 'inquiries', this.parent.currentInquiryId);
             batch.update(inquiryDocRef, updates);
+            console.log('Added main inquiry to batch'); // ADD THIS
 
             // Update pending collection if it exists
             if (inquiry?.pendingDocId && inquiry.accountInfo?.uid) {
                 const pendingDocRef = doc(db, 'client', inquiry.accountInfo.uid, 'pending', inquiry.pendingDocId);
                 batch.update(pendingDocRef, updates);
+                console.log('Added pending document to batch');
             }
 
             await batch.commit();
@@ -175,42 +344,44 @@ class InquiryManager {
     }
 
     async handleRemarksApply() {
-        const remarks = $('#remarksInput').val().trim();
-        const status = $('#statusDropdown').val();
-        const selectedServices = this.getSelectedServices();
+        // Quick validation checks
+        if (!$('#remarksInput').val().trim()) return this.showToast('Remarks is required', 'warning');
+        if (!$('#statusDropdown').val()) return this.showToast('Please select a status before applying', 'warning');
+        if ($('#applyRemarksBtn').prop('disabled')) return;
 
-        if (!remarks) return this.showToast('Please select a status before applying', 'warning');
+        // Show password confirmation modal
+        $('#applyRemarksBtn').prop('disabled', true).text('Confirming...');
 
-        if (!status) return this.showToast('Please select a status before applying', 'warning');
+        this.showPasswordModal(async () => {
+            console.log('Password confirmed, starting update...');
+            try {
+                $('#applyRemarksBtn').text('Applying...');
 
-        if ($('#applyRemarksBtn').prop('disabled')) {
-            return;
-        }
+                // Get fresh data when password is confirmed
+                const remarks = $('#remarksInput').val().trim();
+                const status = $('#statusDropdown').val();
+                const selectedServices = this.getSelectedServices();
 
-        try {
-            $('#applyRemarksBtn').prop('disabled', true).text('Applying...');
+                await this.batchUpdateInquiryAndPending({
+                    remarks: remarks,
+                    status: status,
+                    selectedServices: selectedServices,
+                    lastUpdated: serverTimestamp()
+                });
 
-            // Single batched update instead of multiple calls
-            await this.batchUpdateInquiryAndPending({
-                remarks: remarks,
-                status: status,
-                selectedServices: selectedServices,
-                lastUpdated: serverTimestamp()
-            });
+                this.clearSavedProgress();
+                console.log('Updates completed successfully');
+                this.showToast('Applied successfully!', 'success');
 
-            this.clearSavedProgress();
-
-            console.log('Updates completed successfully');
-            this.showToast('Applied successfully!', 'success');
-
-        } catch (error) {
-            console.error('Error updating:', error);
-            alert('Failed to apply changes. Please try again.');
-        } finally {
-            setTimeout(() => {
-                $('#applyRemarksBtn').prop('disabled', false).text('Apply');
-            }, 500);
-        }
+            } catch (error) {
+                console.error('Error updating:', error);
+                this.showToast('Failed to apply changes. Please try again.', 'error');
+            } finally {
+                setTimeout(() => {
+                    $('#applyRemarksBtn').prop('disabled', false).text('Apply');
+                }, 500);
+            }
+        });
     }
 
     async setupInquiryListener() {
@@ -280,7 +451,11 @@ class InquiryManager {
         if (!inquiry) return;
 
         this.parent.currentInquiryId = inquiryId;
-        console.log('Current inquiry ID set to:', inquiryId);
+
+        this.originalValues = {
+            remarks: inquiry.remarks || '',
+            selectedServices: [...(inquiry.selectedServices || [])]
+        };
 
         const clientName = inquiry.accountInfo ?
             `${inquiry.accountInfo.firstName || ''} ${inquiry.accountInfo.lastName || ''}`.trim() || inquiry.clientName :
@@ -421,6 +596,7 @@ class InquiryManager {
                             <option value="">Select Status</option>
                             <option value="Approved" ${inquiry.status === 'Approved' ? 'selected' : ''} >Approved</option>
                             <option value="Rejected" ${inquiry.status === 'Rejected' ? 'selected' : ''} >Rejected</option>
+                            <option value="Update Documents" ${inquiry.status === 'Update Documents' ? 'selected' : ''} >Update Documents</option>
                         </select>
 
                         <button id="applyRemarksBtn" class="apply-btn">Apply</button>
@@ -434,15 +610,20 @@ class InquiryManager {
         $('#inquiryContent').html(detailsHTML);
         this.loadSavedProgress(inquiryId);
 
-        $('#remarksInput').on('input', () => this.autoSaveProgress());
-        $('#statusDropdown').on('change', () => this.autoSaveProgress());
-        $('.service-checkbox input').on('change', () => this.autoSaveProgress());
+        this.checkForChanges();
 
-        $('#applyRemarksBtn').on('click', () => {
-            this.handleRemarksApply();
+        $('#remarksInput').on('input', () => {
+            this.autoSaveProgress();
+            this.checkForChanges();
         });
 
-        console.log('Inquiry details loaded for:', inquiryId);
+        $('.service-checkbox input').on('change', () => {
+            this.autoSaveProgress();
+            this.checkForChanges();
+        });
+
+        $('#statusDropdown').on('change', () => this.autoSaveProgress());
+        $('#applyRemarksBtn').on('click', () => this.handleRemarksApply());
     }
 
     formatDate(dateSubmitted) {
