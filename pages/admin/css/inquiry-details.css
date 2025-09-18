@@ -331,7 +331,3 @@
 .service-checkbox input[type="checkbox"] {
     margin: 0;
 }
-
-.apply-btn.has-changes {
-    color: red;
-}

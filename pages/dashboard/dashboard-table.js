@@ -131,14 +131,14 @@ function createTableRow(inquiry) {
     // Create request title from description (truncated)
     const requestTitle = truncateText(inquiry.requestDescription, 50);
 
-    // Status styling - handle spaces in status names
-    const statusClass = inquiry.status ? inquiry.status.toLowerCase().replace(/\s+/g, '-') : 'unknown';
+    // Status styling
+    const statusClass = inquiry.status.toLowerCase();
 
     const row = $(`
         <tr>
             <td title="${inquiry.requestDescription || ''}">${requestTitle}</td>
             <td>${dateSubmitted}</td>
-            <td><span class="status-badge ${statusClass}" data-status="${inquiry.status}">${formatStatus(inquiry.status)}</span></td>
+            <td><span class="${statusClass}">${formatStatus(inquiry.status)}</span></td>
             <td>${lastUpdated}</td>
             <td>${inquiry.remarks || 'No remarks'}</td>
             <td>
@@ -231,10 +231,6 @@ function showInquiryModal(inquiry, accountData) {
         ? inquiry.documents.map(doc => `<a href="${doc.url}" target="_blank">${doc.name}</a>`).join('<br>')
         : 'No documents';
 
-    const projectFiles = inquiry.projectFiles && inquiry.projectFiles.length > 0
-        ? inquiry.projectFiles.map(doc => `<a href="${doc.url}" target="_blank">${doc.name}</a>`).join('<br>')
-        : 'No Project Files Yet';
-
     // Format account data with fallbacks
     const firstName = accountData?.firstName || 'N/A';
     const middleName = accountData?.middleName || 'N/A';
@@ -306,14 +302,6 @@ function showInquiryModal(inquiry, accountData) {
                     <div style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
                         ${documentsText}
                     </div>
-
-                    <br>
-
-                    <h3>Project Files</h3>
-                    <div style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
-                        ${projectFiles}
-                    </div>
-
                 </div>
             </div>
         </div>

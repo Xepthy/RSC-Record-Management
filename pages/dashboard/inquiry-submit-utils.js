@@ -142,7 +142,7 @@ export function sanitizeFormData(formData) {
     });
 
     // Copy other fields as-is
-    ['selectedServices', 'dateSubmitted', 'status', 'lastUpdated', 'documents', 'documentCount', 'projectFiles'].forEach(field => {
+    ['selectedServices', 'dateSubmitted', 'status', 'lastUpdated', 'documents', 'documentCount'].forEach(field => {
         sanitized[field] = formData[field];
     });
 

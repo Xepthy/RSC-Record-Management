@@ -47,8 +47,7 @@ function collectFormData() {
         // Add missing fields that admin expects
         read: false,  // Initialize as unread
         status: 'pending',
-        remarks: '',
-        projectFiles: null
+        remarks: ''
     };
 
     // Collect services

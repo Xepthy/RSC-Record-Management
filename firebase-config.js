@@ -6,8 +6,6 @@ import {
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
-    EmailAuthProvider,
-    reauthenticateWithCredential
 
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
@@ -77,8 +75,6 @@ export {
     serverTimestamp,
     updateDoc,
     where,
-    writeBatch,
-    EmailAuthProvider,
-    reauthenticateWithCredential
+    writeBatch
 
 };
