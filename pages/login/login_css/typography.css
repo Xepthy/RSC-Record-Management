@@ -1,0 +1,69 @@
+h1, h2, h3 {
+  color: #0b0c0c;
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1.2rem;
+}
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.5rem;
+  }
+  h2 {
+    font-size: 1.3rem;
+  }
+}
+
+.link a {
+  color: #030303;
+  text-decoration: none;
+}
+
+.link a:hover {
+  text-decoration: underline;
+}
+
+.link-blue {
+  color: #007BFF;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link-blue:hover {
+  text-decoration: underline;
+}
+
+.resend {
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+#resendLink {
+  color: #030303;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+#resendLink:hover {
+  text-decoration: underline;
+}
+
+#resendLink:disabled {
+  color: #999;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+#timerText {
+  color: #666;
+  margin-left: 4px;
+}

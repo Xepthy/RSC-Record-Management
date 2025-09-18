@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Modal Form</title>
+
+  <link rel="stylesheet" href="css/submit.css" />
+  <link rel="stylesheet" href="css/dashboard_table.css" />
+
+  <!-- jQuery CDN -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  
+  <!-- js -->
+  <script type="module" src="dashboard-table.js" defer></script>
+  <script type="module" src="auth-guard.js" defer></script>
+  <script type="module" src="document-upload.js" defer></script>
+  <script type="module" src="inquiry-btn.js" defer></script>
+  <script type="module" src="inquiry-submit.js" defer></script>
+  <script type="module" src="welcomeUser.js" defer></script>
+  <script type="module" src="logout.js" defer></script>
+
+</head>
+<body>
+  <h2>Dashboard</h2> 
+
+  <h3 id="welcomeText">Welcome!</h3>
+
+  <h3>Status Inquiry</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Request Title</th>
+          <th>Date Submitted</th>
+          <th>Current Status</th>
+          <th>Last Updated</th>
+          <th>Remarks</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+  <button id="logoutBtn">Logout</button>
+  <button id="openModalBtn">Submit Form</button>
+
+
+  <!-- submit form -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+
+      <form id="requestForm">
+        <h2>Request Form</h2>
+
+        <label>Request Description</label>
+        <input type="text" id="requestDescription" />
+
+        <label>Client Name</label>
+        <input type="text" id="clientName" />
+
+        <label>Classification</label>
+        <select id="classification">
+          <option value="noValue">--</option>
+          <option value="Agent">Agent</option>
+          <option value="Buyer">Buyer</option>
+          <option value="Seller">Seller</option>
+          <option value="SPA">SPA</option>
+          <option value="Owner">Owner</option>
+          <option value="Others">Others</option>
+        </select>
+        <input type="text" id="classificationCustom" style="display:none; margin-top: 5px;" placeholder="Please specify..." />
+
+
+        <div class="form-group rep-group">
+            <label for="representative">Representative</label>
+            <div class="rep-input-container">
+                <input type="text" id="representative" name="representative" disabled>
+                <input type="checkbox" id="enableRepresentative" title="Enable Representative">
+            </div>
+        </div>
+
+        <label>Rep. Classification</label>
+        <select id="repClassification" disabled>
+          <option value="noValue">--</option>
+          <option value="Agent">Agent</option>
+          <option value="Buyer">Buyer</option>
+          <option value="Seller">Seller</option>
+          <option value="SPA">SPA</option>
+          <option value="Owner">Owner</option>
+          <option value="Others">Others</option>
+        </select>
+        <input type="text" id="repClassificationCustom" style="display:none; margin-top: 5px;" placeholder="Please specify..." disabled />
+
+        <label>Location</label>
+        <input type="text" id="location" />
+
+        <label>Contact No.</label>
+        <input type="tel" id="contact" maxlength="11" pattern="\d{11}" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+
+        <div class="checkbox-group">
+          <label><input type="checkbox" />Relocation Survey</label>
+          <label><input type="checkbox" />Boundary Survey</label>
+          <label><input type="checkbox" />Subdivision Survey</label>
+          <label><input type="checkbox" />Topographic Survey</label>
+          <label><input type="checkbox" />Engineering Services</label>
+          <label><input type="checkbox" />As-Built Survey</label>
+          <label><input type="checkbox" />Tilting Assistance</label>
+          <label><input type="checkbox" />All</label>
+
+        </div>
+
+        <label>Documents</label>
+        <div id="fileUploadContainer">
+          <button type="button" id="uploadDocumentsBtn" class="upload-btn">Upload Documents</button>
+          <input type="file" id="documentUpload" accept=".pdf" multiple style="display: none;" />
+          <div id="uploadedFilesList" class="uploaded-files-list"></div>
+          <small class="file-info">Only PDF files allowed. Maximum 5MB per file.</small>
+        </div>
+        <br>
+
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  </div>
+  
+  
+  
+</body>
+</html>

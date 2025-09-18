@@ -1,0 +1,84 @@
+.remarks-section {
+  background: var(--light-gray);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  margin-top: 20px;
+}
+
+.remarks-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.remarks-section .card-header {
+  background: var(--white);
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--medium-gray);
+  margin: 0;
+}
+
+.remarks-section .card-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--dark-gray);
+  font-weight: 600;
+}
+
+.remarks-section .card-body {
+  padding: 20px;
+}
+
+#remarksInput {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--medium-gray);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: var(--transition);
+  box-sizing: border-box;
+  background: var(--white);
+  color: var(--dark-gray);
+}
+
+#remarksInput:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+#remarksInput::placeholder {
+  color: var(--primary-gray);
+}
+
+.apply-btn {
+  margin-top: 15px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+}
+
+.apply-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.apply-btn:disabled {
+  background: var(--primary-gray);
+  cursor: not-allowed;
+  opacity: 0.7;
+}

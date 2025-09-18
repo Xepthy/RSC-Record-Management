@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-log { background: #28a745; color: white; }
+        .btn-warn { background: #ffc107; color: black; }
+        .btn-error { background: #dc3545; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-debug { background: #6c757d; color: white; }
+        .btn-table { background: #6f42c1; color: white; }
+        .btn-group { background: #007bff; color: white; }
+        .btn-clear { background: #fd7e14; color: white; }
+        
+        button:hover {
+            opacity: 0.8;
+        }
+        
+        .instructions {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .counter {
+            text-align: center;
+            font-size: 18px;
+            margin: 20px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Console Test Tool</h1>
+        
+        <div class="instructions">
+            <strong>Instructions:</strong><br>
+            1. Open DevTools (F12)<br>
+            2. Go to Console tab<br>
+            3. Click the buttons below to test different console message types<br>
+            4. Check if messages appear in the console
+        </div>
+        
+        <div class="counter">
+            Tests Run: <span id="testCounter">0</span>
+        </div>
+        
+        <button class="btn-log" onclick="testConsoleLog()">
+            📝 Test console.log()
+        </button>
+        
+        <button class="btn-warn" onclick="testConsoleWarn()">
+            ⚠️ Test console.warn()
+        </button>
+        
+        <button class="btn-error" onclick="testConsoleError()">
+            ❌ Test console.error()
+        </button>
+        
+        <button class="btn-info" onclick="testConsoleInfo()">
+            ℹ️ Test console.info()
+        </button>
+        
+        <button class="btn-debug" onclick="testConsoleDebug()">
+            🐛 Test console.debug()
+        </button>
+        
+        <button class="btn-table" onclick="testConsoleTable()">
+            📊 Test console.table()
+        </button>
+        
+        <button class="btn-group" onclick="testConsoleGroup()">
+            📁 Test console.group()
+        </button>
+        
+        <button class="btn-clear" onclick="clearConsole()">
+            🧹 Clear Console
+        </button>
+    </div>
+
+    <script>
+        let testCount = 0;
+        
+        // Auto-run initial test on page load
+        window.addEventListener('load', function() {
+            console.log('🚀 Console Test Page Loaded!');
+            console.log('👋 If you can see this message, your console is working!');
+            console.log('📍 Current time:', new Date().toLocaleString());
+            updateCounter();
+        });
+        
+        function updateCounter() {
+            testCount++;
+            document.getElementById('testCounter').textContent = testCount;
+        }
+        
+        function testConsoleLog() {
+            console.log('✅ console.log() is working! Test #' + testCount);
+            console.log('This is a normal log message');
+            console.log('You can log objects:', { name: 'Admin Test', working: true });
+            updateCounter();
+        }
+        
+        function testConsoleWarn() {
+            console.warn('⚠️ console.warn() is working! Test #' + testCount);
+            console.warn('This is a warning message');
+            updateCounter();
+        }
+        
+        function testConsoleError() {
+            console.error('❌ console.error() is working! Test #' + testCount);
+            console.error('This is an error message');
+            console.error('Sample Error Object:', new Error('Test error'));
+            updateCounter();
+        }
+        
+        function testConsoleInfo() {
+            console.info('ℹ️ console.info() is working! Test #' + testCount);
+            console.info('This is an info message');
+            updateCounter();
+        }
+        
+        function testConsoleDebug() {
+            console.debug('🐛 console.debug() is working! Test #' + testCount);
+            console.debug('This is a debug message (might be hidden by default)');
+            updateCounter();
+        }
+        
+        function testConsoleTable() {
+            console.log('📊 Testing console.table():');
+            const tableData = [
+                { name: 'Admin 1', email: 'admin1@test.com', role: 'admin' },
+                { name: 'Admin 2', email: 'admin2@test.com', role: 'admin' },
+                { name: 'User 1', email: 'user1@test.com', role: 'user' }
+            ];
+            console.table(tableData);
+            updateCounter();
+        }
+        
+        function testConsoleGroup() {
+            console.group('📁 Test Group #' + testCount);
+            console.log('Message inside group 1');
+            console.log('Message inside group 2');
+            console.group('📂 Nested Group');
+            console.log('Nested message 1');
+            console.warn('Nested warning');
+            console.groupEnd();
+            console.log('Back to main group');
+            console.groupEnd();
+            updateCounter();
+        }
+        
+        function clearConsole() {
+            console.clear();
+            console.log('🧹 Console cleared! Counter reset.');
+            testCount = 0;
+            updateCounter();
+        }
+        
+        // Test automatic logging every 5 seconds
+        setInterval(function() {
+            console.log('🕐 Auto-log:', new Date().toLocaleTimeString(), '- Console is still working!');
+        }, 5000);
+        
+        // Test error catching
+        window.addEventListener('error', function(e) {
+            console.error('🚨 Caught error:', e.message);
+            console.error('Error details:', e);
+        });
+        
+        // Initial welcome messages
+        console.log('%c🎯 CONSOLE TEST TOOL READY!', 'color: #007bff; font-size: 16px; font-weight: bold;');
+        console.log('%cIf you can see this styled message, your console filters are working correctly!', 'color: #28a745; font-style: italic;');
+    </script>
+</body>
+</html>
