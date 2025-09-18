@@ -24,9 +24,11 @@ class InquiryManager {
     checkForChanges() {
         const currentRemarks = $('#remarksInput').val();
         const currentServices = this.getSelectedServices();
+        const currentStatus = $('#statusDropdown').val();
 
         // Check remarks changes
         const remarksChanged = currentRemarks !== this.originalValues.remarks;
+        const statusChanged = currentStatus !== this.originalValues.status;
 
         // Update remarks header
         const remarksHeader = $('.remarks-section .card-header h4');
@@ -36,6 +38,24 @@ class InquiryManager {
             }
         } else {
             remarksHeader.html('Remarks');
+        }
+
+        // Check status changes and update dropdown options
+        if (statusChanged) {
+            $('#statusDropdown option').each(function () {
+                const optionValue = $(this).val();
+                const optionText = $(this).text();
+
+                if (optionValue === currentStatus && !optionText.includes('*')) {
+                    $(this).text(optionText + ' *');
+                }
+            });
+        } else {
+            // Remove asterisks from all options
+            $('#statusDropdown option').each(function () {
+                const optionText = $(this).text().replace(' *', '');
+                $(this).text(optionText);
+            });
         }
 
         // Check individual service changes
@@ -369,6 +389,14 @@ class InquiryManager {
                     lastUpdated: serverTimestamp()
                 });
 
+                this.originalValues = {
+                    remarks: remarks,
+                    status: status,
+                    selectedServices: [...selectedServices]
+                };
+
+                this.checkForChanges();
+
                 this.clearSavedProgress();
                 console.log('Updates completed successfully');
                 this.showToast('Applied successfully!', 'success');
@@ -454,7 +482,8 @@ class InquiryManager {
 
         this.originalValues = {
             remarks: inquiry.remarks || '',
-            selectedServices: [...(inquiry.selectedServices || [])]
+            selectedServices: [...(inquiry.selectedServices || [])],
+            status: inquiry.status || ''
         };
 
         const clientName = inquiry.accountInfo ?
@@ -622,7 +651,11 @@ class InquiryManager {
             this.checkForChanges();
         });
 
-        $('#statusDropdown').on('change', () => this.autoSaveProgress());
+        $('#statusDropdown').on('change', () => {
+            this.autoSaveProgress();
+            this.checkForChanges();
+        });
+
         $('#applyRemarksBtn').on('click', () => this.handleRemarksApply());
     }
 
