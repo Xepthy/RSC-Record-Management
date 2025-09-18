@@ -1,0 +1,25 @@
+.form-group {
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.form-group .info-icon {
+  margin-left: 0;
+}
+
+.form-group .tooltip {
+  width: 220px;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+}
+
+@media (max-width: 480px) {
+  .form-group .tooltip {
+    width: 180px;
+    font-size: 11px;
+    left: 100%;
+    transform: translateX(-100%);
+  }
+}

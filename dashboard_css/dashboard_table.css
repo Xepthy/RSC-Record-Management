@@ -1,0 +1,194 @@
+.table-wrapper {
+  padding: 30px;
+  width: calc(100% - 320px); /* Space for sidebar */
+  margin: 20px;
+  margin-right: 320px;
+  box-sizing: border-box;
+
+  /* Glassmorphism background */
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(248, 250, 255, 0.9) 50%,
+    rgba(240, 248, 255, 0.85) 100%
+  );
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Table Header Gradient */
+.table-wrapper h3 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #2c3e50, #34495e, #1a73e8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table-wrapper::-webkit-scrollbar {
+  display: none;
+}
+/* ===== TABLE STYLING ===== */
+.table-container {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow-y: auto;
+  max-height: calc(5 * 48px + 42px);
+  margin-bottom: 17px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE & Edge */
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 7px;
+  margin-bottom: 7px;
+}
+
+th {
+  background-color: #e8f4fc;
+  padding: 12px 10px;
+  text-align: left;
+  font-size: 14px;
+  border-bottom: 1px solid #ccc;
+}
+
+td {
+  padding: 12px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  vertical-align: top;
+}
+
+.table-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.table-container tbody tr {
+  height: 48px;
+}
+
+.table-container td:last-child,
+.table-container th:last-child {
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* ===== STATUS COLORS ===== */
+.completed {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.pending {
+  color: #f87c1f;
+  font-weight: bold;
+}
+
+.processing {
+  color: #17a2b8;
+  font-weight: bold;
+}
+
+.cancelled {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.on-hold {
+  color: #6c757d;
+  font-weight: bold;
+}
+
+/* ===== FAKE CHECKBOX ===== */
+.fake-checkbox-label {
+  display: block;
+  margin-bottom: 5px;
+  cursor: default;
+}
+
+.fake-checkbox {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border: 2px solid #007bff;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.fake-checkbox.checked {
+  background-color: #007bff;
+  position: relative;
+}
+
+.fake-checkbox.checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+  .table-wrapper {
+    width: calc(100% - 40px);
+    max-width: 1200px;
+    margin: 0px auto 20px auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-wrapper {
+    margin: 10px auto 20px auto;
+    padding: 15px;
+    width: calc(100% - 20px);
+  }
+  
+  .table-wrapper h3 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  table {
+    min-width: 700px; /* Ensure table doesn't get too cramped */
+  }
+  
+  th, td {
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+  
+  .actions {
+    margin-top: 15px;
+  }
+  
+  .btn-inquire, .btn-logout {
+    width: 100%;
+    margin: 5px 0;
+    padding: 12px;
+  }
+}

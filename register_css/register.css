@@ -1,0 +1,54 @@
+
+/* --- Verify section: matches input width & looks like a sub-card --- */
+#verifySection {
+  display: none;              /* stays hidden until shown via JS */
+  width: 100%;
+  max-width: 400px;           /* same as inputs/selects */
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+
+/* Spacing & typography inside verify block */
+#verifySection p {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #111827;
+}
+
+#verifySection input,
+#verifySection button {
+  width: 100%;
+  max-width: 400px;
+}
+
+#verifySection input {
+  margin-bottom: 10px;
+}
+
+/* Keep buttons aligned with the stack */
+#registerBtn,
+#continueBtn {
+  height: 40px;
+}
+
+/* Optional: subtle divider space before the verify area */
+#password { margin-bottom: 12px; }
+
+/* Small screens: add a touch more breathing room */
+@media (max-width: 480px) {
+  #verifySection input,
+  #verifySection button {
+    font-size: 0.85rem;   /* smaller font inside button */
+    padding: 0.5rem 0.8rem;
+  }
+
+  #continueBtn {
+    font-weight: 500;
+  }
+}
+

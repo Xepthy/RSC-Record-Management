@@ -1,0 +1,45 @@
+/* Submission Status Badge */
+.submission-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #495057;
+    margin: 10px 0;
+}
+
+/* Status Dot */
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-dot.can-submit {
+    background-color: #28a745;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+.status-dot.limit-reached {
+    background-color: #dc3545;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+    animation: pulse 2s infinite;
+}
+
+/* Pulse animation for limit reached */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(220, 53, 69, 0.1);
+    }
+    100% {
+        box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+    }
+}
