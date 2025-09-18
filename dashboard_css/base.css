@@ -1,0 +1,97 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-image: url('../img/logo_2.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  display: flex;
+  flex-direction: column; /* stack navbar + container */
+  min-height: 100vh;
+  overflow-x: hidden; /* prevent horizontal scroll */
+  position: relative;
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 1.5rem 1rem;
+    margin: 1rem auto;
+    width: 95%;
+  }
+}
+
+
+/* Ensure body handles mobile properly */
+@media (max-width: 768px) {
+  body {
+    padding: 0;
+    margin: 0;
+  }
+  
+  /* Stack all content vertically on mobile */
+  .header-container,
+  .sidebar-cards,
+  .table-wrapper {
+    position: static !important;
+    width: calc(100% - 20px) !important;
+    margin: 10px auto !important;
+    right: auto !important;
+    top: auto !important;
+  }
+  
+  /* Sidebar cards become horizontal on medium screens, vertical on small */
+  .sidebar-cards {
+    order: 2; /* Place after header but before table */
+  }
+  
+  .table-wrapper {
+    order: 3; /* Place last */
+  }
+}
+
+/* Very small mobile devices */
+@media (max-width: 480px) {
+  .glass-card {
+    padding: 12px !important;
+  }
+  
+  .card-title {
+    font-size: 1rem !important;
+  }
+  
+  .service-list li,
+  .contact-list p,
+  .about-features li {
+    font-size: 0.85rem !important;
+    padding: 0.3rem 0 !important;
+  }
+  
+  .about-text {
+    font-size: 0.85rem !important;
+  }
+  
+  /* Make table more mobile-friendly */
+  th, td {
+    padding: 6px 4px !important;
+    font-size: 11px !important;
+  }
+  
+  .btn-inquire, .btn-logout {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+}
+
+/* Landscape mobile orientation */
+@media (max-width: 768px) and (orientation: landscape) {
+  .sidebar-cards {
+    flex-direction: row !important;
+    gap: 10px !important;
+  }
+  
+  .glass-card {
+    flex: 1;
+    min-width: 200px;
+  }
+}

@@ -1,0 +1,181 @@
+.sidebar-cards {
+  position: absolute;
+  right: 20px;
+  top: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 260px;
+  z-index: 100;
+}
+
+.glass-card {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(248, 250, 255, 0.9) 50%,
+    rgba(240, 248, 255, 0.85) 100%
+  );
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 1.2rem;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+}
+
+.card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #2c3e50, #34495e, #1a73e8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Service List */
+.service-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.service-list li {
+  padding: 0.4rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.service-icon {
+  color: #3498db;
+  min-width: 16px;
+  font-size: 0.8rem;
+}
+
+/* Contact List */
+.contact-list p {
+  display: flex;
+  align-items: flex-start; /* Changed from center to flex-start */
+  gap: 0.5rem;
+  color: #2c3e50;
+  margin: 0.4rem 0;
+  font-size: 0.9rem;
+}
+
+/* Fix text alignment for multi-line contact info */
+.contact-list p .contact-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.contact-icon {
+  color: #3498db;
+  min-width: 16px;
+  font-size: 0.8rem;
+  margin-top: 2px; /* Small top margin to better align with text */
+  flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+/* About Card */
+.about-text {
+  color: #2c3e50;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 0.8rem;
+}
+
+/* About Card Features */
+.about-features {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.about-features li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #2c3e50;
+  padding: 0.3rem 0;
+  font-size: 0.9rem;
+}
+
+.feature-check {
+  color: #27ae60;
+  font-size: 0.8rem;
+}
+
+/* Adjust main content to not overlap with sidebar */
+.table-wrapper {
+  margin-right: 320px; /* Make space for the sidebar */
+}
+
+.header-container {
+  margin-right: 320px; /* Make space for the sidebar */
+}
+/* Responsive */
+@media (max-width: 1400px) {
+  .sidebar-cards {
+    position: static; /* Back to normal document flow */
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    margin: 20px auto;
+    max-width: 1200px;
+    right: auto;
+    top: auto;
+    gap: 15px;
+    padding: 0 20px;
+  }
+  
+  .glass-card {
+    flex: 1;
+    margin: 0;
+    min-width: 250px;
+  }
+  
+  .table-wrapper,
+  .header-container {
+    margin-right: 0;
+    width: calc(100% - 40px);
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar-cards {
+    flex-direction: column;
+    gap: 15px;
+    padding: 0 10px;
+    margin: 10px auto;
+  }
+  
+  .glass-card {
+    margin: 0;
+    padding: 1rem;
+    min-width: auto;
+  }
+  
+  .table-wrapper,
+  .header-container {
+    width: calc(100% - 20px);
+    margin: 10px auto;
+    padding: 20px;
+  }
+}

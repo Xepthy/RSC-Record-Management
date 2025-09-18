@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rafallo Login</title>
+
+    <link rel="stylesheet" href="login_css/base.css">
+    <link rel="stylesheet" href="login_css/container.css">
+    <link rel="stylesheet" href="login_css/logo.css">
+    <link rel="stylesheet" href="login_css/signup.css">
+    <link rel="stylesheet" href="login_css/input.css">
+    <link rel="stylesheet" href="login_css/button.css">
+    <link rel="stylesheet" href="login_css/forgot-pass.css">
+    <link rel="stylesheet" href="login_css/typography.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script type="module" src="login_js/login.js" defer></script>
+
+</head>
+
+<body>
+    <div class="container-glass">
+        <img src="img/logo_1.png" alt="Rafallo Logo" class="logo" />
+
+        <h2>User Login</h2>
+
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email" required />
+            <input type="password" id="loginPassword" placeholder="Password" required />
+            
+
+            <div class="forgot-password">
+                <a href="forgot-password.html" class="link-blue">Forgot Password?</a>
+            </div>
+
+            <button id="loginBtn">Login</button>
+
+            <div class="signup-message">
+                Don't have an account?
+                <a href="register.html" class="link-blue">Sign Up</a>
+
+</body>
+
+</html>
