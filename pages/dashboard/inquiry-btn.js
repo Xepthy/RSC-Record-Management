@@ -31,6 +31,20 @@ $(document).ready(function () {
         }
     });
 
+    // Handle contractor checkbox
+    $('#enableContractor').on('change', function () {
+        const isEnabled = this.checked;
+        $('#contractorName, #companyName').prop('disabled', !isEnabled);
+
+        if (!isEnabled) {
+            $('#contractorName, #companyName').val('');
+            $('#contractorName').attr('placeholder', 'For contractors only');
+        } else {
+            $('#contractorName').attr('placeholder', 'Enter contractor name');
+        }
+    });
+
+
     // Handle main classification dropdown
     $('#classification').on('change', function () {
         const selectedValue = $(this).val();

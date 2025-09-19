@@ -69,6 +69,31 @@ export function validateFormData(formData) {
             }
         }
     }
+    
+    // Contractor validation logic
+    const isContractorEnabled = !$('#contractorName').prop('disabled');
+    const hasContractorName = formData.contractorName &&
+        formData.contractorName !== 'None' &&
+        formData.contractorName.trim();
+    const hasCompanyName = formData.companyName &&
+        formData.companyName !== 'None' &&
+        formData.companyName.trim();
+
+    if (isContractorEnabled) {
+        // If contractor checkbox is enabled, both contractor name and company name are required
+        if (!hasContractorName) {
+            errors.push('Contractor name is required when contractor fields are enabled');
+        }
+
+        if (!hasCompanyName) {
+            errors.push('Company name is required when contractor fields are enabled');
+        }
+
+        // Additional validation for company name length
+        if (hasCompanyName && formData.companyName.trim().length < 2) {
+            errors.push('Company name must be at least 2 characters long');
+        }
+    }
 
     // Phone validation - must be exactly 11 digits
     if (formData.contact) {
@@ -91,6 +116,12 @@ export function validateFormData(formData) {
     if (hasRepresentative) {
         if (!nameRegex.test(formData.representative.trim())) {
             errors.push('Representative name contains invalid characters (only letters, spaces, hyphens, apostrophes, and dots allowed)');
+        }
+    }
+
+    if (hasContractorName) {
+        if (!nameRegex.test(formData.contractorName.trim())) {
+            errors.push('Contractor name contains invalid characters (only letters, spaces, hyphens, apostrophes, and dots allowed)');
         }
     }
 
@@ -137,12 +168,11 @@ export function sanitizeFormData(formData) {
     const sanitized = {};
 
     // Sanitize text fields
-    ['requestDescription', 'clientName', 'representative', 'location', 'contact', 'remarks', 'classification', 'repClassification'].forEach(field => {
+    ['requestDescription', 'clientName', 'representative', 'location', 'contact', 'remarks', 'classification', 'repClassification', 'contractorName', 'companyName'].forEach(field => {
         sanitized[field] = formData[field] ? sanitizeInput(formData[field]) : formData[field];
     });
 
-    // Copy other fields as-is
-    ['selectedServices', 'dateSubmitted', 'status', 'lastUpdated', 'documents', 'documentCount', 'projectFiles'].forEach(field => {
+    ['selectedServices', 'dateSubmitted', 'status', 'lastUpdated', 'documents', 'documentCount'].forEach(field => {
         sanitized[field] = formData[field];
     });
 

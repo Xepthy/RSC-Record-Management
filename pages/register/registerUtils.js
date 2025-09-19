@@ -1,5 +1,4 @@
 // Input sanitization and validation
-// Input sanitization and validation
 const SecurityUtils = {
     sanitizeInput: function (input) {
         return input.trim().replace(/[<>]/g, '');
@@ -17,7 +16,7 @@ const SecurityUtils = {
     },
 
     getPasswordRequirements: function () {
-        return "Password must be 8-128 characters and contain at least one letter and one number.";
+        return "Password must be 8-12 characters and contain at least one letter and one number.";
     },
 
     validateName: function (name) {
@@ -26,11 +25,6 @@ const SecurityUtils = {
 
     validateMobileNumber: function (mobile) {
         return /^09[0-9]{9}$/.test(mobile);
-    },
-
-    // Add classification validation
-    validateClassification: function (classification) {
-        return classification && classification !== "" && classification !== null;
     }
 };
 

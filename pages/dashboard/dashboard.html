@@ -1,130 +1,305 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Modal Form</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Dashboard</title>
 
-  <link rel="stylesheet" href="css/submit.css" />
-  <link rel="stylesheet" href="css/dashboard_table.css" />
+  <!-- CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/detailsmodal.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/base.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/dashboard_table.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/buttons.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/doc-modal.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/navbar.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/sidebar-cards.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/submitmodal.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/sub-status.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/welcome.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/toast.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/editmodal.css">
 
-  <!-- jQuery CDN -->
+  <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  
-  <!-- js -->
-  <script type="module" src="dashboard-table.js" defer></script>
-  <script type="module" src="auth-guard.js" defer></script>
-  <script type="module" src="document-upload.js" defer></script>
-  <script type="module" src="inquiry-btn.js" defer></script>
-  <script type="module" src="inquiry-submit.js" defer></script>
-  <script type="module" src="welcomeUser.js" defer></script>
-  <script type="module" src="logout.js" defer></script>
+
+  <!-- JS Modules -->
+  <script type="module" src="/pages/dashboard/auth-guard.js" defer></script>
+  <script type="module" src="/pages/dashboard/dashboard-table.js" defer></script>
+  <script type="module" src="/pages/dashboard/document-upload.js" defer></script>
+  <script type="module" src="/pages/dashboard/dashboard-table.js" defer></script>
+  <script type="module" src="/pages/dashboard/inquiry-submit.js" defer></script>
+  <script type="module" src="/pages/dashboard/welcomeUser.js" defer></script>
+  <script type="module" src="/pages/dashboard/logout.js" defer></script>
+  <script type="module" src="/pages/dashboard/maxsub.js" defer></script>
+  <script type="module" src="/pages/dashboard/toast.js" defer></script>
+  <script type="module" src="/pages/dashboard/inquiry-btn.js" defer></script>
 
 </head>
+
 <body>
-  <h2>Dashboard</h2> 
 
-  <h3 id="welcomeText">Welcome!</h3>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <div class="logo">
+        <i class="fas fa-map-marked-alt"></i> Rafallo Survey Services
+      </div>
+    </div>
+    <div class="nav-right">
+      <img src="/img/bellIcon.png" alt="Bell Icon" class="nav-icon">
+      <img src="/img/profileLogo.png" alt="User Icon" class="nav-icon profile">
+    </div>
+  </nav>
 
-  <h3>Status Inquiry</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Request Title</th>
-          <th>Date Submitted</th>
-          <th>Current Status</th>
-          <th>Last Updated</th>
-          <th>Remarks</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <div class="main-content">
+    <!-- Header - Always first -->
+    <div class="welcome-container">
+      <div class="welcome-texts">
+        <h2 id="welcomeText">Welcome, <span class="client-name">Client</span></h2>
+        <p class="tagline">Track your requests and manage your projects with ease, all with Rafallo Survey Services.</p>
+      </div>
+      <div class="welcome-logo">
+        <img src="/img/logo_1.png" alt="Rafallo Logo">
+      </div>
+    </div>
 
-  <button id="logoutBtn">Logout</button>
-  <button id="openModalBtn">Submit Form</button>
+    <!-- Content wrapper for table and sidebar -->
+    <div class="content-wrapper">
 
+      <!-- Main content (Table) - Priority on mobile -->
+      <main class="main-section">
+        <div class="table-wrapper">
+          <h3>Status Inquiry</h3>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Request Title</th>
+                  <th>Date Submitted</th>
+                  <th>Current Status</th>
+                  <th>Last Updated</th>
+                  <th>Remarks</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
 
-  <!-- submit form -->
-  <div id="modal" class="modal">
-    <div class="modal-content">
-      <span class="close-btn">&times;</span>
+          <div class="actions">
+            <button id="openModalBtn" class="btn-inquire">+New Inquiry</button>
+            <br>
+            <button id="logoutBtn" class="btn-logout">Logout</button>
+          </div>
+        </div>
+      </main>
 
-      <form id="requestForm">
-        <h2>Request Form</h2>
+      <!-- Sidebar - Secondary on mobile -->
+      <aside class="sidebar">
+        <div class="sidebar-cards">
+          <!-- Our Services -->
+          <div class="glass-card services-card">
+            <h3 class="card-title"><i class="fas fa-tools"></i> Our Services</h3>
+            <ul class="service-list">
+              <li><i class="fas fa-home service-icon"></i> Subdivision Survey</li>
+              <li><i class="fas fa-arrows-alt service-icon"></i> Relocation Survey</li>
+              <li><i class="fas fa-map service-icon"></i> Location Plan</li>
+              <li><i class="fas fa-mountain service-icon"></i> Topographic Survey</li>
+              <li><i class="fas fa-object-group service-icon"></i> Consolidation Survey</li>
+              <li><i class="fas fa-certificate service-icon"></i> Titling Assistance</li>
+              <li><i class="fas fa-project-diagram service-icon"></i> Parcellary Survey</li>
+              <li><i class="fas fa-ruler-combined service-icon"></i> As-Built Survey</li>
+            </ul>
+          </div>
 
-        <label>Request Description</label>
-        <input type="text" id="requestDescription" />
-
-        <label>Client Name</label>
-        <input type="text" id="clientName" />
-
-        <label>Classification</label>
-        <select id="classification">
-          <option value="noValue">--</option>
-          <option value="Agent">Agent</option>
-          <option value="Buyer">Buyer</option>
-          <option value="Seller">Seller</option>
-          <option value="SPA">SPA</option>
-          <option value="Owner">Owner</option>
-          <option value="Others">Others</option>
-        </select>
-        <input type="text" id="classificationCustom" style="display:none; margin-top: 5px;" placeholder="Please specify..." />
-
-
-        <div class="form-group rep-group">
-            <label for="representative">Representative</label>
-            <div class="rep-input-container">
-                <input type="text" id="representative" name="representative" disabled>
-                <input type="checkbox" id="enableRepresentative" title="Enable Representative">
+          <!-- Contact Us -->
+          <div class="glass-card contact-card">
+            <h3 class="card-title"><i class="fas fa-phone"></i> Contact Us</h3>
+            <div class="contact-list">
+              <p><i class="fas fa-phone contact-icon"></i> <span class="contact-text"> (02)8630-2444 | (02) 8289-9674
+                </span></p>
+              <p><i class="fas fa-mobile-alt contact-icon"></i> <span class="contact-text"> 0917-5047844 |
+                  0922-8596601</span></p>
+              <p><i class="fas fa-envelope contact-icon"></i> <span
+                  class="contact-text">rafallosurveying@gmail.com</span></p>
+              <p><i class="fas fa-map-marker-alt contact-icon"></i> <span class="contact-text">RSC Building, 8 Marigman
+                  Road, San Roque, Antipolo City</span></p>
+              <p><i class="fas fa-clock contact-icon"></i> <span class="contact-text">Mon-Fri: 9AM-5PM</span></p>
             </div>
+          </div>
+
+          <!-- About Us -->
+          <div class="glass-card about-card">
+            <h3 class="card-title"><i class="fas fa-info-circle"></i> About Us</h3>
+            <p class="about-text">We are a licensed surveying company established in 1994, providing accurate and
+              reliable survey services.</p>
+            <ul class="about-features">
+              <li><i class="fas fa-check feature-check"></i> Licensed Professionals</li>
+              <li><i class="fas fa-check feature-check"></i> Modern Equipment</li>
+              <li><i class="fas fa-check feature-check"></i> Fast Turnaround</li>
+              <li><i class="fas fa-check feature-check"></i> Competitive Pricing</li>
+            </ul>
+          </div>
         </div>
-
-        <label>Rep. Classification</label>
-        <select id="repClassification" disabled>
-          <option value="noValue">--</option>
-          <option value="Agent">Agent</option>
-          <option value="Buyer">Buyer</option>
-          <option value="Seller">Seller</option>
-          <option value="SPA">SPA</option>
-          <option value="Owner">Owner</option>
-          <option value="Others">Others</option>
-        </select>
-        <input type="text" id="repClassificationCustom" style="display:none; margin-top: 5px;" placeholder="Please specify..." disabled />
-
-        <label>Location</label>
-        <input type="text" id="location" />
-
-        <label>Contact No.</label>
-        <input type="tel" id="contact" maxlength="11" pattern="\d{11}" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
-
-        <div class="checkbox-group">
-          <label><input type="checkbox" />Relocation Survey</label>
-          <label><input type="checkbox" />Boundary Survey</label>
-          <label><input type="checkbox" />Subdivision Survey</label>
-          <label><input type="checkbox" />Topographic Survey</label>
-          <label><input type="checkbox" />Engineering Services</label>
-          <label><input type="checkbox" />As-Built Survey</label>
-          <label><input type="checkbox" />Tilting Assistance</label>
-          <label><input type="checkbox" />All</label>
-
-        </div>
-
-        <label>Documents</label>
-        <div id="fileUploadContainer">
-          <button type="button" id="uploadDocumentsBtn" class="upload-btn">Upload Documents</button>
-          <input type="file" id="documentUpload" accept=".pdf" multiple style="display: none;" />
-          <div id="uploadedFilesList" class="uploaded-files-list"></div>
-          <small class="file-info">Only PDF files allowed. Maximum 5MB per file.</small>
-        </div>
-        <br>
-
-        <button type="submit">Submit</button>
-      </form>
+      </aside>
     </div>
   </div>
-  
-  
-  
+
+  <!-- Submit Inquiry Modal -->
+  <div id="modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <form id="requestForm">
+        <h2>Submit Inquiry</h2>
+
+        <!-- Form Grid -->
+        <div class="form-grid">
+          <!-- Request Description -->
+          <div class="form-group form-full-width">
+            <div class="glass-box">
+              <label for="requestDescription">Request Description <span class="required">*</span></label>
+              <input type="text" id="requestDescription" required placeholder="Describe your request..." />
+            </div>
+          </div>
+
+          <!-- Client Info -->
+          <div class="form-group">
+            <div class="glass-box">
+              <label for="clientName">Client Name <span class="required">*</span></label>
+              <input type="text" id="clientName" required placeholder="Enter client name" />
+            </div>
+          </div>
+
+          <!-- Classification -->
+          <div class="form-group">
+            <div class="glass-box">
+              <label for="classification">Classification <span class="required">*</span></label>
+              <select id="classification">
+                <option value="">Select...</option>
+                <option value="Agent">Agent</option>
+                <option value="Buyer">Buyer</option>
+                <option value="Seller">Seller</option>
+                <option value="SPA">SPA</option>
+                <option value="Owner">Owner</option>
+                <option value="Others">Others</option>
+              </select>
+              <input type="text" id="classificationCustom" placeholder="Please specify..." />
+            </div>
+          </div>
+
+          <!-- Contractor Name -->
+          <div class="form-group">
+            <div class="glass-box">
+              <label for="contractorName">Contractor Name</label>
+              <div class="contractor-input-container">
+                <input type="text" id="contractorName" disabled placeholder="For contractors only" />
+                <input type="checkbox" id="enableContractor" title="Enable Contractor Fields">
+              </div>
+              <div class="contractor-note">Check the box to enable contractor fields</div>
+            </div>
+          </div>
+
+          <!-- Company Name -->
+          <div class="form-group">
+            <div class="glass-box">
+              <label for="companyName">Company Name</label>
+              <input type="text" id="companyName" disabled placeholder="Enter company name" />
+            </div>
+          </div>
+
+          <!-- Representative -->
+          <div class="form-group">
+            <div class="glass-box">
+              <label for="representative">Representative</label>
+              <div class="rep-input-container">
+                <input type="text" id="representative" disabled placeholder="Enter representative" />
+                <input type="checkbox" id="enableRepresentative" title="Enable Representative">
+              </div>
+              <div class="representative-note">Check the box to enable representative fields</div>
+            </div>
+          </div>
+
+          <!-- Representative Classification -->
+          <div class="form-group">
+            <div class="glass-box">
+              <label for="repClassification">Rep. Classification</label>
+              <select id="repClassification">
+                <option value="">Select...</option>
+                <option value="Agent">Agent</option>
+                <option value="Buyer">Buyer</option>
+                <option value="Seller">Seller</option>
+                <option value="SPA">SPA</option>
+                <option value="Owner">Owner</option>
+                <option value="Others">Others</option>
+              </select>
+              <input type="text" id="repClassificationCustom" placeholder="Please specify..." />
+            </div>
+          </div>
+
+          <!-- Contact -->
+          <div class="form-group">
+            <div class="glass-box">
+              <label>Contact No. <span class="required">*</span></label>
+              <input type="tel" id="contact" maxlength="11" pattern="\d{11}"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="09XXXXXXXXX" />
+            </div>
+          </div>
+
+          <!-- Location -->
+          <div class="form-group">
+            <div class="glass-box">
+              <label for="location">Location <span class="required">*</span></label>
+              <input type="text" id="location" required placeholder="Enter location" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Services Section -->
+        <div class="form-group form-full-width">
+          <div class="services-box">
+            <h3>Types of Service</h3>
+            <div class="checkbox-grid">
+              <label><input type="checkbox" value="Subdivision Survey"> Subdivision Survey</label>
+              <label><input type="checkbox" value="Relocation Survey"> Relocation Survey</label>
+              <label><input type="checkbox" value="Location Plan"> Location Plan</label>
+              <label><input type="checkbox" value="Topographic Survey"> Topographic Survey</label>
+              <label><input type="checkbox" value="Consolidation Survey"> Consolidation Survey</label>
+              <label><input type="checkbox" value="Titling Assistance"> Titling Assistance</label>
+              <label><input type="checkbox" value="Parcellary Survey"> Parcellary Survey</label>
+              <label><input type="checkbox" value="As-Built Survey"> As-Built Survey</label>
+              <label><input type="checkbox" value="All"> All</label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Upload Documents -->
+        <div class="form-group form-full-width">
+          <div class="upload-section">
+            <label for="documentUpload">Upload Documents <span class="required">*</span></label>
+            <div class="upload-box">
+              <input type="file" id="documentUpload" accept=".pdf">
+              <p>Drag and Drop or <span class="file-chooser">Choose File</span> to Upload</p>
+              <small>Only PDF files allowed. Max 5MB per file.</small>
+            </div>
+            <div id="uploadedFilesList" class="uploaded-files-list"></div>
+          </div>
+        </div>
+
+        <div id="submissionStatus" class="submission-status-badge"></div>
+
+        <!-- Submit Button -->
+        <div class="submit-container">
+          <button type="submit" class="submit-btn">Submit Inquiry</button>
+        </div>
+
+    </div>
+    </form>
+  </div>
+  </div>
+  <div id="toast-container" class="toast-container"></div>
 </body>
+
 </html>

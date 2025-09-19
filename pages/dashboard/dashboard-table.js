@@ -1,4 +1,4 @@
-// dashboard-table.js (jQuery Version) - Updated with Account Details
+// dashboard-table.js (jQuery Version) - Updated with Document Viewer Modal
 import {
     db,
     auth,
@@ -8,7 +8,12 @@ import {
     getDoc,
     onSnapshot,
     query,
-    orderBy
+    orderBy,
+    updateDoc,
+    ref,
+    storage,
+    uploadBytes,
+    getDownloadURL
 } from '../../firebase-config.js';
 
 let currentUser = null;
@@ -124,53 +129,35 @@ function renderTable(inquiries) {
 }
 
 function createTableRow(inquiry) {
-    // Format dates
     const dateSubmitted = formatDate(inquiry.dateSubmitted);
     const lastUpdated = formatDate(inquiry.lastUpdated);
-
-    // Create request title from description (truncated)
     const requestTitle = truncateText(inquiry.requestDescription, 50);
+    const statusClass = inquiry.status.toLowerCase();
 
-    // Status styling - handle spaces in status names
-    const statusClass = inquiry.status ? inquiry.status.toLowerCase().replace(/\s+/g, '-') : 'unknown';
+    const buttons = inquiry.status === 'Update Documents' ?
+        `<button class="edit-btn" data-inquiry-id="${inquiry.id}">Edit</button>
+         <button class="view-btn" data-inquiry-id="${inquiry.id}">View</button>` :
+        `<button class="view-btn" data-inquiry-id="${inquiry.id}">View</button>`;
 
     const row = $(`
         <tr>
             <td title="${inquiry.requestDescription || ''}">${requestTitle}</td>
             <td>${dateSubmitted}</td>
-            <td><span class="status-badge ${statusClass}" data-status="${inquiry.status}">${formatStatus(inquiry.status)}</span></td>
+            <td><span class="${statusClass}">${formatStatus(inquiry.status)}</span></td>
             <td>${lastUpdated}</td>
             <td>${inquiry.remarks || 'No remarks'}</td>
-            <td>
-                <button class="view-btn" data-inquiry-id="${inquiry.id}" title="View Details">
-                    View
-                </button>
-            </td>
+            <td>${buttons}</td>
         </tr>
     `);
 
     return row;
 }
 
-function formatDate(dateValue) {
-    if (!dateValue) return 'N/A';
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
 
     try {
-        let date;
-
-        // Firestore Timestamp object
-        if (dateValue.toDate) {
-            date = dateValue.toDate();
-        }
-        // If it’s already a JS Date
-        else if (dateValue instanceof Date) {
-            date = dateValue;
-        }
-        // If it’s a string or number
-        else {
-            date = new Date(dateValue);
-        }
-
+        const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -179,7 +166,6 @@ function formatDate(dateValue) {
             minute: '2-digit'
         });
     } catch (error) {
-        console.error('Date formatting error:', error, dateValue);
         return 'Invalid Date';
     }
 }
@@ -199,6 +185,10 @@ function truncateText(text, maxLength) {
 
 async function viewInquiry(inquiryId) {
     try {
+        // Debug: Check if userAccountData is available
+        console.log('userAccountData when viewing inquiry:', userAccountData);
+        console.log('userAccountData mobileNumber:', userAccountData?.mobileNumber);
+
         // Get inquiry details
         const userDocRef = doc(db, 'client', currentUser.uid);
         const pendingCollectionRef = collection(userDocRef, 'pending');
@@ -228,95 +218,81 @@ async function viewInquiry(inquiryId) {
 function showInquiryModal(inquiry, accountData) {
     const servicesText = inquiry.selectedServices ? inquiry.selectedServices.join(', ') : 'None';
     const documentsText = inquiry.documents && inquiry.documents.length > 0
-        ? inquiry.documents.map(doc => `<a href="${doc.url}" target="_blank">${doc.name}</a>`).join('<br>')
+        ? inquiry.documents.map((doc, index) =>
+            `<a href="#" class="document-link" data-doc-url="${doc.url}" data-doc-name="${doc.name}" data-doc-index="${index}">
+                <i class="fas fa-file-pdf"></i> ${doc.name}
+            </a>`
+        ).join('<br>')
         : 'No documents';
-
-    const projectFiles = inquiry.projectFiles && inquiry.projectFiles.length > 0
-        ? inquiry.projectFiles.map(doc => `<a href="${doc.url}" target="_blank">${doc.name}</a>`).join('<br>')
-        : 'No Project Files Yet';
 
     // Format account data with fallbacks
     const firstName = accountData?.firstName || 'N/A';
     const middleName = accountData?.middleName || 'N/A';
     const lastName = accountData?.lastName || 'N/A';
-    const contactNo = accountData?.mobileNumber || 'N/A'; // Fixed: using mobileNumber
+    const contactNo = accountData?.mobileNumber || 'N/A';
     const classification = accountData?.classification || 'N/A';
     const email = accountData?.email || 'N/A';
     const suffix = accountData?.suffix || 'N/A';
 
     const modalHtml = `
-        <div class="modal inquiry-modal" id="inquiryDetailsModal">
-            <div class="modal-content">
-                <span class="close-btn inquiry-close">&times;</span>
-                <h2>Inquiry Details</h2>
-                
-                <div class="inquiry-details">
-                    <h3 class="account-toggle" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
-                        <span>Account Information</span>
-                        <span class="dropdown-arrow" style="transition: transform 0.3s ease; transform: rotate(-90deg);">▼</span>
-                    </h3>
-                    <div class="account-content" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #007bff;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <p><strong>First Name:</strong> ${firstName}</p>
-                            <p><strong>Middle Name:</strong> ${middleName}</p>
-                            <p><strong>Last Name:</strong> ${lastName}</p>
-                            <p><strong>Suffix:</strong> ${suffix}</p>
-                            <p><strong>Contact No.:</strong> ${contactNo}</p>
-                            <p><strong>Classification:</strong> ${classification}</p>
-                            <p><strong>Email:</strong> ${email}</p>
-                        </div>
-                    </div>
+    <div class="modal inquiry-modal" id="inquiryDetailsModal">
+    <div class="modal-content">
+        <span class="close-btn inquiry-close">&times;</span>
+        <h2>Inquiry Details</h2>
 
-                    <br>
-                    
-                    <h3>Client Basic Information</h3>
-                    <p><strong>Client Name:</strong> ${inquiry.clientName || 'N/A'}</p>
-                    <p><strong>Classification:</strong> ${inquiry.classification || 'N/A'}</p>
-                    <p><strong>Representative:</strong> ${inquiry.representative || 'None'}</p>
-                    <p><strong>Rep. Classification:</strong> ${inquiry.repClassification || 'N/A'}</p>
-                    <p><strong>Location:</strong> ${inquiry.location || 'N/A'}</p>
-                    <p><strong>Contact:</strong> ${inquiry.contact || 'N/A'}</p>
-                    
-                    <br>
-
-                    <h3>Request Details</h3>
-                    <p><strong>Description:</strong></p>
-                    <p style="background: #f5f5f5; padding: 10px; border-radius: 4px;">${inquiry.requestDescription || 'N/A'}</p>
-                    
-                    <p><strong>Selected Services:</strong></p>
-                    <div class="service-checkboxes" style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
-                        ${renderServiceCheckboxes(inquiry.selectedServices)}
-                    </div>
-                    
-                    <br>
-
-                    <h3>Status Information</h3>
-                    <p><strong>Current Status:</strong> <span class="${inquiry.status}">${formatStatus(inquiry.status)}</span></p>
-                    <p><strong>Date Submitted:</strong> ${formatDate(inquiry.dateSubmitted)}</p>
-                    <p><strong>Last Updated:</strong> ${formatDate(inquiry.lastUpdated)}</p>
-
-                    <br>
-                    
-                    <p><strong>Remarks:</strong></p>
-                    <p style="background: #f5f5f5; padding: 10px; border-radius: 4px;">${inquiry.remarks || 'No remarks'}</p>
-                    
-                    <br>
-
-                    <h3>Documents</h3>
-                    <div style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
-                        ${documentsText}
-                    </div>
-
-                    <br>
-
-                    <h3>Project Files</h3>
-                    <div style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
-                        ${projectFiles}
-                    </div>
-
-                </div>
+        <div class="inquiry-details">
+        <h3 class="account-toggle">
+            <span>Account Information</span>
+            <span class="dropdown-arrow">▼</span>
+        </h3>
+        <div class="account-content">
+            <div class="inquiry-grid">
+            <p><strong>First Name:</strong> ${firstName}</p>
+            <p><strong>Middle Name:</strong> ${middleName}</p>
+            <p><strong>Last Name:</strong> ${lastName}</p>
+            <p><strong>Suffix:</strong> ${suffix}</p>
+            <p><strong>Contact No.:</strong> ${contactNo}</p>
+            <p><strong>Classification:</strong> ${classification}</p>
+            <p><strong>Email:</strong> ${email}</p>
             </div>
         </div>
+
+        <h3>Client Basic Information</h3>
+        <div class="inquiry-box">
+            <p><strong>Client Name:</strong> ${inquiry.clientName || 'N/A'}</p>
+            <p><strong>Classification:</strong> ${inquiry.classification || 'N/A'}</p>
+            <p><strong>Representative:</strong> ${inquiry.representative || 'None'}</p>
+            <p><strong>Rep. Classification:</strong> ${inquiry.repClassification || 'N/A'}</p>
+            <p><strong>Location:</strong> ${inquiry.location || 'N/A'}</p>
+            <p><strong>Contractor Name:</strong> ${inquiry.contractorName || 'None'}</p>
+            <p><strong>Company Name:</strong> ${inquiry.companyName || 'None'}</p>
+            <p><strong>Contact:</strong> ${inquiry.contact || 'N/A'}</p>
+        </div>
+          
+        <h3>Request Details</h3>
+        <p><strong>Description:</strong></p>
+        <p class="inquiry-note">${inquiry.requestDescription || 'N/A'}</p>
+
+        <p><strong>Selected Services:</strong></p>
+        <div class="service-checkboxes">
+            ${renderServiceCheckboxes(inquiry.selectedServices)}
+        </div>
+
+        <h3>Status Information</h3>
+        <p><strong>Current Status:</strong> <span class="${inquiry.status}">${formatStatus(inquiry.status)}</span></p>
+        <p><strong>Date Submitted:</strong> ${formatDate(inquiry.dateSubmitted)}</p>
+        <p><strong>Last Updated:</strong> ${formatDate(inquiry.lastUpdated)}</p>
+
+        <h3>Remarks</h3>
+        <p class="inquiry-note">${inquiry.remarks || 'No remarks'}</p>
+
+        <h3>Documents</h3>
+        <div class="inquiry-box documents-list">
+            ${documentsText}
+        </div>
+        </div>
+    </div>
+    </div>
     `;
 
     // Remove existing modal if any
@@ -327,6 +303,327 @@ function showInquiryModal(inquiry, accountData) {
 
     // Show modal
     $('#inquiryDetailsModal').show();
+
+    $('body').addClass('modal-open');
+}
+
+// Corrected version without description field
+
+async function editInquiry(inquiryId) {
+    try {
+        const userDocRef = doc(db, 'client', currentUser.uid);
+        const pendingCollectionRef = collection(userDocRef, 'pending');
+        const inquiryDoc = await getDocs(query(pendingCollectionRef));
+
+        let inquiry = null;
+        inquiryDoc.forEach(doc => {
+            if (doc.id === inquiryId) inquiry = { id: doc.id, ...doc.data() };
+        });
+
+        if (!inquiry) return alert('Inquiry not found');
+        if (inquiry.status !== 'Update Documents') return alert('This inquiry cannot be edited');
+
+        showEditModal(inquiry);
+    } catch (error) {
+        console.error('Edit error:', error);
+        alert('Failed to load inquiry');
+    }
+}
+
+function showEditModal(inquiry, isAdmin = false) {
+    const docs = inquiry.documents || [];
+
+    const docsHtml = docs.length ? docs.map((doc, i) =>
+        `<div class="existing-document" data-doc-index="${i}">
+            <span class="doc-name">${doc.name}</span>
+            ${isAdmin
+            ? `<button type="button" class="remove-existing-doc" data-doc-index="${i}">×</button>`
+            : ''}
+        </div>`).join('') : '<p class="no-docs">No existing documents</p>';
+
+    const modalHtml = `
+    <div class="modal edit-modal" id="editInquiryModal">
+        <div class="modal-content">
+            <span class="close-btn edit-close">&times;</span>
+            <h2>Update Documents</h2>
+            <div class="edit-form">
+                <div class="form-section">
+                    <h3>Current Documents</h3>
+                    <div id="existingDocuments">${docsHtml}</div>
+                </div>
+                <div class="form-section">
+                    <h3>Add New Documents</h3>
+                    <input type="file" id="editDocUpload" accept=".pdf" multiple style="display:none">
+                    <button type="button" id="editUploadBtn" class="upload-btn">Choose Files</button>
+                    <p class="upload-info">PDF only, max 3 total, 5MB each</p>
+                    <div id="newDocsList"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancelEdit" class="cancel-btn">Cancel</button>
+                    <button type="button" id="saveEdit" class="save-btn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+    $('#editInquiryModal').remove();
+    $('body').append(modalHtml).addClass('modal-open');
+    $('#editInquiryModal').show();
+
+    initEditHandlers(inquiry, isAdmin);
+}
+
+function initEditHandlers(inquiry, isAdmin = false) {
+    let newFiles = [], removedIndices = [];
+
+    // Upload button triggers hidden file input
+    $('#editUploadBtn').click(() => $('#editDocUpload').click());
+
+    // Handle newly selected files
+    $('#editDocUpload').change((e) => {
+        const files = Array.from(e.target.files);
+        const totalCount = (inquiry.documents?.length || 0) - removedIndices.length + newFiles.length + files.length;
+
+        if (totalCount > 3) return alert('Max 3 documents');
+
+        files.forEach(file => {
+            if (file.type !== 'application/pdf') return alert(`${file.name} not PDF`);
+            if (file.size > 5242880) return alert(`${file.name} exceeds 5MB`);
+
+            newFiles.push({ id: Date.now() + Math.random(), file, name: file.name, size: file.size });
+        });
+
+        updateNewDocsList();
+        $('#editDocUpload').val('');
+    });
+
+    if (isAdmin) {
+        $(document).on('click', '.remove-existing-doc', function () {
+            removedIndices.push(parseInt($(this).data('doc-index')));
+            $(this).closest('.existing-document').remove();
+
+            if ($('#existingDocuments .existing-document').length === 0) {
+                $('#existingDocuments').html('<p class="no-docs">No existing documents</p>');
+            }
+        });
+    }
+
+    $(document).on('click', '.remove-new-doc', function () {
+        const id = $(this).data('file-id');
+        newFiles = newFiles.filter(f => f.id !== id);
+        updateNewDocsList();
+    });
+
+    function updateNewDocsList() {
+        $('#newDocsList').html(newFiles.map(f =>
+            `<div class="new-document">
+                <span class="doc-name">${f.name}</span>
+                <span class="doc-size">(${(f.size / 1048576).toFixed(2)}MB)</span>
+                <button type="button" class="remove-new-doc" data-file-id="${f.id}">×</button>
+            </div>`).join('')
+        );
+    }
+
+    // Save handler with double lock
+    $('#saveEdit').click(() => {
+        if (!isAdmin) {
+            // 1️⃣ Remove any attempted deletions
+            removedIndices = [];
+
+            // 2️⃣ Remove any fake "remove-existing-doc" buttons hackers might have injected
+            $('#existingDocuments .remove-existing-doc').remove();
+        }
+
+        if (newFiles.length === 0 && removedIndices.length === 0) {
+            showToast('warning', 'No documents', 'Need new documents to save');
+            return;
+        }
+
+        saveChanges(inquiry, newFiles, removedIndices);
+    });
+
+    $('#cancelEdit, .edit-close').click(() => {
+        $('#editInquiryModal').remove();
+        $('body').removeClass('modal-open');
+    });
+}
+
+async function saveChanges(inquiry, newFiles, removedIndices) {
+    try {
+        $('#saveEdit').prop('disabled', true).text('Saving...');
+
+        let docs = [...(inquiry.documents || [])];
+
+        // Remove docs in reverse order
+        removedIndices.sort((a, b) => b - a).forEach(i => docs.splice(i, 1));
+
+        // Upload new files
+        for (const file of newFiles) {
+            const fileRef = ref(storage, `documents/${currentUser.uid}/${Date.now()}_${file.name}`);
+            await uploadBytes(fileRef, file.file);
+            const url = await getDownloadURL(fileRef);
+            docs.push({ name: file.name, size: file.size, url, uploadDate: new Date().toISOString() });
+        }
+
+        const updates = {
+            documents: docs,
+            documentCount: docs.length,
+            lastUpdated: new Date().toISOString(),
+            status: 'pending',
+            userId: currentUser.uid, read: false
+        };
+
+        // Update both collections
+        const userDocRef = doc(db, 'client', currentUser.uid);
+        const inquiryDocRef = doc(collection(userDocRef, 'pending'), inquiry.id);
+        await updateDoc(inquiryDocRef, updates);
+
+        if (inquiry.pendingDocId) {
+            await updateDoc(doc(db, 'inquiries', inquiry.pendingDocId), updates);
+        }
+
+        alert('Updated successfully!');
+        $('#editInquiryModal').remove();
+        $('body').removeClass('modal-open');
+        if (typeof refreshTable === 'function') refreshTable();
+
+    } catch (error) {
+        console.error('Save error:', error);
+        alert('Failed to save changes');
+    } finally {
+        $('#saveEdit').prop('disabled', false).text('Save');
+    }
+}
+
+// Document viewer function
+function showDocumentViewer(docUrl, docName, options = {}) {
+    // Default options
+    const defaults = {
+        width: 800,
+        height: 600,
+        autoSize: false,
+        showControls: true
+    };
+
+    const settings = { ...defaults, ...options };
+
+    // Clean the URL to embed without browser controls
+    const cleanUrl = docUrl.includes('#') ? docUrl : docUrl + '#toolbar=0&navpanes=0&scrollbar=0';
+
+    // Determine sizing classes
+    const autoSizeClass = settings.autoSize ? 'auto-size' : '';
+
+    const documentModalHtml = `
+    <div class="modal document-modal" id="documentViewerModal">
+        <div class="modal-content document-viewer-content ${autoSizeClass}">
+            <div class="document-header">
+                <h3><i class="fas fa-file-pdf"></i> ${docName}</h3>
+                <div class="document-controls">
+                    ${settings.showControls ? `
+                    ` : ''}
+                    <span class="close-btn document-close" title="Close">&times;</span>
+                </div>
+            </div>
+            <div class="document-content ${autoSizeClass}">
+                <div id="documentLoader" class="document-loader">
+                    <div class="loader-spinner"></div>
+                    <p>Loading document...</p>
+                </div>
+                <embed id="documentEmbed" 
+                       src="${cleanUrl}" 
+                       type="application/pdf" 
+                       style="display: none; width: ${settings.width}px; height: ${settings.height}px;"
+                       class="${autoSizeClass}">
+                <div id="documentError" class="document-error" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Unable to display PDF in browser. Please ensure your browser supports PDF viewing.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+
+    // Remove existing document modal if any
+    $('#documentViewerModal').remove();
+
+    // Add modal to body
+    $('body').append(documentModalHtml);
+
+    // Show modal
+    $('#documentViewerModal').show();
+
+    $('body').addClass('modal-open');
+
+    // Handle embed loading
+    const embed = $('#documentEmbed');
+    const loader = $('#documentLoader');
+    const error = $('#documentError');
+
+    // Function to adjust container size based on content
+    function adjustContainerSize() {
+        if (settings.autoSize) {
+            const container = $('.document-viewer-content');
+            const content = $('.document-content');
+
+            // Let the embed determine its natural size first
+            setTimeout(() => {
+                const embedWidth = embed.width();
+                const embedHeight = embed.height();
+
+                if (embedWidth && embedHeight) {
+                    container.css({
+                        width: embedWidth + 'px',
+                        height: (embedHeight + 80) + 'px' // Add header height
+                    });
+                }
+            }, 100);
+        }
+    }
+
+    // Show the embed after a short delay
+    setTimeout(() => {
+        loader.hide();
+        embed.show();
+        adjustContainerSize();
+    }, 1000);
+
+    // Handle embed loading events
+    embed.on('load', function () {
+        loader.hide();
+        embed.show();
+        adjustContainerSize();
+    });
+
+    // Fallback error handling
+    embed.on('error', function () {
+        loader.hide();
+        embed.hide();
+        error.show();
+    });
+
+    // Timeout fallback
+    setTimeout(() => {
+        if (loader.is(':visible')) {
+            loader.hide();
+            if (embed.is(':hidden')) {
+                error.show();
+            } else {
+                adjustContainerSize();
+            }
+        }
+    }, 5000);
+
+    // Close modal handlers
+    $('.document-close').on('click', function () {
+        $('#documentViewerModal').hide().remove();
+    });
+
+    // Click outside to close
+    $('#documentViewerModal').on('click', function (e) {
+        if (e.target === this) {
+            $(this).hide().remove();
+        }
+    });
 }
 
 function showLoading() {
@@ -391,8 +688,6 @@ function renderServiceCheckboxes(selectedServices = []) {
     }).join('');
 }
 
-
-
 // Cleanup method
 function destroyDashboardTable() {
     if (unsubscribe) {
@@ -408,9 +703,29 @@ $(document).ready(function () {
         viewInquiry(inquiryId);
     });
 
+    $('table tbody').on('click', '.edit-btn', function () {
+        const inquiryId = $(this).data('inquiry-id');
+        editInquiry(inquiryId);
+    });
+
     // Event delegation for close modal - ONLY for inquiry detail modals
     $(document).on('click', '.inquiry-close', function () {
         $(this).closest('.inquiry-modal').remove();
+        $('body').removeClass('modal-open');
+    });
+
+    // Event delegation for document viewer close button
+    $(document).on('click', '.document-close', function () {
+        $(this).closest('.document-modal').remove();
+        $('body').removeClass('modal-open');
+    });
+
+    // Event delegation for document links - NEW
+    $(document).on('click', '.document-link', function (e) {
+        e.preventDefault();
+        const docUrl = $(this).data('doc-url');
+        const docName = $(this).data('doc-name');
+        showDocumentViewer(docUrl, docName);
     });
 
     // Event delegation for account information toggle
@@ -436,6 +751,14 @@ $(document).ready(function () {
 
     // Close inquiry modal when clicking outside - ONLY for inquiry modals
     $(document).on('click', '.inquiry-modal', function (e) {
+        if (e.target === this) {
+            $(this).remove();
+            $('body').removeClass('modal-open');
+        }
+    });
+
+    // Close document modal when clicking outside - NEW
+    $(document).on('click', '.document-modal', function (e) {
         if (e.target === this) {
             $(this).remove();
         }

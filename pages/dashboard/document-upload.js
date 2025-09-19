@@ -83,19 +83,17 @@ class DocumentUpload {
         }
 
         const html = this.uploadedFiles.map(file => `
-            <div class="uploaded-file-item">
-                <div class="file-info">
-                    <span class="file-name">${file.name}</span>
-                    <span class="file-size">${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
-                </div>
-                <button type="button" class="remove-file-btn" onclick="window.documentUpload.removeFile(${file.id})">×</button>
-            </div>
-        `).join('');
+        <div class="file-item">
+            <span class="file-name">${file.name}</span>
+            <span class="file-size">${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
+            <button type="button" class="remove-btn" onclick="window.documentUpload.removeFile(${file.id})">×</button>
+        </div>
+    `).join('');
 
         container.html(`
-            <div class="files-header">Uploaded Documents (${this.uploadedFiles.length}/${this.maxFiles})</div>
-            ${html}
-        `);
+        <div class="files-header">Uploaded Documents (${this.uploadedFiles.length}/${this.maxFiles})</div>
+        ${html}
+    `);
     }
 
     showErrors(errors) {
@@ -125,102 +123,6 @@ class DocumentUpload {
 // Initialize
 $(document).ready(() => {
     window.documentUpload = new DocumentUpload();
-
-    // Add minimal styles
-    if (!$('#documentUploadStyles').length) {
-        $('head').append(`
-            <style id="documentUploadStyles">
-                .upload-btn {
-                    background-color: #007bff;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    margin-bottom: 10px;
-                }
-                
-                .upload-btn:hover {
-                    background-color: #0056b3;
-                }
-                
-                .uploaded-files-list {
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    min-height: 50px;
-                    padding: 10px;
-                    margin-top: 5px;
-                }
-                
-                .files-header {
-                    font-weight: bold;
-                    margin-bottom: 10px;
-                    color: #333;
-                }
-                
-                .uploaded-file-item {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 8px;
-                    border: 1px solid #eee;
-                    border-radius: 3px;
-                    margin-bottom: 5px;
-                    background-color: #f9f9f9;
-                }
-                
-                .file-info {
-                    display: flex;
-                    flex-direction: column;
-                    flex-grow: 1;
-                }
-                
-                .file-name {
-                    font-weight: 500;
-                    color: #333;
-                }
-                
-                .file-size {
-                    font-size: 0.85em;
-                    color: #666;
-                }
-                
-                .remove-file-btn {
-                    background-color: #dc3545;
-                    color: white;
-                    border: none;
-                    width: 20px;              
-                    height: 20px;            
-                    border-radius: 50%;   
-                    cursor: pointer;
-                    font-size: 14px;
-                    line-height: 1;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 0;    
-                }
-
-                
-                .remove-file-btn:hover {
-                    background-color: #c82333;
-                }
-                
-                .no-files {
-                    text-align: center;
-                    color: #666;
-                    font-style: italic;
-                    margin: 20px 0;
-                }
-                
-                .file-info.description {
-                    font-size: 0.85em;
-                    color: #666;
-                    margin-top: 5px;
-                }
-            </style>
-        `);
-    }
 });
 
 export { DocumentUpload };

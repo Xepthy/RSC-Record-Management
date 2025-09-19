@@ -1,19 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LOGIN</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script type="module" src="login.js" defer></script>
-    
-</head>
-<body>
+    <title>Rafallo Login</title>
 
-    <h2>Login</h2>
-    <input type="email" id="loginEmail" placeholder="Email"><br>
-    <input type="password" id="loginPassword" placeholder="Password"><br>
-    <button id="loginBtn">Login</button>
+    <link rel="stylesheet" href="/pages/login/css/base.css">
+    <link rel="stylesheet" href="/pages/login/css/container.css">
+    <link rel="stylesheet" href="/pages/login/css/forgot-password.css">
+    <link rel="stylesheet" href="/pages/login/css/LoginButton.css">
+    <link rel="stylesheet" href="/pages/login/css/LoginInput.css">
+    <link rel="stylesheet" href="/pages/login/css/logo.css">
+    <link rel="stylesheet" href="/pages/login/css/sign-up.css">
+    <link rel="stylesheet" href="/pages/login/css/typography.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script type="module" src="/pages/login/login.js" defer></script>
+
+</head>
+
+<body>
+    <div class="container-glass">
+        <img src="/img/logo_1.png" alt="Rafallo Logo" class="logo" />
+
+        <h2>User Login</h2>
+
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email" required />
+            <input type="password" id="loginPassword" placeholder="Password" required />
+            
+
+            <div class="forgot-password">
+                <a href="forgot-password.html" class="link-blue">Forgot Password?</a>
+            </div>
+
+            <button id="loginBtn">Login</button>
+
+            <div class="signup-message">
+                Don't have an account?
+                <a href="/pages/register/register.html" class="link-blue">Sign Up</a>
 
 </body>
+
 </html>

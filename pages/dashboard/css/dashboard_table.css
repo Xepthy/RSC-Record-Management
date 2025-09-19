@@ -1,9 +1,59 @@
-/* Table styling */
+.table-wrapper {
+  padding: 30px;
+  width: calc(100% - 320px); /* Space for sidebar */
+  margin: 20px;
+  margin-right: 320px;
+  box-sizing: border-box;
+
+  /* Glassmorphism background */
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(248, 250, 255, 0.9) 50%,
+    rgba(240, 248, 255, 0.85) 100%
+  );
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Table Header Gradient */
+.table-wrapper h3 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #2c3e50, #34495e, #1a73e8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table-wrapper::-webkit-scrollbar {
+  display: none;
+}
+/* ===== TABLE STYLING ===== */
+.table-container {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow-y: auto;
+  max-height: calc(5 * 48px + 42px);
+  margin-bottom: 17px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE & Edge */
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 15px;
-  margin-bottom: 30px;
+  margin-top: 7px;
+  margin-bottom: 7px;
 }
 
 th {
@@ -11,7 +61,7 @@ th {
   padding: 12px 10px;
   text-align: left;
   font-size: 14px;
-  border: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
 }
 
 td {
@@ -21,13 +71,25 @@ td {
   vertical-align: top;
 }
 
-.completed {
-  color: green;
-  font-weight: bold;
+.table-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
-.approved {
-  color: #4cd169;
+.table-container tbody tr {
+  height: 48px;
+}
+
+.table-container td:last-child,
+.table-container th:last-child {
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* ===== STATUS COLORS ===== */
+.completed {
+  color: #28a745;
   font-weight: bold;
 }
 
@@ -36,103 +98,22 @@ td {
   font-weight: bold;
 }
 
-.rejected {
-  color: red;
+.processing {
+  color: #17a2b8;
   font-weight: bold;
 }
 
-.status-badge[data-status="Update Documents"] {
-    color: #8E44AD;
-    font-weight: bold;
-}
-
-
-
-/* View button styling */
-.view-btn {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 5px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-.view-btn:hover {
-    background-color: #0056b3;
-}
-
-/* Inquiry details modal */
-.inquiry-details h3 {
-    color: #333;
-    margin-top: 20px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 5px;
-}
-
-.inquiry-details h3:first-child {
-    margin-top: 0;
-}
-
-.inquiry-details p {
-    margin: 8px 0;
-    line-height: 1.5;
-}
-
-.inquiry-details strong {
-    color: #555;
-}
-
-/* Loading animation */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Status colors */
-.pending {
-    color: #f87c1f;
-    font-weight: bold;
-}
-
-.completed {
-    color: #28a745;
-    font-weight: bold;
-}
-
-.processing {
-    color: #17a2b8;
-    font-weight: bold;
-}
-
 .cancelled {
-    color: #dc3545;
-    font-weight: bold;
+  color: #dc3545;
+  font-weight: bold;
 }
 
 .on-hold {
-    color: #6c757d;
-    font-weight: bold;
+  color: #6c757d;
+  font-weight: bold;
 }
 
-/* Responsive table */
-@media (max-width: 768px) {
-    table {
-        font-size: 12px;
-    }
-    
-    th, td {
-        padding: 8px 5px;
-    }
-    
-    .view-btn {
-        padding: 3px 8px;
-        font-size: 11px;
-    }
-}
-
+/* ===== FAKE CHECKBOX ===== */
 .fake-checkbox-label {
   display: block;
   margin-bottom: 5px;
@@ -166,3 +147,48 @@ td {
   transform: rotate(45deg);
 }
 
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+  .table-wrapper {
+    width: calc(100% - 40px);
+    max-width: 1200px;
+    margin: 0px auto 20px auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-wrapper {
+    margin: 10px auto 20px auto;
+    padding: 15px;
+    width: calc(100% - 20px);
+  }
+  
+  .table-wrapper h3 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  table {
+    min-width: 700px; /* Ensure table doesn't get too cramped */
+  }
+  
+  th, td {
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+  
+  .actions {
+    margin-top: 15px;
+  }
+  
+  .btn-inquire, .btn-logout {
+    width: 100%;
+    margin: 5px 0;
+    padding: 12px;
+  }
+}
