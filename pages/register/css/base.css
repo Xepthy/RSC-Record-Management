@@ -6,7 +6,7 @@
 body {
   margin: 0;
   padding: 0;   
-  background-image: url('../img/logo_2.jpg');
+  background-image: url('/pages/register/css/logo_2.jpg');
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;

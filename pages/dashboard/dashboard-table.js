@@ -136,28 +136,43 @@ function createTableRow(inquiry) {
 
     const buttons = inquiry.status === 'Update Documents' ?
         `<button class="edit-btn" data-inquiry-id="${inquiry.id}">Edit</button>
-         <button class="view-btn" data-inquiry-id="${inquiry.id}">View</button>` :
+            <button class="view-btn" data-inquiry-id="${inquiry.id}">View</button>` :
         `<button class="view-btn" data-inquiry-id="${inquiry.id}">View</button>`;
 
     const row = $(`
-        <tr>
-            <td title="${inquiry.requestDescription || ''}">${requestTitle}</td>
-            <td>${dateSubmitted}</td>
-            <td><span class="${statusClass}">${formatStatus(inquiry.status)}</span></td>
-            <td>${lastUpdated}</td>
-            <td>${inquiry.remarks || 'No remarks'}</td>
-            <td>${buttons}</td>
-        </tr>
-    `);
+            <tr>
+                <td title="${inquiry.requestDescription || ''}">${requestTitle}</td>
+                <td>${dateSubmitted}</td>
+                <td><span class="${statusClass}">${formatStatus(inquiry.status)}</span></td>
+                <td>${lastUpdated}</td>
+                <td>${inquiry.remarks || 'No remarks'}</td>
+                <td>${buttons}
+                </td>
+            </tr>
+        `);
 
     return row;
 }
 
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
+function formatDate(dateValue) {
+    if (!dateValue) return 'N/A';
 
     try {
-        const date = new Date(dateString);
+        let date;
+
+        // Firestore Timestamp object (has .toDate())
+        if (dateValue.toDate) {
+            date = dateValue.toDate();
+        }
+        // Already a JS Date
+        else if (dateValue instanceof Date) {
+            date = dateValue;
+        }
+        // String or number
+        else {
+            date = new Date(dateValue);
+        }
+
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -166,9 +181,11 @@ function formatDate(dateString) {
             minute: '2-digit'
         });
     } catch (error) {
+        console.error('Date formatting error:', error, dateValue);
         return 'Invalid Date';
     }
 }
+
 
 function formatStatus(status) {
     if (!status) return 'Unknown';
