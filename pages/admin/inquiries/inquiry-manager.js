@@ -6,6 +6,8 @@ import {
     onSnapshot,
     doc,
     updateDoc,
+    getDoc,
+    setDoc,
     where,
     writeBatch,
     serverTimestamp,
@@ -19,7 +21,226 @@ import {
 class InquiryManager {
     constructor(parentInstance) {
         this.parent = parentInstance;
+        this.cachedTeams = null;
     }
+
+    async loadTeamOptions() {
+        // If teams are already cached, use them
+        if (this.cachedTeams) {
+            this.populateTeamDropdown(this.cachedTeams);
+            return;
+        }
+
+        // Otherwise, fetch from Firestore and cache
+        try {
+            const configDoc = await getDoc(doc(db, 'app_config', 'teams'));
+            if (configDoc.exists()) {
+                this.cachedTeams = configDoc.data().availableTeams || [];
+                this.populateTeamDropdown(this.cachedTeams);
+            }
+        } catch (error) {
+            console.error('Error loading teams:', error);
+        }
+    }
+
+    // Helper function to populate dropdown
+    populateTeamDropdown(teams) {
+        // Clear existing options (except the first empty one)
+        $('#teamSelect option').not(':first').remove();
+
+        // Add teams to dropdown
+        teams.forEach(team => {
+            $('#teamSelect').append(`<option value="${team}">${team}</option>`);
+        });
+    }
+
+    async saveNewTeam(newTeam) {
+        try {
+            const configRef = doc(db, 'app_config', 'teams');
+            const configDoc = await getDoc(configRef);
+
+            let currentTeams = [];
+            if (configDoc.exists()) {
+                currentTeams = configDoc.data().availableTeams || [];
+            }
+
+            if (!currentTeams.includes(newTeam)) {
+                currentTeams.push(newTeam);
+                await updateDoc(configRef, { availableTeams: currentTeams });
+
+                this.cachedTeams = currentTeams;
+
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error saving team:', error);
+            throw error;
+        }
+    }
+
+    toggleApprovedSections() {
+        const status = $('#statusDropdown').val();
+        if (status === 'Approved') {
+            $('#pricingSection').show();
+            $('#scheduleTeamSection').show();
+        } else {
+            $('#pricingSection').hide();
+            $('#scheduleTeamSection').hide();
+        }
+    }
+
+    handleTeamExpansion() {
+        $('#addTeamOptionBtn').on('click', async () => {
+            const newTeam = $('#addTeamInput').val().trim().toUpperCase();
+            if (!newTeam) {
+                this.showToast('Please enter a team letter', 'warning');
+                return;
+            }
+
+            if (newTeam.length !== 1 || !/^[A-Z]$/.test(newTeam)) {
+                this.showToast('Team name must be a single letter (A-Z)', 'warning');
+                return;
+            }
+
+            try {
+                const success = await this.saveNewTeam(newTeam);
+                if (success) {
+                    // Add to dropdown
+                    $('#teamSelect').append(`<option value="${newTeam}">${newTeam}</option>`);
+                    $('#addTeamInput').val('');
+                    this.showToast(`Team ${newTeam} added!`, 'success');
+                } else {
+                    this.showToast('Team already exists', 'warning');
+                }
+            } catch (error) {
+                this.showToast('Failed to add team. Please try again.', 'error');
+            }
+        });
+    }
+
+
+    handleTeamManagement() {
+        // Add new team option to dropdown
+        $('#addNewTeamBtn').on('click', () => {
+            const newTeam = $('#newTeamInput').val().trim().toUpperCase();
+            if (!newTeam) {
+                this.showToast('Please enter a team name', 'warning');
+                return;
+            }
+
+            // Check if team option already exists
+            if ($(`#teamSelect option[value="${newTeam}"]`).length > 0) {
+                this.showToast('Team option already exists', 'warning');
+                return;
+            }
+
+            // Add new option to dropdown
+            $('#teamSelect').append(`<option value="${newTeam}">${newTeam}</option>`);
+            $('#newTeamInput').val('');
+            this.showToast(`Team ${newTeam} added to options`, 'success');
+        });
+
+        // Add selected team to list
+        $('#addTeamBtn').on('click', () => {
+            const teamValue = $('#teamSelect').val();
+            if (!teamValue) {
+                this.showToast('Please select a team', 'warning');
+                return;
+            }
+
+            // Check if team already exists in list
+            if ($(`#teamList .team-item[data-team="${teamValue}"]`).length > 0) {
+                this.showToast('Team already added', 'warning');
+                return;
+            }
+
+            this.addTeamToList(teamValue);
+            $('#teamSelect').val('');
+        });
+    }
+
+    addTeamToList(teamValue) {
+        const teamItem = $(`
+        <div class="team-item" data-team="${teamValue}" style="display: inline-block; margin: 2px; padding: 5px 10px; background: #007bff; color: white; border-radius: 15px; font-size: 12px;">
+            Team ${teamValue}
+            <button type="button" onclick="$(this).parent().remove()" style="margin-left: 5px; background: none; border: none; color: white; cursor: pointer;">&times;</button>
+        </div>
+    `);
+        $('#teamList').append(teamItem);
+    }
+
+    toggleScheduleTeamSection() {
+        const status = $('#statusDropdown').val();
+        if (status === 'Approved') {
+            $('#scheduleTeamSection').show();
+        } else {
+            $('#scheduleTeamSection').hide();
+        }
+    }
+
+    handlePaymentCheckboxes() {
+        $('#downPaymentCheck').on('change', function () {
+            // When down payment is checked, remaining stays independent
+            // No automatic checking of remaining
+        });
+
+        $('#remainingCheck').on('change', function () {
+            if ($(this).is(':checked')) {
+                // When remaining is checked, automatically check down payment too
+                $('#downPaymentCheck').prop('checked', true);
+            }
+        });
+    }
+
+    formatCurrency(num) {
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }).format(num);
+    }
+
+    calculatePricing() {
+        let input = $('#totalAmountInput').val().replace(/[^\d]/g, ''); // Remove everything except digits
+
+        // Remove leading zeros but keep at least one digit
+        input = input.replace(/^0+/, '') || '0';
+
+        // Simply limit to 9 digits maximum - don't force to 100M
+        if (input.length > 9) {
+            input = input.substring(0, 9);
+        }
+
+        // Format with commas and update input field
+        const formattedInput = this.addCommas(input);
+        $('#totalAmountInput').val(formattedInput);
+
+        // Calculate
+        const amount = parseFloat(input) || 0;
+        const downPayment = amount * 0.40;
+        const remaining = amount * 0.60;
+
+        $('#displayTotal').text(this.formatCurrency(amount));
+        $('#displayDownPayment').text(this.formatCurrency(downPayment));
+        $('#displayRemaining').text(this.formatCurrency(remaining));
+    }
+
+    addCommas(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    togglePricingSection() {
+        const status = $('#statusDropdown').val();
+        if (status === 'Approved') {
+            $('#pricingSection').show();
+            $('#scheduleTeamSection').show();
+        } else {
+            $('#pricingSection').hide();
+        }
+    }
+
 
     checkForChanges() {
         const currentRemarks = $('#remarksInput').val();
@@ -28,7 +249,6 @@ class InquiryManager {
 
         // Check remarks changes
         const remarksChanged = currentRemarks !== this.originalValues.remarks;
-        const statusChanged = currentStatus !== this.originalValues.status;
 
         // Update remarks header
         const remarksHeader = $('.remarks-section .card-header h4');
@@ -40,23 +260,6 @@ class InquiryManager {
             remarksHeader.html('Remarks');
         }
 
-        // Check status changes and update dropdown options
-        if (statusChanged) {
-            $('#statusDropdown option').each(function () {
-                const optionValue = $(this).val();
-                const optionText = $(this).text();
-
-                if (optionValue === currentStatus && !optionText.includes('*')) {
-                    $(this).text(optionText + ' *');
-                }
-            });
-        } else {
-            // Remove asterisks from all options
-            $('#statusDropdown option').each(function () {
-                const optionText = $(this).text().replace(' *', '');
-                $(this).text(optionText);
-            });
-        }
 
         // Check individual service changes
         const originalServices = this.originalValues.selectedServices;
@@ -249,15 +452,16 @@ class InquiryManager {
 
     async batchUpdateInquiryAndPending(updates) {
         try {
-            console.log('Starting batch update with:', updates); // ADD THIS
+            console.log('Starting batch update with:', updates);
             const batch = writeBatch(db);
             const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
-            console.log('Found inquiry:', inquiry?.id); // ADD THIS
 
-            // Always update main inquiries collection
+            console.log('Found inquiry:', inquiry?.id);
+
+
             const inquiryDocRef = doc(db, 'inquiries', this.parent.currentInquiryId);
             batch.update(inquiryDocRef, updates);
-            console.log('Added main inquiry to batch'); // ADD THIS
+            console.log('Added main inquiry to batch');
 
             // Update pending collection if it exists
             if (inquiry?.pendingDocId && inquiry.accountInfo?.uid) {
@@ -367,9 +571,33 @@ class InquiryManager {
         // Quick validation checks
         if (!$('#remarksInput').val().trim()) return this.showToast('Remarks is required', 'warning');
         if (!$('#statusDropdown').val()) return this.showToast('Please select a status before applying', 'warning');
+        if ($('#statusDropdown').val() === 'Approved') {
+            if (!$('#totalAmountInput').val().trim()) {
+                return this.showToast('Total amount is required when status is Approved', 'warning');
+            }
+
+            // Check if at least one checkbox is selected when amount is entered
+            const hasDownPayment = $('#downPaymentCheck').is(':checked');
+            const hasRemaining = $('#remainingCheck').is(':checked');
+
+            if (!hasDownPayment && !hasRemaining) {
+                return this.showToast('Please select at least one payment option (Down Payment or Remaining)', 'warning');
+            }
+
+            if (!$('#teamSelect').val()) {
+                return this.showToast('Team selection is required when status is Approved', 'warning');
+            }
+
+            if (!$('#scheduleInput').val()) {
+                return this.showToast('Schedule is required when status is Approved', 'warning');
+            }
+        }
+
         if ($('#applyRemarksBtn').prop('disabled')) return;
 
         // Show password confirmation modal
+        const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
+
         $('#applyRemarksBtn').prop('disabled', true).text('Confirming...');
 
         this.showPasswordModal(async () => {
@@ -386,8 +614,38 @@ class InquiryManager {
                     remarks: remarks,
                     status: status,
                     selectedServices: selectedServices,
-                    lastUpdated: serverTimestamp()
+                    lastUpdated: serverTimestamp(),
+
                 });
+
+
+                if (status === 'Approved') {
+                    const progressData = {
+                        totalAmount: parseFloat($('#totalAmountInput').val().replace(/[^\d.]/g, '')),
+                        is40: $('#downPaymentCheck').is(':checked'),
+                        is60: $('#remainingCheck').is(':checked'),
+                        schedule: $('#scheduleInput').val(),
+                        selectedTeam: $('#teamSelect').val(),
+                        pendingDocId: inquiry.pendingDocId, // this is for the user's pending doc | client/{uid}/pending/{pendingDocId}
+                        accountInfo: inquiry.accountInfo,
+                        clientInfo: {
+                            clientName: inquiry.clientName,
+                            classification: inquiry.classification,
+                            representative: inquiry.representative,
+                            repClassification: inquiry.repClassification,
+                            contact: inquiry.contact,
+                            location: inquiry.location
+                        },
+                        createdAt: serverTimestamp(),
+                        remarks: null,
+                        documents: inquiry.documents || [],
+                        selectedServices: selectedServices,
+
+                    };
+
+                    const progressRef = doc(collection(db, 'inProgress'));
+                    await setDoc(progressRef, progressData);
+                }
 
                 this.originalValues = {
                     remarks: remarks,
@@ -396,9 +654,10 @@ class InquiryManager {
                 };
 
                 this.checkForChanges();
-
                 this.clearSavedProgress();
+
                 console.log('Updates completed successfully');
+
                 this.showToast('Applied successfully!', 'success');
 
             } catch (error) {
@@ -483,7 +742,6 @@ class InquiryManager {
         this.originalValues = {
             remarks: inquiry.remarks || '',
             selectedServices: [...(inquiry.selectedServices || [])],
-            status: inquiry.status || ''
         };
 
         const clientName = inquiry.accountInfo ?
@@ -628,6 +886,49 @@ class InquiryManager {
                             <option value="Update Documents" ${inquiry.status === 'Update Documents' ? 'selected' : ''} >Update Documents</option>
                         </select>
 
+
+                        <div id="pricingSection" style="display: none; margin-top: 15px;">
+                            <label>Total Amount:</label>
+                            <input type="text" id="totalAmountInput" placeholder="Enter amount" maxlength="15">
+                            <div id="calculationDisplay" style="margin-top: 10px; font-size: 14px;">
+                                <div>Total Amount: <span id="displayTotal">₱0</span></div>
+                                <div>
+                                    <label>
+                                        <input type="checkbox" id="downPaymentCheck">
+                                        <span class="payment-text">Down Payment (40%):</span>
+                                        <span id="displayDownPayment">₱0</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label>
+                                        <input type="checkbox" id="remainingCheck">
+                                        <span class="payment-text">Remaining (60%):</span>
+                                        <span id="displayRemaining">₱0</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="scheduleTeamSection" style="display: none; margin-top: 15px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div>
+                                    <label>Schedule:</label>
+                                    <input type="date" id="scheduleInput">
+                                </div>
+                                <div>
+                                    <label>Team:</label>
+                                    <select id="teamSelect">
+                                        <option value="">Select Team</option>
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="C">C</option>
+                                    </select>
+                                    <input type="text" id="addTeamInput" placeholder="Add team (D, E, F...)" style="margin-top: 8px; width: 100%; padding: 5px;">
+                                    <button type="button" id="addTeamOptionBtn" style="margin-top: 5px; padding: 5px 10px; width: 100%;">Add Team</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <button id="applyRemarksBtn" class="apply-btn">Apply</button>
                     </div>
                 </div>
@@ -638,6 +939,8 @@ class InquiryManager {
         // Load any saved progress
         $('#inquiryContent').html(detailsHTML);
         this.loadSavedProgress(inquiryId);
+
+        this.loadTeamOptions();
 
         this.checkForChanges();
 
@@ -654,10 +957,24 @@ class InquiryManager {
         $('#statusDropdown').on('change', () => {
             this.autoSaveProgress();
             this.checkForChanges();
+            this.toggleApprovedSections(); // Make sure this line exists
         });
 
+        $('#totalAmountInput').on('input', () => {
+            this.calculatePricing();
+        });
+
+        this.handlePaymentCheckboxes();
+        this.handleTeamManagement();
+        this.handleTeamExpansion();
+        this.toggleApprovedSections();
+
         $('#applyRemarksBtn').on('click', () => this.handleRemarksApply());
+        this.togglePricingSection();
     }
+
+
+
 
     formatDate(dateSubmitted) {
         if (!dateSubmitted) return 'Unknown';
