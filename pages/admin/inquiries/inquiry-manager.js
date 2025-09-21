@@ -601,6 +601,10 @@ class InquiryManager {
             if (!$('#scheduleInput').val()) {
                 return this.showToast('Schedule is required when status is Approved', 'warning');
             }
+
+            if (!$('#planNameInput').val().trim()) {
+                return this.showToast('Plan name is required when status is Approved', 'warning');
+            }
         }
 
         if ($('#applyRemarksBtn').prop('disabled')) return;
@@ -659,6 +663,12 @@ class InquiryManager {
 
                     const progressRef = doc(collection(db, 'inProgress'));
                     await setDoc(progressRef, progressData);
+
+                    inquiry.processed = true;
+                    inquiry.status = status;
+                    inquiry.remarks = remarks;
+
+                    $('#applyRemarksBtn').prop('disabled', true).text('Already Processed');
                 }
 
                 this.originalValues = {
@@ -964,7 +974,7 @@ class InquiryManager {
 
         // In showInquiryDetails(), check if already processed
         if (inquiry.processed || inquiry.status === 'Processing') {
-            $('#applyRemarksBtn').prop('disabled', true).text('Already Processed');
+            $('#applyRemarksBtn').prop('disabled', true).text('This is already approved');
         }
 
         $('#remarksInput').on('input', () => {
