@@ -8,6 +8,7 @@ import {
     updateDoc,
     getDoc,
     setDoc,
+    deleteDoc,
     where,
     writeBatch,
     serverTimestamp,
@@ -664,6 +665,24 @@ class InquiryManager {
                     const progressRef = doc(collection(db, 'inProgress'));
                     await setDoc(progressRef, progressData);
 
+                    const archiveData = {
+                        ...inquiry,
+                        remarks: remarks,
+                        status: status,
+                        selectedServices: selectedServices,
+                        processed: true,
+                        archivedAt: serverTimestamp(),
+                        archivedBy: auth.currentUser.email
+                    };
+
+                    await setDoc(doc(db, 'inquiries_archive', this.parent.currentInquiryId), archiveData);
+                    await deleteDoc(doc(db, 'inquiries', this.parent.currentInquiryId));
+
+                    setTimeout(() => {
+                        this.parent.showInquiriesSection();
+                    }, 1500);
+
+
                     inquiry.processed = true;
                     inquiry.status = status;
                     inquiry.remarks = remarks;
@@ -688,9 +707,11 @@ class InquiryManager {
                 console.error('Error updating:', error);
                 this.showToast('Failed to apply changes. Please try again.', 'error');
             } finally {
-                setTimeout(() => {
-                    $('#applyRemarksBtn').prop('disabled', false).text('Apply');
-                }, 500);
+                if (!inquiry.processed) {
+                    setTimeout(() => {
+                        $('#applyRemarksBtn').prop('disabled', false).text('Apply');
+                    }, 500);
+                }
             }
         });
     }
@@ -973,8 +994,14 @@ class InquiryManager {
         this.checkForChanges();
 
         // In showInquiryDetails(), check if already processed
-        if (inquiry.processed || inquiry.status === 'Processing') {
-            $('#applyRemarksBtn').prop('disabled', true).text('This is already approved');
+        if (inquiry.processed) {
+            if (inquiry.status === 'Approved') {
+                $('#applyRemarksBtn').prop('disabled', true).text('Already Approved');
+            } else if (inquiry.status === 'Rejected') {
+                $('#applyRemarksBtn').prop('disabled', true).text('Already Rejected');
+            } else if (inquiry.status === 'Update Documents') {
+                $('#applyRemarksBtn').prop('disabled', true).text('Already Processed - Update Documents');
+            }
         }
 
         $('#remarksInput').on('input', () => {
