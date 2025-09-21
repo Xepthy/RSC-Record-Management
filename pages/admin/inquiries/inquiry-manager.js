@@ -25,6 +25,220 @@ class InquiryManager {
         this.cachedTeams = null;
     }
 
+
+    async bulkDeleteArchived(inquiryIds) {
+        try {
+            console.log('Starting bulk delete for:', inquiryIds.length, 'items');
+
+            // Show loading state
+            $('.delete-selected-btn').prop('disabled', true).text('Deleting...');
+
+            // Use batch delete for efficiency
+            const batch = writeBatch(db);
+
+            inquiryIds.forEach(id => {
+                const docRef = doc(db, 'inquiries_archive', id);
+                batch.delete(docRef);
+            });
+
+            await batch.commit();
+
+            console.log('Bulk delete completed successfully');
+            this.showToast(`${inquiryIds.length} archived ${inquiryIds.length === 1 ? 'inquiry' : 'inquiries'} deleted successfully`, 'success');
+
+        } catch (error) {
+            console.error('Error in bulk delete:', error);
+            this.showToast('Failed to delete selected items. Please try again.', 'error');
+
+            // Re-enable button on error
+            $('.delete-selected-btn').prop('disabled', false).text('Delete Selected');
+        }
+    }
+
+    async setupArchiveListener() {
+        try {
+            console.log('Setting up archive listener...');
+            this.parent.uiRenderer.showLoading();
+
+            const archiveQuery = query(
+                collection(db, 'inquiries_archive'),
+                orderBy('archivedAt', 'desc')
+            );
+
+            this.parent.unsubscribeArchive = onSnapshot(archiveQuery, (snapshot) => {
+                console.log('Archive snapshot received:', snapshot.size, 'documents');
+
+                this.parent.archivedInquiries = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                console.log('Processed archived inquiries:', this.parent.archivedInquiries.length);
+
+                // ONLY update UI if we're currently viewing archive
+                if ($('#archiveNav').hasClass('active')) {
+                    this.parent.uiRenderer.showArchivedInquiries();
+                }
+
+            }, (error) => {
+                console.error('Error listening to archive:', error);
+                this.parent.uiRenderer.showError('Failed to load archive: ' + error.message);
+            });
+
+        } catch (error) {
+            console.error('Error setting up archive listener:', error);
+            this.parent.uiRenderer.showError('Failed to initialize archive: ' + error.message);
+        }
+    }
+
+    showArchivedInquiryDetails(inquiryId) {
+        const inquiry = this.parent.archivedInquiries.find(inq => inq.id === inquiryId);
+        if (!inquiry) return;
+
+        // Same structure as showInquiryDetails but read-only
+        const clientName = inquiry.accountInfo ?
+            `${inquiry.accountInfo.firstName || ''} ${inquiry.accountInfo.lastName || ''}`.trim() || inquiry.clientName :
+            inquiry.clientName || 'Unknown Client';
+
+        const services = inquiry.selectedServices ?
+            inquiry.selectedServices.join(', ') : 'None specified';
+
+        const dateStr = this.formatDate(inquiry.dateSubmitted);
+        const archivedStr = this.formatDate(inquiry.archivedAt);
+
+        const documentsHTML = this.buildDocumentsHTML(inquiry.documents);
+
+        const statusBadge = `<span class="status-badge archived">${inquiry.status}</span>`;
+
+        const detailsHTML = `
+        <div class="inquiry-details">
+            <div class="details-header">
+                <div class="header-content">
+                    <h3>Archived Inquiry Details</h3>
+                    ${statusBadge}
+                </div>
+                <button class="back-btn" onclick="window.inquiriesPage.showArchiveSection()">← Back to Archive</button>
+            </div>
+            
+            <div class="details-content">
+                <!-- Same detail cards as regular inquiry but read-only -->
+                <div class="details-grid">
+                    <div class="detail-card">
+                        <div class="card-header">
+                            <h4>Account Information</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-row">
+                                <span class="label">Classification:</span>
+                                <span class="value">${inquiry.accountInfo?.classification || 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Name:</span>
+                                <span class="value">${clientName}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Email:</span>
+                                <span class="value">${inquiry.accountInfo?.email || 'Not provided'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Mobile:</span>
+                                <span class="value">${inquiry.accountInfo?.mobileNumber || 'Not provided'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-card">
+                        <div class="card-header">
+                            <h4>Client Information</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-row">
+                                <span class="label">Classification:</span>
+                                <span class="value">${inquiry.classification || 'Not specified'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Client Name:</span>
+                                <span class="value">${inquiry.clientName || 'Not specified'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Representative:</span>
+                                <span class="value">${inquiry.representative || 'None'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Rep. Classification:</span>
+                                <span class="value">${inquiry.repClassification || 'None'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Contact:</span>
+                                <span class="value">${inquiry.contact || 'Not provided'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Location:</span>
+                                <span class="value">${inquiry.location || 'Not provided'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Services:</span>
+                                <span class="value">${services}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Submitted:</span>
+                                <span class="value">${dateStr}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Archived:</span>
+                                <span class="value">${archivedStr}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Archived By:</span>
+                                <span class="value">${inquiry.archivedBy || 'Unknown'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-card description-card">
+                        <div class="card-header">
+                            <h4>Request Description</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="description-text">
+                                ${inquiry.requestDescription || 'No description provided'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-card documents-card">
+                        <div class="card-header">
+                            <h4>Documents (${inquiry.documentCount || 0})</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="documents-list">
+                                ${documentsHTML}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Remarks - Read Only -->
+            <div class="remarks-section archived">
+                <div class="card-header">
+                    <h4>Final Decision</h4>
+                </div>
+                <div class="card-body">
+                    <div class="readonly-remarks">
+                        <strong>Status:</strong> ${inquiry.status}<br>
+                        <strong>Remarks:</strong> ${inquiry.remarks || 'No remarks provided'}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+        $('#inquiryContent').html(detailsHTML);
+    }
+
+
+
     async loadTeamOptions() {
         // If teams are already cached, use them
         if (this.cachedTeams) {
@@ -246,6 +460,11 @@ class InquiryManager {
 
 
     checkForChanges() {
+        // Safety check - ensure originalValues exists
+        if (!this.originalValues) {
+            return;
+        }
+
         const currentRemarks = $('#remarksInput').val();
         const currentServices = this.getSelectedServices();
         const currentStatus = $('#statusDropdown').val();
@@ -263,9 +482,8 @@ class InquiryManager {
             remarksHeader.html('Remarks');
         }
 
-
-        // Check individual service changes
-        const originalServices = this.originalValues.selectedServices;
+        // Check individual service changes - add safety check
+        const originalServices = this.originalValues.selectedServices || [];
         let anyServiceChanged = false;
 
         $('.service-checkbox').each(function () {
@@ -690,6 +908,30 @@ class InquiryManager {
                     $('#applyRemarksBtn').prop('disabled', true).text('Already Processed');
                 }
 
+                if (status === 'Rejected') {
+                    const archiveData = {
+                        ...inquiry,
+                        remarks: remarks,
+                        status: status,
+                        selectedServices: selectedServices,
+                        processed: true,
+                        archivedAt: serverTimestamp(),
+                        archivedBy: auth.currentUser.email
+                    };
+
+                    await setDoc(doc(db, 'inquiries_archive', this.parent.currentInquiryId), archiveData);
+                    await deleteDoc(doc(db, 'inquiries', this.parent.currentInquiryId));
+
+                    setTimeout(() => {
+                        this.parent.showInquiriesSection();
+                    }, 1500);
+
+
+                    inquiry.processed = true;
+                    inquiry.status = status;
+                    inquiry.remarks = remarks;
+                }
+
                 this.originalValues = {
                     remarks: remarks,
                     status: status,
@@ -740,10 +982,10 @@ class InquiryManager {
                 console.log('Processed inquiries:', this.parent.inquiries.length);
                 this.parent.updateNotificationCount();
 
-                // Only show inquiries loaded if we're not viewing specific details
-                if (!currentId) {
+                // ONLY update UI if we're currently viewing inquiries (not archive)
+                if (!currentId && $('#inquiriesNav').hasClass('active')) {
                     this.parent.uiRenderer.showInquiriesLoaded();
-                } else {
+                } else if (currentId) {
                     // Restore the current inquiry ID
                     this.parent.currentInquiryId = currentId;
                 }
@@ -999,8 +1241,6 @@ class InquiryManager {
                 $('#applyRemarksBtn').prop('disabled', true).text('Already Approved');
             } else if (inquiry.status === 'Rejected') {
                 $('#applyRemarksBtn').prop('disabled', true).text('Already Rejected');
-            } else if (inquiry.status === 'Update Documents') {
-                $('#applyRemarksBtn').prop('disabled', true).text('Already Processed - Update Documents');
             }
         }
 

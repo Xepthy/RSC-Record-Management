@@ -3,6 +3,211 @@ class UIRenderer {
         this.parent = parentInstance;
     }
 
+    handleBulkDelete() {
+        const selectedIds = $('.row-checkbox:checked').map(function () {
+            return $(this).val();
+        }).get();
+
+        if (selectedIds.length === 0) return;
+
+        const confirmMessage = `Are you sure you want to permanently delete ${selectedIds.length} archived ${selectedIds.length === 1 ? 'inquiry' : 'inquiries'}? This action cannot be undone.`;
+
+        if (confirm(confirmMessage)) {
+            this.parent.inquiryManager.bulkDeleteArchived(selectedIds);
+        }
+    }
+
+    updateSelectAllState() {
+        const totalRows = $('.row-checkbox').length;
+        const selectedRows = $('.row-checkbox:checked').length;
+        const $selectAll = $('#selectAllCheckbox');
+
+        if (selectedRows === 0) {
+            $selectAll.prop('checked', false).prop('indeterminate', false);
+        } else if (selectedRows === totalRows) {
+            $selectAll.prop('checked', true).prop('indeterminate', false);
+        } else {
+            $selectAll.prop('checked', false).prop('indeterminate', true);
+        }
+    }
+
+    showArchivedInquiries() {
+        if (this.parent.archivedInquiries.length === 0) {
+            $('#inquiryContent').html(`
+            <div class="empty-state">
+                <h3>📦 No archived inquiries</h3>
+                <p>Processed inquiries will appear here.</p>
+            </div>
+        `);
+            return;
+        }
+
+        const tableRows = this.parent.archivedInquiries.map(inquiry => {
+            const fromName = inquiry.accountInfo ?
+                `${inquiry.accountInfo.firstName || ''} ${inquiry.accountInfo.lastName || ''}`.trim() :
+                'Unknown Client';
+
+            const subject = inquiry.requestDescription ?
+                (inquiry.requestDescription.length > 50 ?
+                    inquiry.requestDescription.substring(0, 50) + '...' :
+                    inquiry.requestDescription) :
+                'No subject';
+
+            let archivedDate = 'Unknown date';
+            if (inquiry.archivedAt) {
+                try {
+                    const date = inquiry.archivedAt.toDate ? inquiry.archivedAt.toDate() : new Date(inquiry.archivedAt);
+                    const time = date.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                    const dateStr = date.toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    archivedDate = `${time}<br>${dateStr}`;
+                } catch (error) {
+                    archivedDate = 'Invalid date';
+                }
+            }
+
+            const statusClass = inquiry.status?.toLowerCase().replace(' ', '-') || 'unknown';
+
+            return `
+            <tr class="inquiry-row archived ${statusClass}" data-inquiry-id="${inquiry.id}">
+                <td class="checkbox-column">
+                    <input type="checkbox" class="row-checkbox" value="${inquiry.id}">
+                </td>
+                <td class="from-column">
+                    <div class="client-name">${fromName}</div>
+                    ${inquiry.accountInfo?.email ? `<div class="client-email">${inquiry.accountInfo.email}</div>` : ''}
+                </td>
+                <td class="subject-column">
+                    <div class="subject-text">${subject}</div>
+                    <span class="status-indicator status-${statusClass}">${inquiry.status}</span>
+                </td>
+                <td class="sent-column">
+                    <div class="sent-date">${archivedDate}</div>
+                </td>
+            </tr>
+        `;
+        }).join('');
+
+        const tableHTML = `
+        <div class="inquiries-table-container">
+            <div class="table-header">
+                <div class="table-stats">
+                    <span class="total-count">${this.parent.archivedInquiries.length} Archived</span>
+                    <span class="status-breakdown">
+                        ${this.getStatusBreakdown()}
+                    </span>
+                </div>
+                <div class="bulk-actions" style="display: none;">
+                    <span class="selected-count">0 selected</span>
+                    <button class="delete-selected-btn" id="deleteSelectedBtn">Delete Selected</button>
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table class="inquiries-table archive-table">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-header">
+                                <input type="checkbox" id="selectAllCheckbox">
+                            </th>
+                            <th class="from-header">From</th>
+                            <th class="subject-header">Subject & Status</th>
+                            <th class="sent-header">Archived</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+        $('#inquiryContent').html(tableHTML);
+        this.setupArchiveTableEventListeners();
+    }
+
+    getStatusBreakdown() {
+        const breakdown = {};
+        this.parent.archivedInquiries.forEach(inquiry => {
+            const status = inquiry.status || 'Unknown';
+            breakdown[status] = (breakdown[status] || 0) + 1;
+        });
+
+        return Object.entries(breakdown)
+            .map(([status, count]) => `${status}: ${count}`)
+            .join(' | ');
+    }
+
+    updateBulkActions() {
+        const selectedCount = $('.row-checkbox:checked').length;
+        const $bulkActions = $('.bulk-actions');
+        const $selectedCount = $('.selected-count');
+
+        if (selectedCount > 0) {
+            $bulkActions.show();
+            $selectedCount.text(`${selectedCount} selected`);
+        } else {
+            $bulkActions.hide();
+        }
+    }
+
+    setupArchiveTableEventListeners() {
+        // Handle row clicks (avoid checkbox column)
+        $('.inquiry-row').on('click', (e) => {
+            // Don't trigger row click if clicking on checkbox
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+
+            const inquiryId = $(e.currentTarget).data('inquiry-id');
+            this.parent.inquiryManager.showArchivedInquiryDetails(inquiryId);
+        });
+
+        // Handle individual checkboxes
+        $('.row-checkbox').on('change', () => {
+            this.updateBulkActions();
+            this.updateSelectAllState();
+        });
+
+        // Handle select all checkbox
+        $('#selectAllCheckbox').on('change', (e) => {
+            const isChecked = $(e.target).is(':checked');
+            $('.row-checkbox').prop('checked', isChecked);
+            this.updateBulkActions();
+        });
+
+        // Handle delete selected button
+        $('#deleteSelectedBtn').on('click', () => {
+            this.handleBulkDelete();
+        });
+
+        // Hover effects (avoid checkbox column)
+        $('.inquiry-row').on('mouseenter', function () {
+            $(this).css({
+                'opacity': '0.8',
+                'transform': 'translateX(2px)',
+                'transition': 'all 0.2s ease'
+            });
+        }).on('mouseleave', function () {
+            $(this).css({
+                'opacity': '1',
+                'transform': 'translateX(0)',
+                'transition': 'all 0.2s ease'
+            });
+        });
+
+        $('.inquiry-row').css('cursor', 'pointer');
+    }
+
+
+
     showLoading() {
         $('#inquiryContent').html(`
             <div class="loading-state">
