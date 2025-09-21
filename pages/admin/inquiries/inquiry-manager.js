@@ -82,9 +82,11 @@ class InquiryManager {
     toggleApprovedSections() {
         const status = $('#statusDropdown').val();
         if (status === 'Approved') {
+            $('#planNameSection').show();
             $('#pricingSection').show();
             $('#scheduleTeamSection').show();
         } else {
+            $('#planNameSection').hide();
             $('#pricingSection').hide();
             $('#scheduleTeamSection').hide();
         }
@@ -299,6 +301,14 @@ class InquiryManager {
         } else {
             servicesLabel.html('Services:');
         }
+    }
+
+    formatDateForStorage(dateString) {
+        if (!dateString) return '';
+
+        // dateString comes as "2025-01-15" (yyyy-mm-dd)
+        const [year, month, day] = dateString.split('-');
+        return `${month}/${day}/${year}`; // Convert to mm/dd/yyyy
     }
 
     showPasswordModal(onConfirm) {
@@ -615,6 +625,7 @@ class InquiryManager {
                     status: status,
                     selectedServices: selectedServices,
                     lastUpdated: serverTimestamp(),
+                    processed: true,
 
                 });
 
@@ -624,8 +635,8 @@ class InquiryManager {
                         totalAmount: parseFloat($('#totalAmountInput').val().replace(/[^\d.]/g, '')),
                         is40: $('#downPaymentCheck').is(':checked'),
                         is60: $('#remainingCheck').is(':checked'),
-                        schedule: $('#scheduleInput').val(),
-                        selectedTeam: $('#teamSelect').val(),
+                        schedule: this.formatDateForStorage($('#scheduleInput').val()), // SURVEY TASK INFORMATION
+                        selectedTeam: $('#teamSelect').val(), // SURVEY TASK INFORMATION
                         pendingDocId: inquiry.pendingDocId, // this is for the user's pending doc | client/{uid}/pending/{pendingDocId}
                         accountInfo: inquiry.accountInfo,
                         clientInfo: {
@@ -638,8 +649,11 @@ class InquiryManager {
                         },
                         createdAt: serverTimestamp(),
                         remarks: null,
-                        documents: inquiry.documents || [],
+                        adminNotes: null,
+                        documents: inquiry.documents || [], // TRANSMITTAL OF DOCUMENTS
                         selectedServices: selectedServices,
+                        projectFiles: null, // PLOTTING OF LOT AND RESEARCH
+                        planName: $('#planNameInput').val().trim(), // PLAN NAME FOR TABLE
 
                     };
 
@@ -886,6 +900,10 @@ class InquiryManager {
                             <option value="Update Documents" ${inquiry.status === 'Update Documents' ? 'selected' : ''} >Update Documents</option>
                         </select>
 
+                        <div id="planNameSection" style="display: none; margin-top: 15px;">
+                            <label>Plan Name:</label>
+                            <input type="text" id="planNameInput" placeholder="Enter Plan Name">
+                        </div>
 
                         <div id="pricingSection" style="display: none; margin-top: 15px;">
                             <label>Total Amount:</label>
@@ -944,6 +962,11 @@ class InquiryManager {
 
         this.checkForChanges();
 
+        // In showInquiryDetails(), check if already processed
+        if (inquiry.processed || inquiry.status === 'Processing') {
+            $('#applyRemarksBtn').prop('disabled', true).text('Already Processed');
+        }
+
         $('#remarksInput').on('input', () => {
             this.autoSaveProgress();
             this.checkForChanges();
@@ -970,7 +993,6 @@ class InquiryManager {
         this.toggleApprovedSections();
 
         $('#applyRemarksBtn').on('click', () => this.handleRemarksApply());
-        this.togglePricingSection();
     }
 
 
