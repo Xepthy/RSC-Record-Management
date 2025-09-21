@@ -6,6 +6,7 @@ import {
 import AuthManager from './auth-manager.js';
 import InquiryManager from './inquiry-manager.js';
 import UIRenderer from './ui-renderer.js';
+import InProgressManager from '../inProgress/in-progress-manager.js';
 
 class InquiriesPage {
     constructor() {
@@ -14,14 +15,16 @@ class InquiriesPage {
         this.isAdmin = false;
         this.currentUser = null;
         this.currentInquiryId = null;
-
+        this.inProgressItems = [];
         this.archivedInquiries = [];
         this.unsubscribeArchive = null;
+        this.unsubscribeInProgress = null;
 
         // Initialize sub-modules
         this.authManager = new AuthManager(this);
         this.inquiryManager = new InquiryManager(this);
         this.uiRenderer = new UIRenderer(this);
+        this.inProgressManager = new InProgressManager(this);
 
         this.init();
     }
@@ -54,14 +57,12 @@ class InquiriesPage {
 
     async initializeAdminPanel() {
         try {
-            // Update user info in header
             this.updateUserInfo();
-
-            // Setup event listeners
             this.setupEventListeners();
 
-            // Setup inquiry listener
+            // Setup both listeners to show notification counts
             await this.inquiryManager.setupInquiryListener();
+            await this.inProgressManager.setupInProgressListener();
 
         } catch (error) {
             console.error('Error initializing admin panel:', error);
@@ -73,6 +74,34 @@ class InquiriesPage {
         if (this.currentUser) {
             $('#userName').text(this.currentUser.displayName || 'Admin User');
             $('#userEmail').text(this.currentUser.email);
+        }
+    }
+
+    showInProgressSection() {
+        // Update nav states
+        $('.nav-item').removeClass('active');
+        $('#inProgressNav').addClass('active');
+
+        // Update header
+        $('.content-header h1').text('In Progress Management');
+        $('.content-header p').text('Monitor ongoing projects and track their progress. Click on any item to view details and mark as read.');
+
+        // Setup listener if not already done
+        if (!this.unsubscribeInProgress) {
+            this.inProgressManager.setupInProgressListener();
+        } else {
+            this.uiRenderer.showInProgressItems();
+        }
+    }
+
+    updateInProgressNotificationCount() {
+        const unreadCount = this.inProgressItems.filter(item => !item.read).length;
+        const $countElement = $('#inProgressCount');
+
+        if (unreadCount > 0) {
+            $countElement.text(unreadCount).show();
+        } else {
+            $countElement.hide();
         }
     }
 
@@ -100,6 +129,10 @@ class InquiriesPage {
 
         $('#archiveNav').on('click', () => {
             this.showArchiveSection();
+        });
+
+        $('#inProgressNav').on('click', () => {
+            this.showInProgressSection();
         });
 
         // Logout button click
@@ -147,6 +180,12 @@ class InquiriesPage {
             this.unsubscribeArchive();
             this.unsubscribeArchive = null;
         }
+
+        if (this.unsubscribeInProgress) {  // ADD THIS
+            this.unsubscribeInProgress();
+            this.unsubscribeInProgress = null;
+        }
+
     }
 }
 

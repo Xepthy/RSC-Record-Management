@@ -876,7 +876,8 @@ class InquiryManager {
                         documents: inquiry.documents || [], // TRANSMITTAL OF DOCUMENTS
                         selectedServices: selectedServices,
                         projectFiles: null, // PLOTTING OF LOT AND RESEARCH
-                        planName: $('#planNameInput').val().trim(), // PLAN NAME FOR TABLE
+                        planName: $('#planNameInput').val().trim(), // PLAN NAME FOR TABLE,
+                        read: false,
 
                     };
 
@@ -1193,7 +1194,7 @@ class InquiryManager {
                                 <div>
                                     <label>
                                         <input type="checkbox" id="remainingCheck">
-                                        <span class="payment-text">Remaining (60%):</span>
+                                        <span class="payment-text">Upon Deliveriess (60%):</span>
                                         <span id="displayRemaining">₱0</span>
                                     </label>
                                 </div>
@@ -1234,15 +1235,6 @@ class InquiryManager {
         this.loadTeamOptions();
 
         this.checkForChanges();
-
-        // In showInquiryDetails(), check if already processed
-        if (inquiry.processed) {
-            if (inquiry.status === 'Approved') {
-                $('#applyRemarksBtn').prop('disabled', true).text('Already Approved');
-            } else if (inquiry.status === 'Rejected') {
-                $('#applyRemarksBtn').prop('disabled', true).text('Already Rejected');
-            }
-        }
 
         $('#remarksInput').on('input', () => {
             this.autoSaveProgress();

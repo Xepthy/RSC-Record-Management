@@ -17,6 +17,148 @@ class UIRenderer {
         }
     }
 
+    showInProgressItems() {
+        if (this.parent.inProgressItems.length === 0) {
+            $('#inquiryContent').html(`
+            <div class="empty-state">
+                <h3>⚙️ No items in progress</h3>
+                <p>Approved inquiries will appear here.</p>
+            </div>
+        `);
+            return;
+        }
+
+        const tableRows = this.parent.inProgressItems.map(item => {
+            // Client Name & Contact
+            const clientName = item.clientInfo?.clientName || 'Unknown Client';
+            const contact = item.clientInfo?.contact || '';
+
+            // Plan Name
+            const planName = item.planName || 'Not specified';
+
+            // Services (formatted to prevent overflow)
+            const services = this.parent.inProgressManager.formatServices(item.selectedServices);
+
+
+            // Schedule
+            const schedule = item.schedule || 'Not scheduled';
+
+            // Quotation & Payments
+            const totalAmount = item.totalAmount || 0;
+            const quotation = this.parent.inProgressManager.formatCurrency(totalAmount);
+            const downPayment = this.parent.inProgressManager.formatCurrency(totalAmount * 0.40);
+            const uponDelivery = this.parent.inProgressManager.formatCurrency(totalAmount * 0.60);
+
+            // Remarks
+            const remarks = item.remarks || '--';
+
+            // Read status
+            const readClass = item.read ? 'read' : 'unread';
+
+            return `
+            <tr class="progress-row ${readClass}" data-item-id="${item.id}">
+                <td class="client-column">
+                    <div class="client-name">${clientName}</div>
+                    ${contact ? `<div class="client-contact">${contact}</div>` : ''}
+                </td>
+                <td class="plan-column">
+                    <div class="plan-name">${planName}</div>
+                </td>
+                <td class="services-column">
+                    <div class="services-text" title="${item.selectedServices?.join(', ') || 'None'}">${services}</div>
+                </td>
+                <td class="schedule-column">
+                    <div class="schedule-text">${schedule}</div>
+                </td>
+                <td class="quotation-column">
+                    <div class="quotation-amount">${quotation}</div>
+                </td>
+                <td class="payment-column">
+                    <div class="payment-amount">${downPayment}</div>
+                </td>
+                <td class="payment-column">
+                    <div class="payment-amount">${uponDelivery}</div>
+                </td>
+                <td class="remarks-column">
+                    <div class="remarks-text" title="${remarks}">${remarks.length > 30 ? remarks.substring(0, 30) + '...' : remarks}</div>
+                    ${item.read ? '' : '<span class="unread-indicator">●</span>'}
+                </td>
+            </tr>
+        `;
+        }).join('');
+
+        const tableHTML = `
+        <div class="inquiries-table-container">
+            <div class="table-header">
+                <div class="table-stats">
+                    <span class="total-count">${this.parent.inProgressItems.length} In Progress</span>
+                    <span class="unread-count">${this.parent.inProgressItems.filter(item => !item.read).length} Unread</span>
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table class="inquiries-table progress-table">
+                    <thead>
+                        <tr>
+                            <th class="client-header">Client</th>
+                            <th class="plan-header">Plan Name</th>
+                            <th class="services-header">Services</th>
+                            <th class="schedule-header">Schedule</th>
+                            <th class="quotation-header">Quotation</th>
+                            <th class="payment-header">Downpayment (40%)</th>
+                            <th class="payment-header">Upon Delivery (60%)</th>
+                            <th class="remarks-header">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+        $('#inquiryContent').html(tableHTML);
+        this.setupInProgressTableEventListeners();
+    }
+
+    setupInProgressTableEventListeners() {
+        // Click event for progress rows
+        $('.progress-row').on('click', async (e) => {
+            const itemId = $(e.currentTarget).data('item-id');
+            const item = this.parent.inProgressItems.find(item => item.id === itemId);
+
+            // If item is unread, mark it as read first
+            if (item && !item.read) {
+                await this.parent.inProgressManager.markAsRead(itemId);
+
+                // Update the row visually to show it's now read
+                $(e.currentTarget).removeClass('unread').addClass('read');
+                $(e.currentTarget).find('.unread-indicator').remove();
+
+                // Update the notification count
+                this.parent.updateInProgressNotificationCount();
+            }
+        });
+
+        // Hover effects
+        $('.progress-row').on('mouseenter', function () {
+            $(this).css({
+                'opacity': '0.8',
+                'transform': 'translateX(2px)',
+                'transition': 'all 0.2s ease'
+            });
+        }).on('mouseleave', function () {
+            $(this).css({
+                'opacity': '1',
+                'transform': 'translateX(0)',
+                'transition': 'all 0.2s ease'
+            });
+        });
+
+        $('.progress-row').css('cursor', 'pointer');
+    }
+
     updateSelectAllState() {
         const totalRows = $('.row-checkbox').length;
         const selectedRows = $('.row-checkbox:checked').length;
@@ -222,7 +364,7 @@ class UIRenderer {
         this.parent.currentInquiryId = null;
         // Remove the updateHeaderMarkReadButton call since we removed that method
 
-        if (!this.parent.inquiries.length === 0) {
+        if (this.parent.inquiries.length === 0) {
             $('#inquiryContent').html(`
                 <div class="empty-state">
                     <h3>🔭 No inquiries yet</h3>

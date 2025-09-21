@@ -1,0 +1,46 @@
+.progress-table .client-column {
+    min-width: 150px;
+}
+
+.progress-table .services-column {
+    max-width: 200px;
+    word-wrap: break-word;
+}
+
+.progress-table .remarks-column {
+    max-width: 150px;
+}
+
+.progress-table .payment-column {
+    text-align: right;
+    min-width: 120px;
+}
+
+.progress-table .quotation-column {
+    text-align: right;
+    min-width: 120px;
+    font-weight: bold;
+}
+
+.client-contact {
+    font-size: 12px;
+    color: #666;
+}
+
+.services-text {
+    font-size: 13px;
+}
+
+.quotation-amount {
+    font-family: monospace;
+    font-weight: bold;
+    color: #000000;
+    text-align: left;
+}
+
+.payment-amount {
+    font-family: monospace;
+    font-weight: bold;
+    color: #000000;
+    text-align: left;
+}
