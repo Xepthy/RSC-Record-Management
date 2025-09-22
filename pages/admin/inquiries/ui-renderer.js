@@ -73,15 +73,17 @@ class UIRenderer {
                 <td class="quotation-column">
                     <div class="quotation-amount">${quotation}</div>
                 </td>
-                <td class="payment-column">
+
+                <td class="payment-column ${item.is40 ? 'payment-paid' : 'payment-unpaid'}">
                     <div class="payment-amount">${downPayment}</div>
                 </td>
-                <td class="payment-column">
+
+                <td class="payment-column ${item.is60 ? 'payment-delivered' : 'payment-unpaid'}">
                     <div class="payment-amount">${uponDelivery}</div>
                 </td>
+                
                 <td class="remarks-column">
                     <div class="remarks-text" title="${remarks}">${remarks.length > 30 ? remarks.substring(0, 30) + '...' : remarks}</div>
-                    ${item.read ? '' : '<span class="unread-indicator">●</span>'}
                 </td>
             </tr>
         `;
@@ -431,7 +433,6 @@ class UIRenderer {
                     </td>
                     <td class="subject-column">
                         <div class="subject-text">${subject}</div>
-                        ${inquiry.read ? '' : '<span class="unread-indicator">●</span>'}
                     </td>
                     <td class="sent-column">
                         <div class="sent-date">${sentDate}</div>
