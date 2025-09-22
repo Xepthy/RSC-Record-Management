@@ -1,0 +1,36 @@
+/* Payment status variables */
+:root {
+  --paid-bg: #bbdefb;
+  --paid-border: #1976d2;
+  --paid-text: #0d47a1;
+  
+  --delivered-bg: #ffcc80;
+  --delivered-border: #f57c00;
+  --delivered-text: #e65100;
+  
+  --unpaid-bg: #e0e0e0;
+  --unpaid-border: #757575;
+  --unpaid-text: #424242;
+}
+
+.progress-table {
+  border-collapse: collapse; /* Back to normal */
+}
+
+.payment-paid {
+  background-color: var(--paid-bg);
+  color: var(--paid-text);
+  font-weight: bold;
+}
+
+.payment-delivered {
+  background-color: var(--delivered-bg);
+  color: var(--delivered-text);
+  font-weight: bold;
+}
+
+.payment-unpaid {
+  background-color: var(--unpaid-bg);
+  color: var(--unpaid-text);
+  font-weight: bold;
+}

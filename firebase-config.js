@@ -25,7 +25,8 @@ import {
     serverTimestamp,
     updateDoc,
     where,
-    writeBatch
+    writeBatch,
+    deleteDoc,
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
 
@@ -79,6 +80,7 @@ export {
     where,
     writeBatch,
     EmailAuthProvider,
-    reauthenticateWithCredential
+    reauthenticateWithCredential,
+    deleteDoc,
 
 };

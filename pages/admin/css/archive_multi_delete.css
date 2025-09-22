@@ -1,0 +1,38 @@
+.checkbox-column {
+    width: 40px;
+    text-align: center;
+}
+
+.checkbox-header {
+    width: 40px;
+    text-align: center;
+}
+
+.bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.delete-selected-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.delete-selected-btn:hover {
+    background: #c82333;
+}
+
+.delete-selected-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.selected-count {
+    font-weight: bold;
+    color: #007bff;
+}
