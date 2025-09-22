@@ -514,7 +514,6 @@ async function saveChanges(inquiry, newFiles, removedIndices) {
 
 // Document viewer function
 function showDocumentViewer(docUrl, docName, options = {}) {
-    // Default options
     const defaults = {
         width: 800,
         height: 600,
@@ -524,121 +523,60 @@ function showDocumentViewer(docUrl, docName, options = {}) {
 
     const settings = { ...defaults, ...options };
 
-    // Clean the URL to embed without browser controls
-    const cleanUrl = docUrl.includes('#') ? docUrl : docUrl + '#toolbar=0&navpanes=0&scrollbar=0';
+    // FIXED: Don't disable scrollbar - only remove toolbar and navpanes
+    const cleanUrl = docUrl.includes('#') ? docUrl : docUrl + '#toolbar=0&navpanes=0';
 
-    // Determine sizing classes
     const autoSizeClass = settings.autoSize ? 'auto-size' : '';
 
     const documentModalHtml = `
     <div class="modal document-modal" id="documentViewerModal">
         <div class="modal-content document-viewer-content ${autoSizeClass}">
-            <div class="document-header">
-                <h3><i class="fas fa-file-pdf"></i> ${docName}</h3>
-                <div class="document-controls">
-                    ${settings.showControls ? `
-                    ` : ''}
-                    <span class="close-btn document-close" title="Close">&times;</span>
-                </div>
-            </div>
+            <span class="close-btn document-close" title="Close">&times;</span>
             <div class="document-content ${autoSizeClass}">
                 <div id="documentLoader" class="document-loader">
                     <div class="loader-spinner"></div>
                     <p>Loading document...</p>
                 </div>
-                <embed id="documentEmbed" 
+                <!-- Use iframe instead of embed for better scrolling -->
+                <iframe id="documentIframe" 
                        src="${cleanUrl}" 
-                       type="application/pdf" 
-                       style="display: none; width: ${settings.width}px; height: ${settings.height}px;"
+                       style="display: none; width: ${settings.width}px; height: ${settings.height}px; border: none;"
                        class="${autoSizeClass}">
+                </iframe>
                 <div id="documentError" class="document-error" style="display: none;">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>Unable to display PDF in browser. Please ensure your browser supports PDF viewing.</p>
+                    <p>Unable to display PDF. <a href="${docUrl}" target="_blank">Open in new tab</a></p>
                 </div>
             </div>
         </div>
     </div>
     `;
 
-    // Remove existing document modal if any
     $('#documentViewerModal').remove();
-
-    // Add modal to body
     $('body').append(documentModalHtml);
-
-    // Show modal
     $('#documentViewerModal').show();
-
     $('body').addClass('modal-open');
 
-    // Handle embed loading
-    const embed = $('#documentEmbed');
+    const iframe = $('#documentIframe');
     const loader = $('#documentLoader');
     const error = $('#documentError');
 
-    // Function to adjust container size based on content
-    function adjustContainerSize() {
-        if (settings.autoSize) {
-            const container = $('.document-viewer-content');
-            const content = $('.document-content');
-
-            // Let the embed determine its natural size first
-            setTimeout(() => {
-                const embedWidth = embed.width();
-                const embedHeight = embed.height();
-
-                if (embedWidth && embedHeight) {
-                    container.css({
-                        width: embedWidth + 'px',
-                        height: (embedHeight + 80) + 'px' // Add header height
-                    });
-                }
-            }, 100);
-        }
-    }
-
-    // Show the embed after a short delay
+    // Show iframe after loading
     setTimeout(() => {
         loader.hide();
-        embed.show();
-        adjustContainerSize();
-    }, 1000);
+        iframe.show();
+    }, 1500);
 
-    // Handle embed loading events
-    embed.on('load', function () {
-        loader.hide();
-        embed.show();
-        adjustContainerSize();
-    });
-
-    // Fallback error handling
-    embed.on('error', function () {
-        loader.hide();
-        embed.hide();
-        error.show();
-    });
-
-    // Timeout fallback
-    setTimeout(() => {
-        if (loader.is(':visible')) {
-            loader.hide();
-            if (embed.is(':hidden')) {
-                error.show();
-            } else {
-                adjustContainerSize();
-            }
-        }
-    }, 5000);
-
-    // Close modal handlers
+    // Close handlers
     $('.document-close').on('click', function () {
         $('#documentViewerModal').hide().remove();
+        $('body').removeClass('modal-open');
     });
 
-    // Click outside to close
     $('#documentViewerModal').on('click', function (e) {
         if (e.target === this) {
             $(this).hide().remove();
+            $('body').removeClass('modal-open');
         }
     });
 }
