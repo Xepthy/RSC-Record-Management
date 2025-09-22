@@ -1,6 +1,11 @@
 class UIRenderer {
     constructor(parentInstance) {
         this.parent = parentInstance;
+
+        this.itemsPerPage = 5;
+        this.inquiriesCurrentPage = 1;
+        this.archiveCurrentPage = 1;
+        this.inProgressCurrentPage = 1;
     }
 
     handleBulkDelete() {
@@ -17,6 +22,66 @@ class UIRenderer {
         }
     }
 
+    generatePaginationControls(totalPages, tableType) {
+        if (totalPages <= 1) return '';
+
+        const currentPage = this.getCurrentPage(tableType);
+        let paginationHTML = '<div class="pagination-container">';
+
+        // Previous button
+        if (currentPage > 1) {
+            paginationHTML += `<button class="page-btn" data-page="${currentPage - 1}" data-table="${tableType}">Previous</button>`;
+        }
+
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            const activeClass = i === currentPage ? 'active' : '';
+            paginationHTML += `<button class="page-btn ${activeClass}" data-page="${i}" data-table="${tableType}">${i}</button>`;
+        }
+
+        // Next button
+        if (currentPage < totalPages) {
+            paginationHTML += `<button class="page-btn" data-page="${currentPage + 1}" data-table="${tableType}">Next</button>`;
+        }
+
+        paginationHTML += '</div>';
+        return paginationHTML;
+    }
+
+    setupPaginationEventListeners() {
+        $('.page-btn').on('click', (e) => {
+            const page = parseInt($(e.target).data('page'));
+            const tableType = $(e.target).data('table');
+
+            this.setCurrentPage(tableType, page);
+            this.refreshTable(tableType);
+        });
+    }
+
+    getCurrentPage(tableType) {
+        switch (tableType) {
+            case 'inquiries': return this.inquiriesCurrentPage;
+            case 'archive': return this.archiveCurrentPage;
+            case 'inprogress': return this.inProgressCurrentPage;
+        }
+    }
+
+    setCurrentPage(tableType, page) {
+        switch (tableType) {
+            case 'inquiries': this.inquiriesCurrentPage = page; break;
+            case 'archive': this.archiveCurrentPage = page; break;
+            case 'inprogress': this.inProgressCurrentPage = page; break;
+        }
+    }
+
+    refreshTable(tableType) {
+        switch (tableType) {
+            case 'inquiries': this.showInquiriesLoaded(); break;
+            case 'archive': this.showArchivedInquiries(); break;
+            case 'inprogress': this.showInProgressItems(); break;
+        }
+    }
+
     showInProgressItems() {
         if (this.parent.inProgressItems.length === 0) {
             $('#inquiryContent').html(`
@@ -28,7 +93,13 @@ class UIRenderer {
             return;
         }
 
-        const tableRows = this.parent.inProgressItems.map(item => {
+        const totalItems = this.parent.inProgressItems.length;
+        const totalPages = Math.ceil(totalItems / this.itemsPerPage);
+        const startIndex = (this.inProgressCurrentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const currentItems = this.parent.inProgressItems.slice(startIndex, endIndex);
+
+        const tableRows = currentItems.map(item => {
             // Client Name & Contact
             const clientName = item.clientInfo?.clientName || 'Unknown Client';
             const contact = item.clientInfo?.contact || '';
@@ -39,6 +110,7 @@ class UIRenderer {
             // Services (formatted to prevent overflow)
             const services = this.parent.inProgressManager.formatServices(item.selectedServices);
 
+            const team = item.selectedTeam || 'Not assigned';
 
             // Schedule
             const schedule = item.schedule || 'Not scheduled';
@@ -70,6 +142,11 @@ class UIRenderer {
                 <td class="schedule-column">
                     <div class="schedule-text">${schedule}</div>
                 </td>
+
+                <td class="team-column">
+                <div class="team-text">${team}</div>
+                </td>
+
                 <td class="quotation-column">
                     <div class="quotation-amount">${quotation}</div>
                 </td>
@@ -81,7 +158,7 @@ class UIRenderer {
                 <td class="payment-column ${item.is60 ? 'payment-delivered' : 'payment-unpaid'}">
                     <div class="payment-amount">${uponDelivery}</div>
                 </td>
-                
+
                 <td class="remarks-column">
                     <div class="remarks-text" title="${remarks}">${remarks.length > 30 ? remarks.substring(0, 30) + '...' : remarks}</div>
                 </td>
@@ -89,12 +166,15 @@ class UIRenderer {
         `;
         }).join('');
 
+        const paginationHTML = this.generatePaginationControls(totalPages, 'inprogress');
+
         const tableHTML = `
         <div class="inquiries-table-container">
             <div class="table-header">
                 <div class="table-stats">
                     <span class="total-count">${this.parent.inProgressItems.length} In Progress</span>
                     <span class="unread-count">${this.parent.inProgressItems.filter(item => !item.read).length} Unread</span>
+                    <span class="page-info">Page ${this.inProgressCurrentPage} of ${totalPages}</span>
                 </div>
             </div>
             
@@ -117,11 +197,13 @@ class UIRenderer {
                     </tbody>
                 </table>
             </div>
+            ${paginationHTML}
         </div>
     `;
 
         $('#inquiryContent').html(tableHTML);
         this.setupInProgressTableEventListeners();
+        this.setupPaginationEventListeners();
     }
 
     setupInProgressTableEventListeners() {
@@ -186,7 +268,13 @@ class UIRenderer {
             return;
         }
 
-        const tableRows = this.parent.archivedInquiries.map(inquiry => {
+        const totalItems = this.parent.archivedInquiries.length;
+        const totalPages = Math.ceil(totalItems / this.itemsPerPage);
+        const startIndex = (this.archiveCurrentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const currentItems = this.parent.archivedInquiries.slice(startIndex, endIndex);
+
+        const tableRows = currentItems.map(inquiry => {
             const fromName = inquiry.accountInfo ?
                 `${inquiry.accountInfo.firstName || ''} ${inquiry.accountInfo.lastName || ''}`.trim() :
                 'Unknown Client';
@@ -238,14 +326,14 @@ class UIRenderer {
         `;
         }).join('');
 
+        const paginationHTML = this.generatePaginationControls(totalPages, 'archive');
+
         const tableHTML = `
         <div class="inquiries-table-container">
             <div class="table-header">
                 <div class="table-stats">
-                    <span class="total-count">${this.parent.archivedInquiries.length} Archived</span>
-                    <span class="status-breakdown">
-                        ${this.getStatusBreakdown()}
-                    </span>
+                    <span class="total-count">${totalItems} Archived</span>
+                    <span class="page-info">Page ${this.archiveCurrentPage} of ${totalPages}</span>
                 </div>
                 <div class="bulk-actions" style="display: none;">
                     <span class="selected-count">0 selected</span>
@@ -270,11 +358,13 @@ class UIRenderer {
                     </tbody>
                 </table>
             </div>
+            ${paginationHTML}
         </div>
     `;
 
         $('#inquiryContent').html(tableHTML);
         this.setupArchiveTableEventListeners();
+        this.setupPaginationEventListeners();
     }
 
     getStatusBreakdown() {
@@ -379,7 +469,15 @@ class UIRenderer {
     }
 
     displayInquiriesTable() {
-        const tableRows = this.parent.inquiries.map(inquiry => {
+
+
+        const totalItems = this.parent.inquiries.length;
+        const totalPages = Math.ceil(totalItems / this.itemsPerPage);
+        const startIndex = (this.inquiriesCurrentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const currentItems = this.parent.inquiries.slice(startIndex, endIndex);
+
+        const tableRows = currentItems.map(inquiry => {
             // Column 1: From (firstName + lastName)
             const fromName = inquiry.accountInfo ?
                 `${inquiry.accountInfo.firstName || ''} ${inquiry.accountInfo.lastName || ''}`.trim() :
@@ -441,6 +539,8 @@ class UIRenderer {
             `;
         }).join('');
 
+        const paginationHTML = this.generatePaginationControls(totalPages, 'inquiries');
+
         const tableHTML = `
             <div class="inquiries-table-container">
                 <div class="table-header">
@@ -464,11 +564,13 @@ class UIRenderer {
                         </tbody>
                     </table>
                 </div>
+                ${paginationHTML}
             </div>
         `;
 
         $('#inquiryContent').html(tableHTML);
         this.setupTableEventListeners();
+        this.setupPaginationEventListeners();
     }
 
     setupTableEventListeners() {
