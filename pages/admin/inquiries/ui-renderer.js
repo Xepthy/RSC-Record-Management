@@ -186,6 +186,7 @@ class UIRenderer {
                             <th class="plan-header">Plan Name</th>
                             <th class="services-header">Services</th>
                             <th class="schedule-header">Schedule</th>
+                            <th class="team-header">Team</th>
                             <th class="quotation-header">Quotation</th>
                             <th class="payment-header">Downpayment (40%)</th>
                             <th class="payment-header">Upon Delivery (60%)</th>
