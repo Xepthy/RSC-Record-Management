@@ -858,6 +858,7 @@ class InquiryManager {
                         totalAmount: parseFloat($('#totalAmountInput').val().replace(/[^\d.]/g, '')),
                         is40: $('#downPaymentCheck').is(':checked'),
                         is60: $('#remainingCheck').is(':checked'),
+                        isSchedDone: false,
                         schedule: this.formatDateForStorage($('#scheduleInput').val()), // SURVEY TASK INFORMATION
                         selectedTeam: $('#teamSelect').val(), // SURVEY TASK INFORMATION
                         pendingDocId: inquiry.pendingDocId, // this is for the user's pending doc | client/{uid}/pending/{pendingDocId}
