@@ -8,14 +8,14 @@
 
 .progress-table thead th,
 .progress-table td {
-  padding: 14px 18px;
   border-bottom: 1px solid var(--medium-gray);
   box-sizing: border-box;
 }
 
-/* Balanced column widths */
+/* === COLUMN SPECIFIC STYLES (these override the default padding) === */
 .progress-table .client-column {
   min-width: 160px;
+  text-align: left;
 }
 
 .progress-table .plan-column {
@@ -28,43 +28,50 @@
 }
 
 .progress-table .services-column {
-  min-width: 180px;   /* was 200–220px */
+  min-width: 180px;
   max-width: 200px;
-  text-align: left;
+  text-align: center;
   word-wrap: break-word;
   white-space: normal;
 }
 
-.progress-table .schedule-column {
-  min-width: 140px;   /* was 120px */
-  max-width: 160px;
+/* REDUCED GAP COLUMNS - Override default padding */
+.progress-table .schedule-column,
+.progress-table th.schedule-header {
+  min-width: 95px;      
+  max-width: 115px;     
   text-align: center;
+  padding: 14px 12px ;  
 }
 
-.progress-table .team-column {
-  min-width: 120px;
+.progress-table .team-column,
+.progress-table th.team-header {
+  min-width: 75px;     
   text-align: center;
+  padding: 14px 12px ;  
 }
 
-
-.progress-table .quotation-column {
-  min-width: 130px;
-  text-align: right;
-  font-weight: bold;
+.progress-table .quotation-column,
+.progress-table th.quotation-header {
+  min-width: 105px;      
+  text-align: center;
+  padding: 14px 12px ;  
 }
 
-.progress-table .payment-column {
-  min-width: 130px;
-  text-align: right;
+.progress-table .payment-column,
+.progress-table th.payment-header {
+  min-width: 125px;
+  text-align: center;
+  padding: 14px 8px;
 }
 
 .progress-table .remarks-column {
-  min-width: 180px;  /* give remarks more breathing space */
+  min-width: 180px;
   max-width: 220px;
   text-align: left;
 }
 
-/* Content tweaks */
+/* === CONTENT STYLING === */
 .client-contact {
   font-size: 12px;
   color: #666;
@@ -82,7 +89,7 @@
   font-family: monospace;
   font-weight: bold;
   color: #000000;
-  text-align: left;
+  text-align: center;
   display: block;
 }
 
@@ -101,43 +108,23 @@
   text-overflow: ellipsis;
 }
 
-/* Ensure table body aligns with headers */
-.progress-table th.client-header,
-.progress-table td.client-column {
+/* === HEADER ALIGNMENT === */
+.progress-table th.client-header {
   text-align: left;
+  padding: 14px 18px; 
 }
 
-.progress-table th.plan-header,
-.progress-table td.plan-column {
+.progress-table th.plan-header {
   text-align: left;
+  padding: 14px 18px; 
 }
 
-.progress-table th.services-header,
-.progress-table td.services-column {
+.progress-table th.services-header {
   text-align: center;
+  padding: 14px 18px;
 }
 
-.progress-table th.schedule-header,
-.progress-table td.schedule-column {
-  text-align: center;
-}
-
-.progress-table th.team-header,
-.progress-table td.team-column {
-  text-align: center;
-}
-
-.progress-table th.quotation-header,
-.progress-table td.quotation-column {
+.progress-table th.remarks-header {
   text-align: left;
-}
-
-.progress-table th.payment-header,
-.progress-table td.payment-column {
-  text-align: left;
-}
-
-.progress-table th.remarks-header,
-.progress-table td.remarks-column {
-  text-align: left;
+  padding: 14px 18px;
 }
