@@ -170,7 +170,7 @@ class UIRenderer {
                 </td>
 
                 <td class="remarks-column">
-                    <div class="remarks-text" title="${tooltipRemarks}">${remarks.length > 15 ? remarks.substring(0, 15) + '...' : remarks}</div>
+                    <div class="remarks-text" title="${tooltipRemarks}">${remarks.length > 20 ? remarks.substring(0, 20) + '...' : remarks}</div>
                 </td>
             </tr>
         `;
