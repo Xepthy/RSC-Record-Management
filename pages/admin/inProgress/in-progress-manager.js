@@ -14,6 +14,10 @@ class InProgressManager {
         this.parent = parentInstance;
     }
 
+    // PS: For the future devs working on this file,
+    // I apologize for the mess. This was rushed to meet a deadline.
+    // I'll refactor this properly when I have time (hopefully soon).
+
     showInProgressDetails(itemId) {
         const item = this.parent.inProgressItems.find(item => item.id === itemId);
         if (!item) return;
@@ -348,14 +352,29 @@ class InProgressManager {
         });
 
         $('#quotationEdit').on('input', () => {
-            this.updatePaymentCalculations();
+            this.calculateModalPricing();
         });
     }
 
-    updatePaymentCalculations() {
-        const totalAmount = parseFloat($('#quotationEdit').val()) || 0;
-        const downPayment = totalAmount * 0.40;
-        const uponDelivery = totalAmount * 0.60;
+    calculateModalPricing() {
+        let input = $('#quotationEdit').val().replace(/[^\d]/g, ''); // Remove everything except digits
+
+        // Remove leading zeros but keep at least one digit
+        input = input.replace(/^0+/, '') || '0';
+
+        // Simply limit to 9 digits maximum - don't force to 100M
+        if (input.length > 9) {
+            input = input.substring(0, 9);
+        }
+
+        // Format with commas and update input field
+        const formattedInput = this.addCommas(input);
+        $('#quotationEdit').val(formattedInput);
+
+        // Calculate
+        const amount = parseFloat(input) || 0;
+        const downPayment = amount * 0.40;
+        const uponDelivery = amount * 0.60;
 
         // Update the payment text displays
         const is40Checked = $('#is40Edit').is(':checked');
@@ -379,6 +398,9 @@ class InProgressManager {
             .addClass(is60Checked ? 'payment-delivered' : 'payment-unpaid');
     }
 
+    addCommas(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
 
     resetFormValues(item) {
         // Reset all form values to original
