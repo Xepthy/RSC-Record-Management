@@ -234,6 +234,8 @@ class UIRenderer {
                 // Update the notification count
                 this.parent.updateInProgressNotificationCount();
             }
+
+            this.parent.inProgressManager.showInProgressDetails(itemId);
         });
 
         // Hover effects
