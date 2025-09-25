@@ -752,8 +752,10 @@ class InquiryManager {
             'Subdivision Survey',
             'Engineering Services',
             'Topographic Survey',
+            'Consolidaiton Survey',
+            'Parcellary Survey',
             'As-Built Survey',
-            'Tilting Assistance',
+            'Titling Assistance',
             'All'
         ];
 

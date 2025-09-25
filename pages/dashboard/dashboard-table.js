@@ -627,9 +627,11 @@ function renderServiceCheckboxes(selectedServices = []) {
         'Boundary Survey',
         'Subdivision Survey',
         'Topographic Survey',
+        'Consolidation Survey',
         'Engineering Services',
+        'Parcellary Survey',
         'As-Built Survey',
-        'Tilting Assistance',
+        'Titling Assistance',
         'All'
     ];
 

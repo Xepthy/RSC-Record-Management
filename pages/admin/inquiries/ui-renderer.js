@@ -127,6 +127,16 @@ class UIRenderer {
             // Read status
             const readClass = item.read ? 'read' : 'unread';
 
+            const tooltipPlanName = planName.split(' ').reduce((acc, word, index) => {
+                return acc + word + (index % 4 === 3 ? '\n' : ' '); // Break every 4 words
+            }, '').trim();
+
+            const tooltipRemarks = remarks.split(' ').reduce((acc, word, index) => {
+                return acc + word + (index % 4 === 3 ? '\n' : ' '); // Break every 4 words
+            }, '').trim();
+
+
+
             return `
             <tr class="progress-row ${readClass}" data-item-id="${item.id}">
                 <td class="client-column">
@@ -134,10 +144,10 @@ class UIRenderer {
                     ${contact ? `<div class="client-contact">${contact}</div>` : ''}
                 </td>
                 <td class="plan-column">
-                    <div class="plan-name">${planName}</div>
+                    <div class="plan-name" title="${tooltipPlanName}">${planName.length > 15 ? planName.substring(0, 15) + '...' : planName}</div>
                 </td>
                 <td class="services-column">
-                    <div class="services-text" title="${item.selectedServices?.join(', ') || 'None'}">${services}</div>
+                    <div class="services-text" title="${item.selectedServices?.join('\n') || 'None'}">${services}</div>
                 </td>
                 <td class="schedule-column">
                     <div class="schedule-text">${schedule}</div>
@@ -160,7 +170,7 @@ class UIRenderer {
                 </td>
 
                 <td class="remarks-column">
-                    <div class="remarks-text" title="${remarks}">${remarks.length > 30 ? remarks.substring(0, 30) + '...' : remarks}</div>
+                    <div class="remarks-text" title="${tooltipRemarks}">${remarks.length > 15 ? remarks.substring(0, 15) + '...' : remarks}</div>
                 </td>
             </tr>
         `;
