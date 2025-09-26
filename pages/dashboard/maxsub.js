@@ -68,7 +68,7 @@ class MaxSubmissionHandler {
             const now = Date.now();
 
             // If 24h passed, reset counter
-            if (now - lastTime >= 1 * 60 * 1000) {
+            if (now - lastTime >= 24 * 60 * 60 * 1000) {
                 await this.resetCounter(userId);
                 return {
                     canSubmit: true,

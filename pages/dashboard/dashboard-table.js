@@ -597,7 +597,7 @@ function showEmptyState() {
         <tr>
             <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
                 <p>No inquiries found.</p>
-                <p>Click "Submit Form" to create your first inquiry.</p>
+                <p>Click "Submit Inquiry" to create your first inquiry.</p>
             </td>
         </tr>
     `);
