@@ -169,20 +169,24 @@ class InquiriesPage {
         }
 
         // Inquiries navigation click
-        $('#inquiriesNav').on('click', () => {
+        $('#inquiriesNav').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
             this.showInquiriesSection();
         });
 
-        $('#archiveNav').on('click', () => {
+        $('#archiveNav').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
             this.showArchiveSection();
         });
 
-        $('#inProgressNav').on('click', () => {
+        $('#inProgressNav').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
             this.showInProgressSection();
         });
 
         // Logout button click
         $('#logoutBtn').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
             await this.authManager.handleLogout();
         });
     }
@@ -218,16 +222,20 @@ class InquiriesPage {
     }
 
     destroy() {
+        if (this.inquiryManager) {
+            this.inquiryManager.closeInquiryAndReleaseLock();
+        }
+
         if (this.unsubscribe) {
             this.unsubscribe();
             this.unsubscribe = null;
         }
-        if (this.unsubscribeArchive) {  // ADD THIS
+        if (this.unsubscribeArchive) {
             this.unsubscribeArchive();
             this.unsubscribeArchive = null;
         }
 
-        if (this.unsubscribeInProgress) {  // ADD THIS
+        if (this.unsubscribeInProgress) {
             this.unsubscribeInProgress();
             this.unsubscribeInProgress = null;
         }

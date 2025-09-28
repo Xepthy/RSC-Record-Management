@@ -512,6 +512,8 @@ class InProgressManager {
                 planName: item.planName,
                 selectedServices: item.selectedServices,
                 projectFiles: item.projectFiles,
+                isReceive: false,
+                read: false,
                 createdAt: serverTimestamp()
             };
 

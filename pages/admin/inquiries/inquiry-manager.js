@@ -995,6 +995,23 @@ class InquiryManager {
                 console.log('Processed inquiries:', this.parent.inquiries.length);
                 this.parent.updateNotificationCount();
 
+                const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+                snapshot.docs.forEach(async (docSnap) => {
+                    const data = docSnap.data();
+                    if (data.beingEditedBy && data.editingStartedAt) {
+                        const editingStarted = data.editingStartedAt.toDate();
+                        if (editingStarted < fifteenMinutesAgo) {
+                            await updateDoc(doc(db, 'inquiries', docSnap.id), {
+                                beingEditedBy: null,
+                                editingStartedAt: null
+                            });
+                            console.log(`Released stale lock for inquiry ${docSnap.id}`);
+                        }
+                    }
+                });
+
+
+
                 // ONLY update UI if we're currently viewing inquiries (not archive)
                 if (!currentId && $('#inquiriesNav').hasClass('active')) {
                     this.parent.uiRenderer.showInquiriesLoaded();
@@ -1033,9 +1050,42 @@ class InquiryManager {
         }
     }
 
-    showInquiryDetails(inquiryId) {
+    async closeInquiryAndReleaseLock() {
+        if (this.parent.currentInquiryId) {
+            try {
+                await updateDoc(doc(db, 'inquiries', this.parent.currentInquiryId), {
+                    beingEditedBy: null,
+                    editingStartedAt: null
+                });
+            } catch (error) {
+                console.error('Error releasing inquiry lock:', error);
+            }
+        }
+        this.parent.showInquiriesSection();
+    }
+
+
+
+    async showInquiryDetails(inquiryId) {
         const inquiry = this.parent.inquiries.find(inq => inq.id === inquiryId);
         if (!inquiry) return;
+
+        // Check if someone else is editing
+        if (inquiry.beingEditedBy && inquiry.beingEditedBy !== auth.currentUser.email) {
+            this.showToast(`This inquiry is currently being processed by ${inquiry.beingEditedBy}`, 'warning');
+            return; // Block access
+        }
+
+        // Lock for editing
+        try {
+            await updateDoc(doc(db, 'inquiries', inquiryId), {
+                beingEditedBy: auth.currentUser.email,
+                editingStartedAt: serverTimestamp()
+            });
+        } catch (error) {
+            this.showToast('Failed to open inquiry for editing', 'error');
+            return;
+        }
 
         this.parent.currentInquiryId = inquiryId;
 
@@ -1066,7 +1116,7 @@ class InquiryManager {
                         <h3>Inquiry Details</h3>
                         ${statusBadge}
                     </div>
-                    <button class="back-btn" onclick="window.inquiriesPage.showInquiriesSection()">← Back to List</button>
+                    <button class="back-btn" onclick="window.inquiriesPage.inquiryManager.closeInquiryAndReleaseLock()">← Back to List</button>
                 </div>
                 
                 <div class="details-content">
