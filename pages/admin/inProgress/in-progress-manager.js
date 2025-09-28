@@ -79,6 +79,7 @@ class InProgressManager {
         const repClassification = item.clientInfo?.repClassification || 'None';
         const representative = item.clientInfo?.representative || 'None';
 
+        const planName = item?.planName || 'None';
         // Services checkboxes (read-only)
         const servicesHTML = this.buildServicesCheckboxes(item.selectedServices || [], false);
 
@@ -103,6 +104,18 @@ class InProgressManager {
                 </div>
                 <div class="modal-body">
                     <div class="details-grid">
+
+                        <div class="detail-card full-width">
+                            <div class="card-header">
+                                <h4>Plan Name</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="planNameClass" id="planName">
+                                    ${planName}
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Account Information -->
                         <div class="detail-card">
                             <div class="card-header">
@@ -242,7 +255,7 @@ class InProgressManager {
                                 <div class="info-row">
                                     <label class="checkbox-row">
                                         <input type="checkbox" id="scheduleCheckbox" ${item.isScheduleDone ? 'checked' : ''} disabled>
-                                        <span>Schedule: ${this.formatDateForDisplay(item.schedule) || 'Not scheduled'}</span>
+                                        <span>Schedule: ${item.isScheduleDone ? '--' : (this.formatDateForDisplay(item.schedule) || 'Not scheduled')}</span>
                                         <input type="date" id="scheduleEdit" value="" style="display: none; margin-left: 10px;">
                                     </label>
                                 </div>
@@ -323,10 +336,10 @@ class InProgressManager {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <!-- ===== HIDE EDIT BUTTON FOR STAFF ===== -->
                     ${this.parent.isAdmin || this.parent.isSuperAdmin ? `<button class="btn-secondary" id="editBtn">Edit</button>` : ''}
                     <button class="btn-primary" id="saveBtn" style="display: none;">Save</button>
                     <button class="btn-secondary" id="cancelEditBtn" style="display: none;">Cancel</button>
+                    ${this.parent.isAdmin || this.parent.isSuperAdmin ? `<button class="btn-success" id="moveToCompletedBtn">Move to Completed</button>` : ''}
                     <button class="btn-cancel" id="cancelBtn">Close</button>
                 </div>
             </div>
@@ -782,6 +795,9 @@ ${editable ? `<button class="btn-small btn-danger delete-project-btn" data-index
                 is60 = $('#is60Edit').is(':checked');
             }
 
+            const isScheduleDone = $('#scheduleCheckbox').is(':checked');
+            const wasScheduleDone = currentItem.isScheduleDone;
+
             // Collect updated data
             const updates = {
                 totalAmount: totalAmount,
@@ -801,6 +817,10 @@ ${editable ? `<button class="btn-small btn-danger delete-project-btn" data-index
                 documents: currentItem.documents || [],
                 projectFiles: finalProjectFiles
             };
+
+            if (isScheduleDone && !wasScheduleDone) {
+                updates.read = true;
+            }
 
             // Update Firestore
             await updateDoc(doc(db, 'inProgress', item.id), updates);
@@ -875,6 +895,32 @@ ${editable ? `<button class="btn-small btn-danger delete-project-btn" data-index
         return `${year}-${month}-${day}`;
     }
 
+    async checkAndUpdateScheduleStatus() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (const item of this.parent.inProgressItems) {
+            // Skip if schedule is already done or no schedule set
+            if (item.isScheduleDone || !item.schedule) continue;
+
+            const scheduleParts = item.schedule.split('/');
+            if (scheduleParts.length !== 3) continue;
+
+            const [day, month, year] = scheduleParts;
+            const scheduleDate = new Date(year, month - 1, day);
+            scheduleDate.setHours(0, 0, 0, 0);
+
+            // If schedule is today, mark as unread
+            if (scheduleDate <= today && item.read !== false) {
+                try {
+                    await updateDoc(doc(db, 'inProgress', item.id), { read: false });
+                    console.log(`Marked item ${item.id} as unread due to schedule date`);
+                } catch (error) {
+                    console.error('Error updating read status:', error);
+                }
+            }
+        }
+    }
 
     async setupInProgressListener() {
         try {
@@ -899,8 +945,11 @@ ${editable ? `<button class="btn-small btn-danger delete-project-btn" data-index
 
                 console.log('Processed in-progress items:', this.parent.inProgressItems.length);
 
+                this.checkAndUpdateScheduleStatus()
                 // Always update notification count
                 this.parent.updateInProgressNotificationCount();
+
+
 
                 // Only update UI if we're currently viewing in-progress
                 if ($('#inProgressNav').hasClass('active')) {

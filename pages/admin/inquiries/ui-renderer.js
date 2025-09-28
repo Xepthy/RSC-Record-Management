@@ -142,7 +142,8 @@ class UIRenderer {
             const team = item.selectedTeam || 'Not assigned';
 
             // Schedule
-            const schedule = item.schedule || 'Not scheduled';
+            // Schedule - show "--" if schedule is done, otherwise show actual schedule
+            const schedule = item.isScheduleDone ? '--' : (item.schedule || 'Not scheduled');
 
             // Quotation & Payments
             const totalAmount = item.totalAmount || 0;
