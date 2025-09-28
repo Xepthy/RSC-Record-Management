@@ -8,13 +8,18 @@ import {
     doc,
     updateDoc,
     serverTimestamp,
-    storage,  // Add this
-    ref,      // Add this
-    uploadBytes,  // Add this
+    storage,
+    ref,
+    uploadBytes,
     getDownloadURL,
-    getDoc,
+    where,
+    getDocs,
+    setDoc,
+    deleteDoc,
     auth,
-    deleteObject
+    deleteObject,
+    EmailAuthProvider,
+    reauthenticateWithCredential
 } from '../../../firebase-config.js';
 class InProgressManager {
     constructor(parentInstance) {
@@ -336,10 +341,10 @@ class InProgressManager {
                     </div>
                 </div>
                 <div class="modal-footer">
+                ${this.parent.isAdmin || this.parent.isSuperAdmin ? `<button class="btn-success" id="moveToCompletedBtn">Move to Completed</button>` : ''}
                     ${this.parent.isAdmin || this.parent.isSuperAdmin ? `<button class="btn-secondary" id="editBtn">Edit</button>` : ''}
                     <button class="btn-primary" id="saveBtn" style="display: none;">Save</button>
                     <button class="btn-secondary" id="cancelEditBtn" style="display: none;">Cancel</button>
-                    ${this.parent.isAdmin || this.parent.isSuperAdmin ? `<button class="btn-success" id="moveToCompletedBtn">Move to Completed</button>` : ''}
                     <button class="btn-cancel" id="cancelBtn">Close</button>
                 </div>
             </div>
@@ -426,14 +431,175 @@ class InProgressManager {
 
         // Handle array of files
         return projectFiles.map((file, index) => `
-        <div class="project-file-item">
-            <span>📄 ${file.name}</span>
-            <button class="view-link" onclick="window.inProgressManager.handleViewFile('${file.storagePath || ''}', '${file.url || ''}')">View File</button>
-${editable ? `<button class="btn-small btn-danger delete-project-btn" data-index="${index}" type="button"></button>` : ''}
-        </div>
-    `).join('');
+            <div class="project-file-item">
+                <span>📄 ${file.name}</span>
+                <button class="view-link" onclick="window.inProgressManager.handleViewFile('${file.storagePath || ''}', '${file.url || ''}')">View File</button>
+                ${editable ? `<button class="btn-small btn-danger delete-project-btn" data-index="${index}" type="button"></button>` : ''}
+            </div>
+        `).join('');
     }
 
+    async handleMoveToCompleted(item) {
+        const completionDate = $('#completionDate').val();
+        const referenceCode = $('#referenceCode').val().trim();
+        const password = $('#confirmCompletionPassword').val();
+        const errorDiv = $('#completionError');
+
+        // Clear previous errors
+        errorDiv.hide();
+
+        // Validate inputs
+        if (!completionDate) {
+            errorDiv.text('Completion date is required').show();
+            return;
+        }
+        if (!referenceCode) {
+            errorDiv.text('Reference code is required').show();
+            return;
+        }
+        if (!password) {
+            errorDiv.text('Password is required').show();
+            return;
+        }
+
+        // Check business logic conditions
+        if (!item.is40 || !item.is60) {
+            errorDiv.text('Both down payment (40%) and upon delivery (60%) must be completed').show();
+            return;
+        }
+
+        if (!item.projectFiles || (Array.isArray(item.projectFiles) && item.projectFiles.length === 0)) {
+            errorDiv.text('Project files are required before completion').show();
+            return;
+        }
+
+        if (!item.isScheduleDone) {
+            errorDiv.text('Schedule must be marked as done before completion').show();
+            return;
+        }
+
+        try {
+            const completedQuery = query(
+                collection(db, 'completed'),
+                where('referenceCode', '==', referenceCode)
+            );
+            const existingDocs = await getDocs(completedQuery);
+
+            if (!existingDocs.empty) {
+                errorDiv.text('Reference code already exists. Please use a unique reference code.').show();
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking reference code:', error);
+            errorDiv.text('Failed to validate reference code. Please try again.').show();
+            return;
+        }
+
+
+        try {
+            $('#confirmCompletionBtn').prop('disabled', true).text('Verifying...');
+
+            // Verify password
+            const user = auth.currentUser;
+            const credential = EmailAuthProvider.credential(user.email, password);
+            await reauthenticateWithCredential(user, credential);
+
+            // Create completion data
+            const completionData = {
+                completedDate: completionDate,
+                referenceCode: referenceCode,
+                clientInfo: item.clientInfo,
+                planName: item.planName,
+                selectedServices: item.selectedServices,
+                projectFiles: item.projectFiles,
+                createdAt: serverTimestamp()
+            };
+
+            // Add to completed collection
+            await setDoc(doc(collection(db, 'completed')), completionData);
+
+            // Remove from inProgress
+            await deleteDoc(doc(db, 'inProgress', item.id));
+
+            this.parent.inquiryManager.showToast('Successfully moved to completed!', 'success');
+
+            // Close both modals
+            $('#completionModal').remove();
+            $('#inProgressModal').remove();
+
+        } catch (error) {
+            console.error('Error moving to completed:', error);
+
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                errorDiv.text('Incorrect password. Please try again.').show();
+            } else {
+                errorDiv.text('Failed to complete the operation. Please try again.').show();
+            }
+
+            $('#confirmCompletionBtn').prop('disabled', false).text('Confirm');
+        }
+    }
+
+    setupCompletionModalEventListeners(item) {
+        // Close modal
+        $('#completionModalCloseBtn, #cancelCompletionBtn').on('click', () => {
+            $('#completionModal').remove();
+        });
+
+        // Confirm completion
+        $('#confirmCompletionBtn').on('click', () => {
+            this.handleMoveToCompleted(item);
+        });
+
+        // Handle Enter key
+        $('#completionModal input').on('keypress', (e) => {
+            if (e.which === 13) {
+                this.handleMoveToCompleted(item);
+            }
+        });
+    }
+
+    showMoveToCompletedModal(item) {
+        const completionModalHTML = `
+        <div id="completionModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Move to Completed</h3>
+                    <button class="modal-close" id="completionModalCloseBtn">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="completion-form">
+                        <div class="form-group">
+                            <label>Completion Date:</label>
+                            <input type="date" id="completionDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Reference Code:</label>
+                            <input type="text" id="referenceCode" placeholder="Enter reference code" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Password:</label>
+                            <input type="password" id="confirmCompletionPassword" placeholder="Enter your password" required>
+                        </div>
+                        <div id="completionError" class="error-message" style="display: none;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="cancelCompletionBtn">Cancel</button>
+                    <button class="btn-primary" id="confirmCompletionBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+        $('body').append(completionModalHTML);
+
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        $('#completionDate').val(today);
+
+        this.setupCompletionModalEventListeners(item);
+    }
 
 
     setupModalEventListeners(item) {
@@ -462,6 +628,11 @@ ${editable ? `<button class="btn-small btn-danger delete-project-btn" data-index
         $('#saveBtn').on('click', () => {
             this.saveInProgressChanges(item);
         });
+
+        $('#moveToCompletedBtn').on('click', () => {
+            this.showMoveToCompletedModal(item);
+        });
+
 
         $('#quotationEdit').on('input', () => {
             this.calculateModalPricing();
