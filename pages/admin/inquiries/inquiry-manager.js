@@ -100,8 +100,7 @@ class InquiryManager {
             `${inquiry.accountInfo.firstName || ''} ${inquiry.accountInfo.lastName || ''}`.trim() || inquiry.clientName :
             inquiry.clientName || 'Unknown Client';
 
-        const services = inquiry.selectedServices ?
-            inquiry.selectedServices.join(', ') : 'None specified';
+        const servicesHTML = this.buildServicesCheckboxes(inquiry.selectedServices || [], false);
 
         const dateStr = this.formatDate(inquiry.dateSubmitted);
         const archivedStr = this.formatDate(inquiry.archivedAt);
@@ -178,7 +177,9 @@ class InquiryManager {
                             </div>
                             <div class="info-row">
                                 <span class="label">Services:</span>
-                                <span class="value">${services}</span>
+                                <div class="value services-checkboxes">
+                                    ${servicesHTML}
+                                </div>
                             </div>
                             <div class="info-row">
                                 <span class="label">Submitted:</span>
@@ -206,6 +207,7 @@ class InquiryManager {
                         </div>
                     </div>
                     
+                    ${this.parent.isSuperAdmin ? `
                     <div class="detail-card documents-card">
                         <div class="card-header">
                             <h4>Documents (${inquiry.documentCount || 0})</h4>
@@ -215,7 +217,7 @@ class InquiryManager {
                                 ${documentsHTML}
                             </div>
                         </div>
-                    </div>
+                    </div>` : ''}
                 </div>
             </div>
 
@@ -745,7 +747,7 @@ class InquiryManager {
         return selectedServices;
     }
 
-    buildServicesCheckboxes(selectedServices) {
+    buildServicesCheckboxes(selectedServices, editable = true) {
         const allServices = [
             'Relocation Survey',
             'Boundary Survey',
@@ -757,11 +759,15 @@ class InquiryManager {
             'All'
         ];
 
+        const canEdit = editable && this.parent.isSuperAdmin;
+
         return allServices.map(service => {
             const isChecked = selectedServices.includes(service) ? 'checked' : '';
+            const disabled = canEdit ? '' : 'disabled';
+            const readOnlyClass = canEdit ? '' : 'readonly-checkbox';
             return `
-            <label class="service-checkbox">
-                <input type="checkbox" value="${service}" ${isChecked}>
+            <label class="service-checkbox ${readOnlyClass}">
+                <input type="checkbox" value="${service}" ${isChecked} ${disabled}>
                 <span>${service}</span>
             </label>
         `;
@@ -858,7 +864,11 @@ class InquiryManager {
                         totalAmount: parseFloat($('#totalAmountInput').val().replace(/[^\d.]/g, '')),
                         is40: $('#downPaymentCheck').is(':checked'),
                         is60: $('#remainingCheck').is(':checked'),
-                        isSchedDone: false,
+                        isDoneLayout: false,
+                        isEncroachment: false,
+                        isLock: false,
+                        isNeedResearch: false,
+                        isScheduleDone: false,
                         schedule: this.formatDateForStorage($('#scheduleInput').val()), // SURVEY TASK INFORMATION
                         selectedTeam: $('#teamSelect').val(), // SURVEY TASK INFORMATION
                         pendingDocId: inquiry.pendingDocId, // this is for the user's pending doc | client/{uid}/pending/{pendingDocId}
@@ -967,6 +977,7 @@ class InquiryManager {
 
             const inquiriesQuery = query(
                 collection(db, 'inquiries'),
+                orderBy('read', 'asc'),
                 orderBy('dateSubmitted', 'desc')
             );
 
@@ -1147,16 +1158,17 @@ class InquiryManager {
                             </div>
                         </div>
                         
+                        ${this.parent.isSuperAdmin ? `
                         <div class="detail-card documents-card">
                             <div class="card-header">
-                                <h4>Documents (${inquiry.documentCount || 0})</h4>
+                                <h4>Transmittal of Documents (${inquiry.documentCount || 0})</h4>
                             </div>
                             <div class="card-body">
                                 <div class="documents-list">
                                     ${documentsHTML}
                                 </div>
                             </div>
-                        </div>
+                        </div>` : ''}
                     </div>
                 </div>
 
@@ -1165,9 +1177,10 @@ class InquiryManager {
                         <h4>Remarks</h4>
                     </div>
                     <div class="card-body">
+    
+                        <textarea id="remarksInput" placeholder="Enter your remarks here..." rows="4" ${this.parent.isSuperAdmin ? '' : 'readonly'}>${inquiry.remarks || ''}</textarea>
 
-                        <textarea id="remarksInput" placeholder="Enter your remarks here..." rows="4">${inquiry.remarks || ''}</textarea>
-
+                        ${this.parent.isSuperAdmin ? `
                         <select id="statusDropdown">
                             <option value="">Select Status</option>
                             <option value="Approved" ${inquiry.status === 'Approved' ? 'selected' : ''} >Approved</option>
@@ -1223,6 +1236,8 @@ class InquiryManager {
                         </div>
 
                         <button id="applyRemarksBtn" class="apply-btn">Apply</button>
+                        ` : `
+                        `}
                     </div>
                 </div>
 

@@ -58,11 +58,18 @@ class InquiriesPage {
     async initializeAdminPanel() {
         try {
             this.updateUserInfo();
-            this.setupEventListeners();
 
-            // Setup both listeners to show notification counts
+            // Get user role and set permissions
+            this.userRole = await this.authManager.getUserRole(this.currentUser.uid);
+            this.isSuperAdmin = this.userRole === 'super_admin';
+            this.isAdmin = this.userRole === 'admin';
+            this.isStaff = this.userRole === 'staff';
+
+            this.setupEventListeners();
             await this.inquiryManager.setupInquiryListener();
             await this.inProgressManager.setupInProgressListener();
+
+            this.updateInProgressNotificationCount();
 
         } catch (error) {
             console.error('Error initializing admin panel:', error);
@@ -94,6 +101,40 @@ class InquiriesPage {
         }
     }
 
+    updateScheduleNotificationCount() {
+        if (!this.inProgressItems) return;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let urgentCount = 0;
+
+        this.inProgressItems.forEach(item => {
+            if (item.isScheduleDone || !item.schedule) return;
+
+            const scheduleParts = item.schedule.split('/');
+            if (scheduleParts.length !== 3) return;
+
+            const [month, day, year] = scheduleParts;
+            const scheduleDate = new Date(year, month - 1, day);
+            scheduleDate.setHours(0, 0, 0, 0);
+
+            if (scheduleDate <= today) {
+                urgentCount++;
+            }
+        });
+
+        // Only show schedule badge if there are urgent items AND user is viewing in-progress
+        if (urgentCount > 0 && $('#inProgressNav').hasClass('active')) {
+            // You could show a small indicator in the UI or just rely on the color coding
+            console.log(`${urgentCount} urgent schedule items`);
+        }
+    }
+
+
+
+
+
     updateInProgressNotificationCount() {
         const unreadCount = this.inProgressItems.filter(item => !item.read).length;
         const $countElement = $('#inProgressCount');
@@ -122,6 +163,11 @@ class InquiriesPage {
     }
 
     setupEventListeners() {
+
+        if (this.isStaff || this.isAdmin) {
+            $('#archiveNav').hide();
+        }
+
         // Inquiries navigation click
         $('#inquiriesNav').on('click', () => {
             this.showInquiriesSection();

@@ -76,6 +76,9 @@
     background: #f8f9fa;
     padding: 12px 16px;
     border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .card-header h4 {
@@ -198,4 +201,403 @@
 
 .btn-cancel:hover {
     background: #c82333;
+}
+
+/* Modal Footer Button Styling */
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 20px;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+}
+
+.modal-footer .btn-primary,
+.modal-footer .btn-secondary,
+.modal-footer .btn-cancel {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid;
+    min-width: 80px;
+}
+
+.modal-footer .btn-primary {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.modal-footer .btn-primary:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.modal-footer .btn-secondary {
+    background-color: #6b7280;
+    color: white;
+    border-color: #6b7280;
+}
+
+.modal-footer .btn-secondary:hover {
+    background-color: #4b5563;
+    border-color: #4b5563;
+}
+
+.modal-footer .btn-cancel {
+    background-color: #f3f4f6;
+    color: #374151;
+    border-color: #d1d5db;
+}
+
+.modal-footer .btn-cancel:hover {
+    background-color: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+/* Project Files Section Styling */
+.card-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.card-actions .btn-small {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid;
+    min-width: 60px;
+}
+
+/* Add Project File Button */
+#addProjectFileBtn {
+    background-color: #10b981;
+    color: white;
+    border-color: #10b981;
+    position: relative;
+}
+
+
+/* Text Input Styling */
+#quotationEdit,
+#scheduleEdit,
+#teamEdit,
+#remarksEdit {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    background-color: #ffffff;
+}
+
+#quotationEdit:focus,
+#scheduleEdit:focus,
+#teamEdit:focus,
+#remarksEdit:focus {
+    outline: none;
+}
+
+/* Specific styling for date input */
+#scheduleEdit {
+    cursor: pointer;
+}
+
+/* Select dropdown styling */
+#teamEdit {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+    padding-right: 32px;
+}
+
+/* Textarea styling */
+#remarksEdit {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+}
+
+/* Input container styling for better layout */
+.info-row input[type="text"],
+.info-row input[type="date"],
+.info-row select,
+.info-row textarea {
+    margin-left: 8px;
+    flex: 1;
+}
+
+/* Disabled input styling */
+input:disabled,
+select:disabled,
+textarea:disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+/* Error state (optional) */
+.input-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Success state (optional) */
+.input-success {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* Placeholder styling */
+#quotationEdit::placeholder,
+#scheduleEdit::placeholder,
+#teamEdit::placeholder,
+#remarksEdit::placeholder {
+    color: #9ca3af;
+    opacity: 1;
+}
+
+/* Hover effects */
+#quotationEdit:hover,
+#scheduleEdit:hover,
+#teamEdit:hover,
+#remarksEdit:hover {
+    border-color: #9ca3af;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #quotationEdit,
+    #scheduleEdit,
+    #teamEdit,
+    #remarksEdit {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+    
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .info-row input[type="text"],
+    .info-row input[type="date"],
+    .info-row select,
+    .info-row textarea {
+        margin-left: 0;
+        margin-top: 4px;
+        width: 100%;
+    }
+}
+
+#addProjectFileBtn {
+    background-color: #10b981;
+    color: white;
+    border-color: #10b981;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+#addProjectFileBtn:hover {
+    background-color: #059669;
+    border-color: #059669;
+}
+
+#addProjectFileBtn::before {
+    content: '+';
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* Project File Items */
+.project-file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.project-file-item:last-child {
+    margin-bottom: 0;
+}
+
+.project-file-item span {
+    flex: 1;
+    font-size: 14px;
+    color: #374151;
+}
+
+.project-file-item .view-link {
+    background-color: #3b82f6;
+    color: white;
+    border: 1px solid #3b82f6;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.project-file-item .view-link:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+/* Delete Project File Button */
+.delete-project-btn {
+    background-color: #ef4444;
+    color: white;
+    border-color: #ef4444;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    min-width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-project-btn:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+.delete-project-btn::before {
+    content: '×';
+    font-size: 16px;
+    line-height: 1;
+}
+
+/* Document Items (if needed) */
+.document-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.document-item:last-child {
+    margin-bottom: 0;
+}
+
+.document-item a {
+    flex: 1;
+    color: #3b82f6;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.document-item a:hover {
+    text-decoration: underline;
+}
+
+#quotationEdit {
+    font-weight: 500;
+    text-align: right;
+    background: white !important;
+    color: #000 !important;
+    border: 1px solid #d1d5db !important;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+    width: 100%;
+}
+
+#quotationEdit:focus {
+    outline: none !important;
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: #000 !important;
+}
+
+#quotationEdit::placeholder {
+    color: #9ca3af;
+    opacity: 1;
+    text-align: right;
+}
+
+
+.delete-doc-btn {
+    background-color: #ef4444;
+    color: white;
+    border-color: #ef4444;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-doc-btn:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+.delete-doc-btn::before {
+    content: '×';
+    font-size: 16px;
+    line-height: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .modal-footer {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .modal-footer .btn-primary,
+    .modal-footer .btn-secondary,
+    .modal-footer .btn-cancel {
+        min-width: 70px;
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+    
+    .project-file-item {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
 }

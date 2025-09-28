@@ -168,7 +168,7 @@ class AdminLogin {
         this.showSuccess('Login successful! Redirecting...');
 
         setTimeout(() => {
-            window.location.href = '../inquiries/inquiries.html';
+            window.location.href = '../../admin/inquiries/dashboard_admin.html';
         }, 1000);
     }
 

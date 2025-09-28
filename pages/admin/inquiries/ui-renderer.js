@@ -82,6 +82,35 @@ class UIRenderer {
         }
     }
 
+    getTeamColorClass(item) {
+        // If schedule is done, always return green
+        if (item.isScheduleDone) {
+            return 'team-done';
+        }
+
+        // If no schedule set, return default
+        if (!item.schedule) {
+            return '';
+        }
+
+        // Parse schedule date (assuming format is dd/mm/yyyy)
+        const scheduleParts = item.schedule.split('/');
+        if (scheduleParts.length !== 3) return '';
+
+        const scheduleDate = new Date(scheduleParts[2], scheduleParts[1] - 1, scheduleParts[0]);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        scheduleDate.setHours(0, 0, 0, 0);
+
+        if (scheduleDate < today) {
+            return 'team-overdue'; // Gray - deadline passed
+        } else if (scheduleDate.getTime() === today.getTime()) {
+            return 'team-today'; // Red - deadline today
+        } else {
+            return 'team-pending'; // Yellow - not deadline yet
+        }
+    }
+
     showInProgressItems() {
         if (this.parent.inProgressItems.length === 0) {
             $('#inquiryContent').html(`
@@ -154,9 +183,10 @@ class UIRenderer {
                 </td>
 
                 <td class="team-column">
-                <div class="team-text">${team}</div>
+                <div class="team-text ${this.getTeamColorClass(item)}">${team}</div>
                 </td>
 
+                ${this.parent.isSuperAdmin ? `
                 <td class="quotation-column">
                     <div class="quotation-amount">${quotation}</div>
                 </td>
@@ -168,6 +198,13 @@ class UIRenderer {
                 <td class="payment-column ${item.is60 ? 'payment-delivered' : 'payment-unpaid'}">
                     <div class="payment-amount">${uponDelivery}</div>
                 </td>
+                ` : `
+                <td class="payment-status-column">
+                    <div class="payment-status ${item.is60 ? 'fully-paid' : (item.is40 ? 'partially-paid' : 'unpaid')}">
+                        ${item.is60 ? 'Fully Paid' : (item.is40 ? 'Partially' : 'Unpaid')}
+                    </div>
+                </td>
+                `}
 
                 <td class="remarks-column">
                     <div class="remarks-text" title="${tooltipRemarks}">${remarks.length > 20 ? remarks.substring(0, 20) + '...' : remarks}</div>
@@ -197,9 +234,14 @@ class UIRenderer {
                             <th class="services-header">Services</th>
                             <th class="schedule-header">Schedule</th>
                             <th class="team-header">Team</th>
+
+                            ${this.parent.isSuperAdmin ? `
                             <th class="quotation-header">Quotation</th>
                             <th class="payment-header">Downpayment (40%)</th>
                             <th class="payment-header">Upon Delivery (60%)</th>
+                            ` : `
+                            <th class="payment-status-header">Payment Status</th>`}
+
                             <th class="remarks-header">Remarks</th>
                         </tr>
                     </thead>

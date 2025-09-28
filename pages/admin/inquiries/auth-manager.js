@@ -12,6 +12,19 @@ class AuthManager {
         this.parent = parentInstance;
     }
 
+    async getUserRole(uid) {
+        try {
+            const userDoc = await getDoc(doc(db, 'accounts', uid));
+            if (userDoc.exists()) {
+                return userDoc.data().role || 'staff'; // default to staff if no role
+            }
+            return 'staff';
+        } catch (error) {
+            console.error('Error getting user role:', error);
+            return 'staff'; // default to staff on error
+        }
+    }
+
     setupAuthListener() {
         console.log('Setting up auth listener...');
         onAuthStateChanged(auth, async (user) => {
@@ -29,23 +42,20 @@ class AuthManager {
 
     async handleUserAuthenticated(user) {
         try {
-            // Check if user is admin
-            const isAdmin = await this.checkAdminStatus(user.uid);
+            // Get user role instead of just checking admin
+            const userRole = await this.getUserRole(user.uid);
 
-            // Debugging: confirm Firestore role
-            console.log("Admin check UID:", user.uid);
-            const snap = await getDoc(doc(db, "accounts", user.uid));
-            console.log("Doc exists?", snap.exists(), "Role:", snap.data()?.role);
-
-            if (isAdmin) {
-                this.parent.isAdmin = true;
+            if (['super_admin', 'admin', 'staff'].includes(userRole)) {
+                this.parent.isAdmin = (userRole === 'admin');
+                this.parent.isSuperAdmin = (userRole === 'super_admin');
+                this.parent.isStaff = (userRole === 'staff');
                 await this.parent.initializeAdminPanel();
             } else {
                 this.parent.uiRenderer.showAccessDenied();
             }
         } catch (error) {
             console.error('Error handling authenticated user:', error);
-            this.parent.uiRenderer.showError('Failed to verify admin permissions');
+            this.parent.uiRenderer.showError('Failed to verify permissions');
         }
     }
 
