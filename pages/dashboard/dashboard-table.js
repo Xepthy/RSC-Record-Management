@@ -135,7 +135,7 @@ function createTableRow(inquiry) {
     const statusClass = inquiry.status.toLowerCase();
 
     const buttons = inquiry.status === 'Update Documents' ?
-        `<button class="edit-btn" data-inquiry-id="${inquiry.id}">Edit</button>
+        `<button class="edit-btn" data-inquiry-id="${inquiry.id}">Update</button>
             <button class="view-btn" data-inquiry-id="${inquiry.id}">View</button>` :
         `<button class="view-btn" data-inquiry-id="${inquiry.id}">View</button>`;
 
@@ -399,15 +399,37 @@ function initEditHandlers(inquiry, isAdmin = false) {
     // Handle newly selected files
     $('#editDocUpload').change((e) => {
         const files = Array.from(e.target.files);
-        const totalCount = (inquiry.documents?.length || 0) - removedIndices.length + newFiles.length + files.length;
-
-        if (totalCount > 3) return alert('Max 3 documents');
+        
+        // FIXED: For edit mode, only check new files count (reset to 3 max for new uploads)
+        const newFilesCount = newFiles.length + files.length;
+        
+        if (newFilesCount > 3) {
+            alert('Maximum 3 new documents allowed for update');
+            return;
+        }
 
         files.forEach(file => {
-            if (file.type !== 'application/pdf') return alert(`${file.name} not PDF`);
-            if (file.size > 5242880) return alert(`${file.name} exceeds 5MB`);
+            if (file.type !== 'application/pdf') {
+                alert(`${file.name} is not a PDF file`);
+                return;
+            }
+            if (file.size > 5242880) {
+                alert(`${file.name} exceeds 5MB limit`);
+                return;
+            }
 
-            newFiles.push({ id: Date.now() + Math.random(), file, name: file.name, size: file.size });
+            // Check for duplicate names in new files
+            if (newFiles.find(f => f.name === file.name)) {
+                alert(`${file.name} is already selected`);
+                return;
+            }
+
+            newFiles.push({ 
+                id: Date.now() + Math.random(), 
+                file, 
+                name: file.name, 
+                size: file.size 
+            });
         });
 
         updateNewDocsList();
@@ -432,29 +454,33 @@ function initEditHandlers(inquiry, isAdmin = false) {
     });
 
     function updateNewDocsList() {
-        $('#newDocsList').html(newFiles.map(f =>
-            `<div class="new-document">
-                <span class="doc-name">${f.name}</span>
-                <span class="doc-size">(${(f.size / 1048576).toFixed(2)}MB)</span>
-                <button type="button" class="remove-new-doc" data-file-id="${f.id}">×</button>
-            </div>`).join('')
-        );
+        const listHtml = newFiles.length === 0 
+            ? ''
+            : newFiles.map(f =>
+                `<div class="new-document">
+                    <span class="doc-name">${f.name}</span>
+                    <span class="doc-size">(${(f.size / 1048576).toFixed(2)}MB)</span>
+                    <button type="button" class="remove-new-doc" data-file-id="${f.id}">×</button>
+                </div>`
+            ).join('');
+        
+        $('#newDocsList').html(listHtml);
     }
 
     // Save handler with double lock
     $('#saveEdit').click(() => {
         if (!isAdmin) {
-            // 1️⃣ Remove any attempted deletions
+            // Remove any attempted deletions for non-admin users
             removedIndices = [];
-
-            // 2️⃣ Remove any fake "remove-existing-doc" buttons hackers might have injected
             $('#existingDocuments .remove-existing-doc').remove();
         }
 
         if (newFiles.length === 0 && removedIndices.length === 0) {
-            showToast('warning', 'No documents', 'Need new documents to save');
+            alert('No changes made. Please add new documents to save.');
             return;
         }
+
+        // No additional validation needed - users can upload up to 3 new docs
 
         saveChanges(inquiry, newFiles, removedIndices);
     });
@@ -463,34 +489,79 @@ function initEditHandlers(inquiry, isAdmin = false) {
         $('#editInquiryModal').remove();
         $('body').removeClass('modal-open');
     });
+
+    // Initialize the display
+    updateNewDocsList();
 }
 
 async function saveChanges(inquiry, newFiles, removedIndices) {
+
+    function normalizeFileName(name) {
+        return name.replace(/\(\d+\)/, ''); // "food(1).pdf" -> "food.pdf"
+    }
+
     try {
         $('#saveEdit').prop('disabled', true).text('Saving...');
 
         let docs = [...(inquiry.documents || [])];
 
-        // Remove docs in reverse order
-        removedIndices.sort((a, b) => b - a).forEach(i => docs.splice(i, 1));
+        // STEP 1: Handle deletions
+        for (const i of removedIndices.sort((a, b) => b - a)) {
+            const removedDoc = docs[i];
+            if (removedDoc && removedDoc.url) {
+                try {
+                    const oldPath = getStoragePathFromUrl(removedDoc.url);
+                    await deleteObject(ref(storage, oldPath));
+                    console.log(`Deleted from storage: ${removedDoc.name}`);
+                } catch (err) {
+                    console.warn(`Failed to delete ${removedDoc?.name} from storage:`, err);
+                }
+            }
+            docs.splice(i, 1);
+        }
 
-        // Upload new files
+        // STEP 2: Handle new uploads (replace if same *base* name)
         for (const file of newFiles) {
+            const baseName = normalizeFileName(file.name);
+
+            const existingIndex = docs.findIndex(d => normalizeFileName(d.name) === baseName);
+            if (existingIndex !== -1) {
+                const oldDoc = docs[existingIndex];
+                if (oldDoc && oldDoc.url) {
+                    try {
+                        const oldPath = getStoragePathFromUrl(oldDoc.url);
+                        await deleteObject(ref(storage, oldPath));
+                        console.log(`Replaced old file in storage: ${oldDoc.name}`);
+                    } catch (err) {
+                        console.warn(`Failed to delete old file ${oldDoc?.name}:`, err);
+                    }
+                }
+                docs.splice(existingIndex, 1);
+            }
+
+            // Upload new file
             const fileRef = ref(storage, `documents/${currentUser.uid}/${Date.now()}_${file.name}`);
             await uploadBytes(fileRef, file.file);
             const url = await getDownloadURL(fileRef);
-            docs.push({ name: file.name, size: file.size, url, uploadDate: new Date().toISOString() });
+
+            docs.push({ 
+                name: file.name, 
+                size: file.size, 
+                url, 
+                uploadDate: new Date().toISOString() 
+            });
         }
 
+        // STEP 3: Update Firestore
         const updates = {
             documents: docs,
             documentCount: docs.length,
             lastUpdated: new Date().toISOString(),
             status: 'pending',
-            userId: currentUser.uid, read: false
+            userId: currentUser.uid,
+            read: false
         };
 
-        // Update both collections
         const userDocRef = doc(db, 'client', currentUser.uid);
         const inquiryDocRef = doc(collection(userDocRef, 'pending'), inquiry.id);
         await updateDoc(inquiryDocRef, updates);
@@ -512,8 +583,23 @@ async function saveChanges(inquiry, newFiles, removedIndices) {
     }
 }
 
+
+// Helper: extract path from Firebase Storage URL
+function getStoragePathFromUrl(url) {
+    try {
+        const urlObj = new URL(url);
+        const path = urlObj.pathname.split('/o/')[1];
+        return decodeURIComponent(path.split('?')[0]);
+    } catch {
+        const match = url.match(/\/o\/(.+?)\?/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+}
+
+
+
 // Document viewer function
-function showDocumentViewer(docUrl, docName, options = {}) {
+function showDocumentViewer(docUrl, options = {}) {
     const defaults = {
         width: 800,
         height: 600,
@@ -736,5 +822,5 @@ window.dashboardTable = {
     refresh: refreshTable,
     destroy: destroyDashboardTable
 };
-
-export { refreshTable };
+window.viewInquiry = viewInquiry;
+export { refreshTable,  };

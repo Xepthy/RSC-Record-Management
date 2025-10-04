@@ -7,7 +7,9 @@ import {
     signOut,
     onAuthStateChanged,
     EmailAuthProvider,
-    reauthenticateWithCredential
+    reauthenticateWithCredential,
+    sendPasswordResetEmail,
+    updatePassword
 
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
@@ -27,6 +29,7 @@ import {
     where,
     writeBatch,
     deleteDoc,
+    arrayUnion
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
 
@@ -82,5 +85,8 @@ export {
     EmailAuthProvider,
     reauthenticateWithCredential,
     deleteDoc,
+    sendPasswordResetEmail,
+    updatePassword,
+    arrayUnion
 
 };

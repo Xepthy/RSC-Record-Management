@@ -22,6 +22,33 @@ input[type="tel"]::-webkit-outer-spin-button {
   margin: 0;
 }
 
+/* Password container styling */
+.password-container {
+  position: relative;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.password-container input {
+  margin-bottom: 0;
+  padding-right: 45px;
+}
+
+.password-container i {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #666;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.password-container i:hover {
+  color: #3498db;
+}
+
 .code-inputs {
   display: flex;
   justify-content: center;
@@ -48,6 +75,25 @@ input[type="tel"]::-webkit-outer-spin-button {
   }
 }
 
+@media (max-width: 480px) {
+  input, select {
+    padding: 10px;
+  }
+  
+  .password-container input {
+    padding-right: 40px;
+  }
+  
+  .password-container i {
+    right: 10px;
+    font-size: 14px;
+  }
+  
+  .code-inputs input {
+    height: 40px;
+    font-size: 14px;
+  }
+}
 
 .select-label-container {
   display: flex;

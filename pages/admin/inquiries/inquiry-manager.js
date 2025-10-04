@@ -14,7 +14,8 @@ import {
     serverTimestamp,
     auth,
     EmailAuthProvider,
-    reauthenticateWithCredential
+    reauthenticateWithCredential,
+    arrayUnion
 } from '../../../firebase-config.js';
 
 // Note: ung recent service sa client side wala pa yun pero dagdagin yun sa HULI fucntions dito
@@ -752,7 +753,7 @@ class InquiryManager {
             'Subdivision Survey',
             'Engineering Services',
             'Topographic Survey',
-            'Consolidaiton Survey',
+            'Consolidation Survey',
             'Parcellary Survey',
             'As-Built Survey',
             'Titling Assistance',
@@ -802,12 +803,12 @@ class InquiryManager {
         // Quick validation checks
         if (!$('#remarksInput').val().trim()) return this.showToast('Remarks is required', 'warning');
         if (!$('#statusDropdown').val()) return this.showToast('Please select a status before applying', 'warning');
+
         if ($('#statusDropdown').val() === 'Approved') {
             if (!$('#totalAmountInput').val().trim()) {
                 return this.showToast('Total amount is required when status is Approved', 'warning');
             }
 
-            // Check if at least one checkbox is selected when amount is entered
             const hasDownPayment = $('#downPaymentCheck').is(':checked');
             const hasRemaining = $('#remainingCheck').is(':checked');
 
@@ -830,7 +831,6 @@ class InquiryManager {
 
         if ($('#applyRemarksBtn').prop('disabled')) return;
 
-        // Show password confirmation modal
         const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
 
         $('#applyRemarksBtn').prop('disabled', true).text('Confirming...');
@@ -840,30 +840,32 @@ class InquiryManager {
             try {
                 $('#applyRemarksBtn').text('Applying...');
 
-                // Get fresh data when password is confirmed
                 const remarks = $('#remarksInput').val().trim();
                 const status = $('#statusDropdown').val();
                 const selectedServices = this.getSelectedServices();
 
+                // Update inquiry + pending
                 await this.batchUpdateInquiryAndPending({
                     remarks: remarks,
                     status: status,
                     selectedServices: selectedServices,
                     lastUpdated: serverTimestamp(),
                     processed: true,
-
                 });
 
+                // 🔔 Send notification to client
+                await this.sendNotifClient(inquiry, status);
 
+                // If Approved
                 if (status === 'Approved') {
                     const progressData = {
                         totalAmount: parseFloat($('#totalAmountInput').val().replace(/[^\d.]/g, '')),
                         is40: $('#downPaymentCheck').is(':checked'),
                         is60: $('#remainingCheck').is(':checked'),
                         isSchedDone: false,
-                        schedule: this.formatDateForStorage($('#scheduleInput').val()), // SURVEY TASK INFORMATION
-                        selectedTeam: $('#teamSelect').val(), // SURVEY TASK INFORMATION
-                        pendingDocId: inquiry.pendingDocId, // this is for the user's pending doc | client/{uid}/pending/{pendingDocId}
+                        schedule: this.formatDateForStorage($('#scheduleInput').val()),
+                        selectedTeam: $('#teamSelect').val(),
+                        pendingDocId: inquiry.pendingDocId,
                         accountInfo: inquiry.accountInfo,
                         clientInfo: {
                             clientName: inquiry.clientName,
@@ -876,12 +878,11 @@ class InquiryManager {
                         createdAt: serverTimestamp(),
                         remarks: null,
                         adminNotes: null,
-                        documents: inquiry.documents || [], // TRANSMITTAL OF DOCUMENTS
+                        documents: inquiry.documents || [],
                         selectedServices: selectedServices,
-                        projectFiles: null, // PLOTTING OF LOT AND RESEARCH
-                        planName: $('#planNameInput').val().trim(), // PLAN NAME FOR TABLE,
+                        projectFiles: null,
+                        planName: $('#planNameInput').val().trim(),
                         read: false,
-
                     };
 
                     const progressRef = doc(collection(db, 'inProgress'));
@@ -904,7 +905,6 @@ class InquiryManager {
                         this.parent.showInquiriesSection();
                     }, 1500);
 
-
                     inquiry.processed = true;
                     inquiry.status = status;
                     inquiry.remarks = remarks;
@@ -912,6 +912,7 @@ class InquiryManager {
                     $('#applyRemarksBtn').prop('disabled', true).text('Already Processed');
                 }
 
+                // If Rejected
                 if (status === 'Rejected') {
                     const archiveData = {
                         ...inquiry,
@@ -930,7 +931,6 @@ class InquiryManager {
                         this.parent.showInquiriesSection();
                     }, 1500);
 
-
                     inquiry.processed = true;
                     inquiry.status = status;
                     inquiry.remarks = remarks;
@@ -946,7 +946,6 @@ class InquiryManager {
                 this.clearSavedProgress();
 
                 console.log('Updates completed successfully');
-
                 this.showToast('Applied successfully!', 'success');
 
             } catch (error) {
@@ -961,6 +960,42 @@ class InquiryManager {
             }
         });
     }
+
+    async sendNotifClient(inquiry, status) {
+        try {
+            if (!inquiry.accountInfo?.uid || !inquiry.pendingDocId) {
+                console.warn('Missing uid or pendingDocId for notification');
+                return;
+            }
+
+            const notifRef = doc(
+                db,
+                'client',
+                inquiry.accountInfo.uid,
+                'pending',
+                inquiry.pendingDocId
+            );
+
+            const notification = {
+                inquiryId: inquiry.id,   // Firestore docId of the inquiry
+                requestTitle: inquiry.requestDescription || 'Inquiry', // fallback if missing
+                status: status,
+                message: `Your request "${inquiry.requestDescription}" is now ${status}`,
+                timestamp: new Date(),
+                read: false
+            };
+
+            await updateDoc(notifRef, {
+                notifications: arrayUnion(notification)
+            });
+
+            console.log('Notification sent to client:', notification);
+
+        } catch (error) {
+            console.error('Error sending notification:', error);
+        }
+    }
+
 
     async setupInquiryListener() {
         try {
@@ -1283,16 +1318,98 @@ class InquiryManager {
     }
 
     buildDocumentsHTML(documents) {
-        if (!documents || documents.length === 0) {
-            return '<p>No documents attached</p>';
-        }
+        if (!documents?.length) return '<p>No documents attached</p>';
 
-        const documentsList = documents.map(doc =>
-            `<li><a href="${doc.url}" target="_blank">${doc.name}</a></li>`
-        ).join('');
+        const list = documents.map(doc => `
+        <li>
+            <a href="#" class="doc-link" data-url="${doc.url}" data-name="${doc.name}">
+                ${doc.name}
+            </a>
+        </li>
+    `).join('');
 
-        return `<ul>${documentsList}</ul>`;
+        setTimeout(() => {
+            $('.doc-link').off('click').on('click', e => {
+                e.preventDefault();
+                const { url, name } = e.currentTarget.dataset;
+                showDocumentViewer(url, name, { autoSize: true });
+            });
+        }, 0);
+
+        return `<ul>${list}</ul>`;
     }
 }
+
+function showDocumentViewer(docUrl, docName, options = {}) {
+    const defaults = {
+        autoSize: true,
+        downloadUrl: null // Custom download URL, if null uses docUrl
+    };
+    const settings = { ...defaults, ...options };
+
+    // Use custom download URL if provided, otherwise use the original docUrl
+    const downloadLink = settings.downloadUrl || docUrl;
+
+    // Clean URL for iframe display (remove toolbar/navpanes)
+    const cleanUrl = docUrl.includes('#') ? docUrl : docUrl + '#toolbar=0&navpanes=0';
+
+    const documentModalHtml = `
+    <div class="modal document-modal" id="documentViewerModal">
+      <div class="modal-content document-viewer-content ${settings.autoSize ? 'auto-size' : ''}">
+        <div class="modal-header" style="display:flex; align-items:center; justify-content:space-between; background:#f5f5f5; padding:10px 15px; border-bottom:1px solid #ddd;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="close-btn document-close" title="Close" style="cursor:pointer; font-size:20px;">&times;</span>
+            <h3 style="margin:0; font-size:16px;">${docName}</h3>
+          </div>
+        </div>
+        <div class="document-content" style="width:100%; height:calc(100vh - 60px);">
+          <div id="documentLoader" class="document-loader" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
+            <div class="loader-spinner"></div>
+            <p>Loading document...</p>
+          </div>
+          <iframe id="documentIframe" src="${cleanUrl}" 
+                  style="display:none; width:100%; height:100%; border:none;"></iframe>
+          <div id="documentError" class="document-error" style="display:none; text-align:center; padding:20px;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Unable to display PDF. <a href="${downloadLink}" download="${docName}" target="_blank">Open in new tab</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    `;
+
+    // Remove any existing modal and append new one
+    $('#documentViewerModal').remove();
+    $('body').append(documentModalHtml);
+    $('#documentViewerModal').show();
+    $('body').addClass('modal-open');
+
+    const iframe = $('#documentIframe');
+    const loader = $('#documentLoader');
+
+    // Simulate loading
+    setTimeout(() => {
+        loader.hide();
+        iframe.show();
+    }, 1500);
+
+    // Close modal handlers
+    $('.document-close').on('click', function () {
+        $('#documentViewerModal').hide().remove();
+        $('body').removeClass('modal-open');
+    });
+
+    $('#documentViewerModal').on('click', function (e) {
+        if (e.target === this) {
+            $(this).hide().remove();
+            $('body').removeClass('modal-open');
+        }
+    });
+}
+
+
+
+
+
 
 export default InquiryManager;

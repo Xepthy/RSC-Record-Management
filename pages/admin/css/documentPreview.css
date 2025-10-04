@@ -1,0 +1,111 @@
+/* Document Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.document-modal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    border: 1px solid #888;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+/* Main viewer content */
+.document-viewer-content {
+    width: 80vw;           /* less wide */
+    max-width: 900px;      /* smaller max width */
+    height: 85vh;          /* slightly shorter */
+    max-height: 750px;
+    display: flex;
+    flex-direction: column;
+}
+
+.document-viewer-content.auto-size {
+    width: 90vw;           /* allow bigger when needed */
+    height: 90vh;
+}
+
+/* Header stays at top, iframe fills rest */
+.document-viewer-content .modal-header {
+    flex-shrink: 0;
+}
+
+.document-viewer-content .document-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Loading Spinner */
+.loader-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Close button hover effect */
+.document-close:hover {
+    color: #f44336;
+    font-weight: bold;
+}
+
+/* Download button hover effect */
+.download-btn:hover {
+    background-color: #0056b3 !important;
+    text-decoration: none !important;
+}
+
+/* Document list styling */
+.documents-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.documents-list li {
+    margin-bottom: 8px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+}
+
+.documents-list .doc-link {
+    text-decoration: none;
+    color: #007bff;
+    font-weight: 500;
+}
+
+.documents-list .doc-link:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}

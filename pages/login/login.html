@@ -13,10 +13,13 @@
     <link rel="stylesheet" href="/pages/login/css/LoginInput.css">
     <link rel="stylesheet" href="/pages/login/css/logo.css">
     <link rel="stylesheet" href="/pages/login/css/sign-up.css">
-    <link rel="stylesheet" href="/page  s/login/css/typography.css">
+    <link rel="stylesheet" href="/pages/login/css/typography.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script type="module" src="/pages/login/login.js" defer></script>
-
+    <script type="module" src="/pages/login/authForgot.js" defer></script>
 </head>
 
 <body>
@@ -26,19 +29,47 @@
         <h2>User Login</h2>
 
         <form id="loginForm">
+            <!-- Email -->
             <input type="email" id="loginEmail" placeholder="Email" required />
-            <input type="password" id="loginPassword" placeholder="Password" required />
-            
 
-            <div class="forgot-password">
-                <a href="forgot-password.html" class="link-blue">Forgot Password?</a>
+            <div class="password-container">
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
             </div>
 
+
+            <!-- Forgot password -->
+            <div class="forgot-password">
+                <a href="#" id="reset" class="link-blue">Forgot Password?</a>
+            </div>
+
+            <!-- Login button -->
             <button id="loginBtn">Login</button>
 
+            <!-- Sign up link -->
             <div class="signup-message">
                 Don't have an account?
                 <a href="/pages/register/register.html" class="link-blue">Sign Up</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+    $(document).ready(function () {
+        $("#togglePassword").on("click", function () {
+            const $password = $("#loginPassword");
+            const isHidden = $password.attr("type") === "password";
+
+            // Toggle type
+            $password.attr("type", isHidden ? "text" : "password");
+
+            // Switch icon
+            $(this)
+                .toggleClass("fa-eye", isHidden)
+                .toggleClass("fa-eye-slash", !isHidden);
+        });
+    });
+</script>
 
 </body>
 

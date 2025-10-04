@@ -3,20 +3,39 @@ import {
     signOut
 } from '../../firebase-config.js';
 
-$('#logoutBtn').on('click', async function () {
-    try {
-        $(this).prop('disabled', true).text('Signing out...');
+$(document).ready(function() {
+    // Toggle dropdown on profile click
+    $('.profile-dropdown .profile').on('click', function(e) {
+        e.stopPropagation();
+        $('#profileDropdown').toggleClass('show');
+    });
 
-        await signOut(auth);
+    // Close dropdown when clicking outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.profile-dropdown').length) {
+            $('#profileDropdown').removeClass('show');
+        }
+    });
 
-        window.location.href = "../login/login.html";
+    // Logout handler
+    $('#logoutBtn').on('click', async function() {
+        try {
+            // Close dropdown
+            $('#profileDropdown').removeClass('show');
+            
+            // Show loading state
+            $(this).html('<i class="fas fa-spinner fa-spin"></i> Signing out...').css('pointer-events', 'none');
 
-    } catch (error) {
+            await signOut(auth);
 
-        console.error('Logout error:', error);
-        alert('Failed to sign out. Please try again.');
+            window.location.href = "../login/login.html";
 
-        // Reset button state
-        $(this).prop('disabled', false).text('Logout');
-    }
+        } catch (error) {
+            console.error('Logout error:', error);
+            alert('Failed to sign out. Please try again.');
+
+            // Reset button state
+            $(this).html('<i class="fas fa-sign-out-alt"></i> Logout').css('pointer-events', 'auto');
+        }
+    });
 });

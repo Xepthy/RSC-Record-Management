@@ -124,7 +124,7 @@ $(document).ready(function () {
                 await setupFirstTimeUser(user);
                 sessionStorage.clear();
                 InputUtils.clearSensitiveFields();
-                window.location.href = "/pages/dashboard/dashboard.html";
+                window.location.href = "../dashboard/dashboard.html";
             } else {
                 alert("Email not verified yet. Please check your inbox and click the verification link.");
             }

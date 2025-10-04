@@ -16,9 +16,9 @@
     <link rel="stylesheet" href="/pages/register/css/checkbox.css">
     <link rel="stylesheet" href="/pages/register/css/policy.css">
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-
-
     <script type="module" src="/pages/register/register.js"></script>
 
 </head>
@@ -56,7 +56,11 @@
             </div>
 
             <input type="email" id="email" placeholder="Email"><br>
-            <input type="password" id="password" placeholder="Password"><br>
+
+            <div class="password-container">
+                <input type="password" id="password" placeholder="Enter your password">
+                <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
+            </div>
 
             <div class="checkbox-group">
                 <label>
@@ -89,7 +93,12 @@
 
             <div id="verifySection" style="display: none;">
                 <p>✅ Verification email sent! Check your inbox.</p>
-                <input type="password" id="verifyPassword" placeholder="Re-enter your password"><br>
+
+                <div class="password-container">
+                    <input type="password" id="verifyPassword" placeholder="Re-enter your password">
+                    <i class="fa-solid fa-eye-slash" id="toggleVerifyPassword"></i>
+                </div>
+
                 <button id="continueBtn">I have verified</button>
             </div>
 
@@ -100,6 +109,30 @@
             <div class="link"><a href="/pages/login/login.html">Back to Login</a></div>
         </div>
     </div>
+
+    <script>
+        $(document).ready(function () {
+            // Generic function to handle toggle
+            function setupPasswordToggle(toggleSelector, inputSelector) {
+                $(toggleSelector).on("click", function () {
+                    const $password = $(inputSelector);
+                    const isHidden = $password.attr("type") === "password";
+
+                    // Toggle input type
+                    $password.attr("type", isHidden ? "text" : "password");
+
+                    // Switch icons
+                    $(this)
+                        .toggleClass("fa-eye", isHidden)
+                        .toggleClass("fa-eye-slash", !isHidden);
+                });
+            }
+
+            // Setup both password fields
+            setupPasswordToggle("#togglePassword", "#password");
+            setupPasswordToggle("#toggleVerifyPassword", "#verifyPassword");
+        });
+    </script>
 
 </body>
 
