@@ -298,7 +298,9 @@ class InquiryManager {
 
     toggleApprovedSections() {
         const status = $('#statusDropdown').val();
-        if (status === 'Approved') {
+        const isEditing = !$('#statusDropdown').prop('disabled');
+
+        if (status === 'Approved' && isEditing) {
             $('#planNameSection').show();
             $('#pricingSection').show();
             $('#scheduleTeamSection').show();
@@ -473,6 +475,20 @@ class InquiryManager {
 
         // Check remarks changes
         const remarksChanged = currentRemarks !== this.originalValues.remarks;
+
+        // Check status changes
+        const originalStatus = this.originalValues.status || '';
+        const statusChanged = currentStatus && currentStatus !== originalStatus;
+
+        // Update Status label
+        const statusLabel = $('label:contains("Status:")');
+        if (statusChanged) {
+            if (!statusLabel.html().includes('*')) {
+                statusLabel.html('Status: <span style="color: red;">*</span>');
+            }
+        } else {
+            statusLabel.html('Status:');
+        }
 
         // Update remarks header
         const remarksHeader = $('.remarks-section .card-header h4');
@@ -1070,28 +1086,13 @@ class InquiryManager {
         const inquiry = this.parent.inquiries.find(inq => inq.id === inquiryId);
         if (!inquiry) return;
 
-        // Check if someone else is editing
-        if (inquiry.beingEditedBy && inquiry.beingEditedBy !== auth.currentUser.email) {
-            this.showToast(`This inquiry is currently being processed by ${inquiry.beingEditedBy}`, 'warning');
-            return; // Block access
-        }
-
-        // Lock for editing
-        try {
-            await updateDoc(doc(db, 'inquiries', inquiryId), {
-                beingEditedBy: auth.currentUser.email,
-                editingStartedAt: serverTimestamp()
-            });
-        } catch (error) {
-            this.showToast('Failed to open inquiry for editing', 'error');
-            return;
-        }
 
         this.parent.currentInquiryId = inquiryId;
 
         this.originalValues = {
             remarks: inquiry.remarks || '',
             selectedServices: [...(inquiry.selectedServices || [])],
+            status: inquiry.status || ''
         };
 
         const clientName = inquiry.accountInfo ?
@@ -1186,7 +1187,7 @@ class InquiryManager {
                                 <div class="info-row">
                                     <span class="label">Services:</span>
                                     <div class="value services-checkboxes">
-                                        ${this.buildServicesCheckboxes(inquiry.selectedServices || [])}
+                                        ${this.buildServicesCheckboxes(inquiry.selectedServices || [], false)}
                                     </div>
                                 </div>
                                 
@@ -1228,10 +1229,11 @@ class InquiryManager {
                     </div>
                     <div class="card-body">
     
-                        <textarea id="remarksInput" placeholder="Enter your remarks here..." rows="4" ${this.parent.isSuperAdmin ? '' : 'readonly'}>${inquiry.remarks || ''}</textarea>
-
+                    <textarea id="remarksInput" placeholder="Enter your remarks here..." rows="4" readonly>${inquiry.remarks || ''}</textarea>
+                            
                         ${this.parent.isSuperAdmin ? `
-                        <select id="statusDropdown">
+                        <label style="display: block; margin-top: 15px; margin-bottom: 5px;">Status:</label>
+                        <select id="statusDropdown" disabled>
                             <option value="">Select Status</option>
                             <option value="Approved" ${inquiry.status === 'Approved' ? 'selected' : ''} >Approved</option>
                             <option value="Rejected" ${inquiry.status === 'Rejected' ? 'selected' : ''} >Rejected</option>
@@ -1285,10 +1287,17 @@ class InquiryManager {
                             </div>
                         </div>
 
-                        <button id="applyRemarksBtn" class="apply-btn">Apply</button>
+                        <button id="cancelEditBtn" class="btn-secondary" style="display: none;">Cancel</button>
+                        <button id="applyRemarksBtn" class="apply-btn" style="display: none";>Apply</button>
                         ` : `
                         `}
                     </div>
+
+                    ${this.parent.isSuperAdmin ? `
+                        <div style="text-align: left;">
+                            <button id="editInquiryBtn" class="btn-secondary" style="margin: 0 16px 16px; padding: 10px 20px;">Edit</button>
+                        </div>
+                        ` : ''}
                 </div>
 
             </div>
@@ -1296,11 +1305,60 @@ class InquiryManager {
 
         // Load any saved progress
         $('#inquiryContent').html(detailsHTML);
+
+        // Edit button handler
+        $('#editInquiryBtn').on('click', async () => {
+            const currentInquiry = this.parent.inquiries.find(inq => inq.id === inquiryId);
+
+            if (currentInquiry.beingEditedBy && currentInquiry.beingEditedBy !== auth.currentUser.email) {
+                this.showToast(`Being processed by ${currentInquiry.beingEditedBy}`, 'warning');
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, 'inquiries', inquiryId), {
+                    beingEditedBy: auth.currentUser.email,
+                    editingStartedAt: serverTimestamp()
+                });
+
+                // Show the entire editing section
+                $('#remarksEditSection').show();
+                $('#remarksInput').prop('readonly', false);
+                $('#statusDropdown').prop('disabled', false);
+                $('.service-checkbox input[type="checkbox"]').prop('disabled', false);
+                $('#applyRemarksBtn, #cancelEditBtn').show();
+                $('#editInquiryBtn').hide();
+                this.toggleApprovedSections();
+            } catch (error) {
+                this.showToast('Failed to lock inquiry', 'error');
+            }
+        });
+
+        // Cancel button handler
+        $('#cancelEditBtn').on('click', async () => {
+            await updateDoc(doc(db, 'inquiries', inquiryId), {
+                beingEditedBy: null,
+                editingStartedAt: null
+            });
+
+            $('#remarksInput').prop('readonly', true);
+            $('#statusDropdown').prop('disabled', true);
+            $('.service-checkbox input[type="checkbox"]').prop('disabled', true);  // Add this line
+            $('#applyRemarksBtn, #cancelEditBtn').hide();
+            $('#editInquiryBtn').show();
+
+            $('#planNameSection').hide();
+            $('#pricingSection').hide();
+            $('#scheduleTeamSection').hide();
+        });
+
         this.loadSavedProgress(inquiryId);
 
         this.loadTeamOptions();
 
-        this.checkForChanges();
+        setTimeout(() => {
+            this.checkForChanges();
+        }, 100);
 
         $('#remarksInput').on('input', () => {
             this.autoSaveProgress();
@@ -1327,8 +1385,11 @@ class InquiryManager {
         this.handleTeamExpansion();
         this.toggleApprovedSections();
 
+
         $('#applyRemarksBtn').on('click', () => this.handleRemarksApply());
     }
+
+
 
 
 
