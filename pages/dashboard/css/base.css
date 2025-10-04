@@ -7,9 +7,9 @@ body {
   background-repeat: no-repeat;
   background-position: center;
   display: flex;
-  flex-direction: column; /* stack navbar + container */
-  min-height: 100vh;
-  overflow-x: hidden; /* prevent horizontal scroll */
+  flex-direction: column; 
+  height: 100vh; 
+  overflow: auto; 
   position: relative;
 }
 
