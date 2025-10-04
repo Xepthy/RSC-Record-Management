@@ -969,6 +969,11 @@ class InquiryManager {
                 this.checkForChanges();
                 this.clearSavedProgress();
 
+                if (this.lockHeartbeat) {
+                    clearInterval(this.lockHeartbeat);
+                    this.lockHeartbeat = null;
+                }
+
                 console.log('Updates completed successfully');
 
                 this.showToast('Applied successfully!', 'success');
@@ -1041,6 +1046,22 @@ class InquiryManager {
                 this.parent.uiRenderer.showError('Failed to load inquiries: ' + error.message);
             });
 
+            setInterval(() => {
+                const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000);
+                this.parent.inquiries.forEach(async (inquiry) => {
+                    if (inquiry.beingEditedBy && inquiry.editingStartedAt) {
+                        const editingStarted = inquiry.editingStartedAt.toDate();
+                        if (editingStarted < twentyMinutesAgo) {
+                            await updateDoc(doc(db, 'inquiries', inquiry.id), {
+                                beingEditedBy: null,
+                                editingStartedAt: null
+                            });
+                            console.log(`Released stale lock for inquiry ${inquiry.id}`);
+                        }
+                    }
+                });
+            }, 2 * 60 * 1000);
+
         } catch (error) {
             console.error('Error setting up inquiry listener:', error);
             this.parent.uiRenderer.showError('Failed to initialize inquiry system: ' + error.message);
@@ -1073,6 +1094,11 @@ class InquiryManager {
                     beingEditedBy: null,
                     editingStartedAt: null
                 });
+
+                if (this.lockHeartbeat) {
+                    clearInterval(this.lockHeartbeat);
+                    this.lockHeartbeat = null;
+                }
             } catch (error) {
                 console.error('Error releasing inquiry lock:', error);
             }
@@ -1321,6 +1347,12 @@ class InquiryManager {
                     editingStartedAt: serverTimestamp()
                 });
 
+                this.lockHeartbeat = setInterval(async () => {
+                    await updateDoc(doc(db, 'inquiries', inquiryId), {
+                        editingStartedAt: serverTimestamp()
+                    });
+                }, 7 * 60 * 1000);
+
                 // Show the entire editing section
                 $('#remarksEditSection').show();
                 $('#remarksInput').prop('readonly', false);
@@ -1340,6 +1372,11 @@ class InquiryManager {
                 beingEditedBy: null,
                 editingStartedAt: null
             });
+
+            if (this.lockHeartbeat) {
+                clearInterval(this.lockHeartbeat);
+                this.lockHeartbeat = null;
+            }
 
             $('#remarksInput').prop('readonly', true);
             $('#statusDropdown').prop('disabled', true);

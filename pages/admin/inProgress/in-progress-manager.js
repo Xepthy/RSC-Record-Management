@@ -609,19 +609,67 @@ class InProgressManager {
         this.currentItemId = item.id;
 
         // Close modal
-        $('#modalCloseBtn, #cancelBtn').on('click', () => {
+        $('#modalCloseBtn, #cancelBtn').on('click', async () => {
+            // Release lock if in edit mode
+            if ($('#saveBtn').is(':visible')) {
+                await updateDoc(doc(db, 'inProgress', this.currentItemId), {
+                    beingEditedBy: null,
+                    editingStartedAt: null
+                });
+
+                if (this.lockHeartbeat) {
+                    clearInterval(this.lockHeartbeat);
+                    this.lockHeartbeat = null;
+                }
+
+            }
             $('#inProgressModal').remove();
         });
 
-        // Edit mode
-        $('#editBtn').on('click', () => {
-            this.toggleEditMode(true);
+        // Edit mode + Lock
+        $('#editBtn').on('click', async () => {
+            const currentItem = this.parent.inProgressItems.find(item => item.id === this.currentItemId);
+
+            // Check if someone else is editing
+            if (currentItem.beingEditedBy && currentItem.beingEditedBy !== auth.currentUser.email) {
+                this.parent.inquiryManager.showToast(`Being processed by ${currentItem.beingEditedBy}`, 'warning');
+                return;
+            }
+
+            try {
+                // Lock the item
+                await updateDoc(doc(db, 'inProgress', this.currentItemId), {
+                    beingEditedBy: auth.currentUser.email,
+                    editingStartedAt: serverTimestamp()
+                });
+
+                this.toggleEditMode(true);
+
+                this.lockHeartbeat = setInterval(async () => {
+                    await updateDoc(doc(db, 'inProgress', this.currentItemId), {
+                        editingStartedAt: serverTimestamp()
+                    });
+                }, 9 * 60 * 1000);
+
+            } catch (error) {
+                this.parent.inquiryManager.showToast('Failed to lock item', 'error');
+            }
         });
 
-        $('#cancelEditBtn').on('click', () => {
-            this.toggleEditMode(false);
-            this.resetFormValues(item); // Reset any changes
+        $('#cancelEditBtn').on('click', async () => {
+            // Release the lock
+            await updateDoc(doc(db, 'inProgress', this.currentItemId), {
+                beingEditedBy: null,
+                editingStartedAt: null
+            });
 
+            if (this.lockHeartbeat) {
+                clearInterval(this.lockHeartbeat);
+                this.lockHeartbeat = null;
+            }
+
+            this.toggleEditMode(false);
+            this.resetFormValues(item);
             this.tempProjectFiles = null;
             this.filesToDelete = null;
         });
@@ -996,12 +1044,21 @@ class InProgressManager {
             }
 
             // Update Firestore
-            await updateDoc(doc(db, 'inProgress', item.id), updates);
+            await updateDoc(doc(db, 'inProgress', item.id), {
+                ...updates,
+                beingEditedBy: null,
+                editingStartedAt: null
+            });
 
             // Clear temporary data
             this.tempProjectFiles = null;
             this.filesToDelete = null;
             this.projectFilesToDelete = false;
+
+            if (this.lockHeartbeat) {
+                clearInterval(this.lockHeartbeat);
+                this.lockHeartbeat = null;
+            }
 
             this.parent.inquiryManager.showToast('Changes saved successfully!', 'success');
             $('#inProgressModal').remove();
@@ -1108,6 +1165,24 @@ class InProgressManager {
             this.parent.unsubscribeInProgress = onSnapshot(inProgressQuery, (snapshot) => {
                 console.log('InProgress snapshot received:', snapshot.size, 'documents');
 
+
+                const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000);
+                snapshot.docs.forEach(async (docSnap) => {
+                    if (docSnap.id === '_init') return;
+
+                    const data = docSnap.data();
+                    if (data.beingEditedBy && data.editingStartedAt) {
+                        const editingStarted = data.editingStartedAt.toDate();
+                        if (editingStarted < twentyMinutesAgo) {
+                            await updateDoc(doc(db, 'inProgress', docSnap.id), {
+                                beingEditedBy: null,
+                                editingStartedAt: null
+                            });
+                            console.log(`Released stale lock for inProgress ${docSnap.id}`);
+                        }
+                    }
+                });
+
                 // Filter out the _init document
                 this.parent.inProgressItems = snapshot.docs
                     .filter(doc => doc.id !== '_init')
@@ -1133,6 +1208,22 @@ class InProgressManager {
                 console.error('Error listening to in-progress:', error);
                 this.parent.uiRenderer.showError('Failed to load in-progress: ' + error.message);
             });
+
+            setInterval(() => {
+                const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000);
+                this.parent.inProgressItems.forEach(async (item) => {
+                    if (item.beingEditedBy && item.editingStartedAt) {
+                        const editingStarted = item.editingStartedAt.toDate();
+                        if (editingStarted < twentyMinutesAgo) {
+                            await updateDoc(doc(db, 'inProgress', item.id), {
+                                beingEditedBy: null,
+                                editingStartedAt: null
+                            });
+                            console.log(`Released stale lock for inProgress ${item.id}`);
+                        }
+                    }
+                });
+            }, 2 * 60 * 1000);
 
         } catch (error) {
             console.error('Error setting up in-progress listener:', error);
