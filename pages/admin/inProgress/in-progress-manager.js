@@ -14,6 +14,7 @@ import {
     getDownloadURL,
     where,
     getDocs,
+    getDoc,
     setDoc,
     deleteDoc,
     auth,
@@ -30,6 +31,30 @@ class InProgressManager {
     // PS: For the future devs working on this file,
     // I apologize for the mess. This was rushed to meet a deadline.
     // I'll refactor this properly when I have time (hopefully soon).
+
+    async loadTeamOptions() {
+        try {
+            const configDoc = await getDoc(doc(db, 'app_config', 'teams'));
+            if (configDoc.exists()) {
+                const teams = configDoc.data().availableTeams || [];
+                return teams;
+            }
+            return [];
+        } catch (error) {
+            console.error('Error loading teams:', error);
+            return [];
+        }
+    }
+
+    populateTeamDropdown(teams, selectedTeam) {
+        const teamSelect = $('#teamEdit');
+        teamSelect.find('option').not(':first').remove(); // Clear except "Select Team"
+
+        teams.forEach(team => {
+            const isSelected = selectedTeam === team ? 'selected' : '';
+            teamSelect.append(`<option value="${team}" ${isSelected}>Team ${team}</option>`);
+        });
+    }
 
     updateInProgressNotificationCount() {
         const unreadCount = this.inProgressItems.filter(item => !item.read).length;
@@ -282,9 +307,6 @@ class InProgressManager {
                                     <span class="value" id="teamValue">Team ${item.selectedTeam || 'Not assigned'}</span>
                                     <select id="teamEdit" style="display: none;">
                                         <option value="">Select Team</option>
-                                        <option value="A" ${item.selectedTeam === 'A' ? 'selected' : ''}>Team A</option>
-                                        <option value="B" ${item.selectedTeam === 'B' ? 'selected' : ''}>Team B</option>
-                                        <option value="C" ${item.selectedTeam === 'C' ? 'selected' : ''}>Team C</option>
                                     </select>
                                 </div>
                             </div>
@@ -352,6 +374,9 @@ class InProgressManager {
     `;
 
         $('body').append(modalHTML);
+        this.loadTeamOptions().then(teams => {
+            this.populateTeamDropdown(teams, item.selectedTeam);
+        });
         this.setupModalEventListeners(item);
     }
 
@@ -872,6 +897,7 @@ class InProgressManager {
             // Show edit elements
             $('#quotationEdit, #scheduleEdit, #teamEdit, #remarksEdit, #saveBtn, #cancelEditBtn').show();
             $('#projectFilesActions').show();
+            $('#moveToCompletedBtn').prop('disabled', true);
 
             const item = this.parent.inProgressItems.find(item => item.id === this.currentItemId);
             const documentsHTML = this.buildDocumentsHTML(item.documents || [], false);
@@ -908,6 +934,7 @@ class InProgressManager {
             // Hide edit elements
             $('#quotationEdit, #scheduleEdit, #teamEdit, #remarksEdit, #saveBtn, #cancelEditBtn').hide();
             $('#documentsActions, #projectFilesActions').hide();
+            $('#moveToCompletedBtn').prop('disabled', false);
 
             const item = this.parent.inProgressItems.find(item => item.id === this.currentItemId);
             const documentsHTML = this.buildDocumentsHTML(item.documents || [], false);
@@ -1061,12 +1088,50 @@ class InProgressManager {
             }
 
             this.parent.inquiryManager.showToast('Changes saved successfully!', 'success');
-            $('#inProgressModal').remove();
+
+            // Exit edit mode and refresh with saved data
+            this.toggleEditMode(false);
+
+            // Get fresh data from the array (updated by real-time listener)
+            const updatedItem = this.parent.inProgressItems.find(i => i.id === item.id);
+            if (updatedItem) {
+                this.refreshModalContent(updatedItem);
+            }
 
         } catch (error) {
             console.error('Error saving changes:', error);
             this.parent.inquiryManager.showToast('Failed to save changes', 'error');
         }
+    }
+
+    refreshModalContent(item) {
+        // Update all read-only display values with fresh data
+        $('#quotationValue').text(this.formatCurrency(item.totalAmount || 0));
+        $('#teamValue').text(`Team ${item.selectedTeam || 'Not assigned'}`);
+        $('#remarksValue').text(item.remarks || 'No remarks');
+
+        // Update schedule display
+        const scheduleText = item.isScheduleDone ? '--' : (this.formatDateForDisplay(item.schedule) || 'Not scheduled');
+        $('#scheduleCheckbox').siblings('span').text(`Schedule: ${scheduleText}`);
+
+        // Update checkboxes to match saved state
+        $('#is40Edit').prop('checked', item.is40 || false);
+        $('#is60Edit').prop('checked', item.is60 || false);
+        $('#scheduleCheckbox').prop('checked', item.isScheduleDone || false);
+        $('#encroachmentEdit').prop('checked', item.isEncroachment || false);
+        $('#needResearchEdit').prop('checked', item.isNeedResearch || false);
+        $('#doneLayoutEdit').prop('checked', item.isDoneLayout || false);
+
+        // Update services checkboxes
+        const selectedServices = item.selectedServices || [];
+        $('#servicesContainer input[type="checkbox"]').each(function () {
+            const isChecked = selectedServices.includes($(this).val());
+            $(this).prop('checked', isChecked);
+        });
+
+        // Refresh project files display
+        const projectFilesHTML = this.buildProjectFilesHTML(item.projectFiles, false);
+        $('#projectFilesContainer').html(projectFilesHTML);
     }
 
     getSelectedServicesFromModal() {

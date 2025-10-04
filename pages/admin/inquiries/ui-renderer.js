@@ -6,8 +6,38 @@ class UIRenderer {
         this.inquiriesCurrentPage = 1;
         this.archiveCurrentPage = 1;
         this.inProgressCurrentPage = 1;
+
+        this.setupGlobalSearchListeners();
     }
 
+    setupGlobalSearchListeners() {
+        let searchTimeout;
+
+        document.addEventListener('input', (e) => {
+            if (e.target.id === 'inquiriesSearch') {
+                this.lastInquiriesSearch = e.target.value;
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {  // Change 300 to 600 or 800
+                    this.inquiriesCurrentPage = 1;
+                    this.displayInquiriesTable();
+                }, 600);  // <-- Changed from 300 to 600
+            } else if (e.target.id === 'archiveSearch') {
+                this.lastArchiveSearch = e.target.value;
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.archiveCurrentPage = 1;
+                    this.showArchivedInquiries();
+                }, 600);  // <-- Changed from 300 to 600
+            } else if (e.target.id === 'inProgressSearch') {
+                this.lastInProgressSearch = e.target.value;
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.inProgressCurrentPage = 1;
+                    this.showInProgressItems();
+                }, 600);  // <-- Changed from 300 to 600
+            }
+        });
+    }
     handleBulkDelete() {
         const selectedIds = $('.row-checkbox:checked').map(function () {
             return $(this).val();
@@ -122,11 +152,37 @@ class UIRenderer {
             return;
         }
 
-        const totalItems = this.parent.inProgressItems.length;
+        const searchQuery = this.lastInProgressSearch || $('#inProgressSearch').val() || '';
+        const filteredItems = this.filterItems(this.parent.inProgressItems, searchQuery, 'inprogress');
+
+        if (filteredItems.length === 0) {
+            const emptyHTML = `
+            <div class="inquiries-table-container">
+                <div class="table-header">
+                    <div class="search-bar">
+                        <input type="text" id="inProgressSearch" placeholder="🔍 Search by client, plan name, or services..." value="${searchQuery}" />
+                    </div>
+                </div>
+                <div class="empty-state">
+                    <h3>⚙️ No items ${searchQuery ? 'found' : 'in progress'}</h3>
+                    <p>${searchQuery ? 'Try a different search term.' : 'Approved inquiries will appear here.'}</p>
+                </div>
+            </div>
+            `;
+            $('#inquiryContent').html(emptyHTML);
+
+            // Restore search value after render
+            if (this.lastInProgressSearch) {
+                $('#inProgressSearch').val(this.lastInProgressSearch);
+            }
+            return;
+        }
+
+        const totalItems = filteredItems.length;
         const totalPages = Math.ceil(totalItems / this.itemsPerPage);
         const startIndex = (this.inProgressCurrentPage - 1) * this.itemsPerPage;
         const endIndex = startIndex + this.itemsPerPage;
-        const currentItems = this.parent.inProgressItems.slice(startIndex, endIndex);
+        const currentItems = filteredItems.slice(startIndex, endIndex);
 
         const tableRows = currentItems.map(item => {
             // Client Name & Contact
@@ -219,6 +275,9 @@ class UIRenderer {
         const tableHTML = `
         <div class="inquiries-table-container">
             <div class="table-header">
+                <div class="search-bar">
+                    <input type="text" id="inProgressSearch" placeholder="Search by client, plan name, or services..." />
+                </div>
                 <div class="table-stats">
                     <span class="total-count">${this.parent.inProgressItems.length} In Progress</span>
                     <span class="unread-count">${this.parent.inProgressItems.filter(item => !item.read).length} Unread</span>
@@ -257,6 +316,11 @@ class UIRenderer {
 
         $('#inquiryContent').html(tableHTML);
         this.setupInProgressTableEventListeners();
+
+        if (this.lastInProgressSearch) {
+            $('#inProgressSearch').val(this.lastInProgressSearch);
+        }
+
         this.setupPaginationEventListeners();
     }
 
@@ -313,6 +377,41 @@ class UIRenderer {
         }
     }
 
+    filterItems(items, searchQuery, type) {
+        if (!searchQuery.trim()) return items;
+
+        const query = searchQuery.toLowerCase();
+
+        return items.filter(item => {
+            if (type === 'inquiries' || type === 'archive') {
+                const name = item.accountInfo ?
+                    `${item.accountInfo.firstName || ''} ${item.accountInfo.lastName || ''}`.toLowerCase() : '';
+                const email = item.accountInfo?.email?.toLowerCase() || '';
+                const subject = item.requestDescription?.toLowerCase() || '';
+                const status = item.status?.toLowerCase() || '';
+
+                return name.includes(query) ||
+                    email.includes(query) ||
+                    subject.includes(query) ||
+                    status.includes(query);
+            }
+
+            if (type === 'inprogress') {
+                const clientName = item.clientInfo?.clientName?.toLowerCase() || '';
+                const planName = item.planName?.toLowerCase() || '';
+                const services = item.selectedServices?.join(' ').toLowerCase() || '';
+                const team = item.selectedTeam?.toLowerCase() || '';
+
+                return clientName.includes(query) ||
+                    planName.includes(query) ||
+                    services.includes(query) ||
+                    team.includes(query);
+            }
+
+            return false;
+        });
+    }
+
     showArchivedInquiries() {
         if (this.parent.archivedInquiries.length === 0) {
             $('#inquiryContent').html(`
@@ -324,11 +423,37 @@ class UIRenderer {
             return;
         }
 
-        const totalItems = this.parent.archivedInquiries.length;
+        const searchQuery = this.lastArchiveSearch || $('#archiveSearch').val() || '';
+        const filteredItems = this.filterItems(this.parent.archivedInquiries, searchQuery, 'archive');
+
+        if (filteredItems.length === 0) {
+            const emptyHTML = `
+            <div class="inquiries-table-container">
+                <div class="table-header">
+                    <div class="search-bar">
+                        <input type="text" id="archiveSearch" placeholder="🔍 Search by name, email, subject, or status..." value="${searchQuery}" />
+                    </div>
+                </div>
+                <div class="empty-state">
+                    <h3>📦 No archived inquiries ${searchQuery ? 'found' : ''}</h3>
+                    <p>${searchQuery ? 'Try a different search term.' : 'Processed inquiries will appear here.'}</p>
+                </div>
+            </div>
+            `;
+            $('#inquiryContent').html(emptyHTML);
+
+            // Restore search value after render
+            if (this.lastArchiveSearch) {
+                $('#archiveSearch').val(this.lastArchiveSearch);
+            }
+            return;
+        }
+
+        const totalItems = filteredItems.length;
         const totalPages = Math.ceil(totalItems / this.itemsPerPage);
         const startIndex = (this.archiveCurrentPage - 1) * this.itemsPerPage;
         const endIndex = startIndex + this.itemsPerPage;
-        const currentItems = this.parent.archivedInquiries.slice(startIndex, endIndex);
+        const currentItems = filteredItems.slice(startIndex, endIndex);
 
         const tableRows = currentItems.map(inquiry => {
             const fromName = inquiry.accountInfo ?
@@ -387,6 +512,11 @@ class UIRenderer {
         const tableHTML = `
         <div class="inquiries-table-container">
             <div class="table-header">
+
+                <div class="search-bar">
+                    <input type="text" id="archiveSearch" placeholder="🔍 Search by name, email, subject, or status..." />
+                </div>
+
                 <div class="table-stats">
                     <span class="total-count">${totalItems} Archived</span>
                     <span class="page-info">Page ${this.archiveCurrentPage} of ${totalPages}</span>
@@ -420,6 +550,11 @@ class UIRenderer {
 
         $('#inquiryContent').html(tableHTML);
         this.setupArchiveTableEventListeners();
+
+        if (this.lastArchiveSearch) {
+            $('#archiveSearch').val(this.lastArchiveSearch);
+        }
+
         this.setupPaginationEventListeners();
     }
 
@@ -525,13 +660,34 @@ class UIRenderer {
     }
 
     displayInquiriesTable() {
+        const searchQuery = this.lastInquiriesSearch || $('#inquiriesSearch').val() || '';
+        const filteredItems = this.filterItems(this.parent.inquiries, searchQuery, 'inquiries');
+
+        if (this.parent.inquiries.length > 0 && filteredItems.length === 0) {
+            const emptyHTML = `
+            <div class="inquiries-table-container">
+                <div class="table-header">
+                    <div class="search-bar">
+                        <input type="text" id="inquiriesSearch" placeholder="🔍 Search by name, email, or subject..." value="${searchQuery}" />
+                    </div>
+                </div>
+                <div class="empty-state">
+                    <h3>📭 No inquiries found</h3>
+                    <p>Try a different search term.</p>
+                </div>
+            </div>
+        `;
+            $('#inquiryContent').html(emptyHTML);
+            return;
 
 
-        const totalItems = this.parent.inquiries.length;
+        }
+
+        const totalItems = filteredItems.length;
         const totalPages = Math.ceil(totalItems / this.itemsPerPage);
         const startIndex = (this.inquiriesCurrentPage - 1) * this.itemsPerPage;
         const endIndex = startIndex + this.itemsPerPage;
-        const currentItems = this.parent.inquiries.slice(startIndex, endIndex);
+        const currentItems = filteredItems.slice(startIndex, endIndex);
 
         const tableRows = currentItems.map(inquiry => {
             // Column 1: From (firstName + lastName)
@@ -600,6 +756,9 @@ class UIRenderer {
         const tableHTML = `
             <div class="inquiries-table-container">
                 <div class="table-header">
+                    <div class="search-bar">
+                        <input type="text" id="inquiriesSearch" placeholder="🔍 Search by name, email, or subject..." value="${searchQuery}" />
+                    </div>
                     <div class="table-stats">
                         <span class="total-count">${this.parent.inquiries.length} Total</span>
                         <span class="unread-count">${this.parent.inquiries.filter(inq => !inq.read).length} Unread</span>
@@ -626,6 +785,11 @@ class UIRenderer {
 
         $('#inquiryContent').html(tableHTML);
         this.setupTableEventListeners();
+
+        if (this.lastInquiriesSearch) {
+            $('#inquiriesSearch').val(this.lastInquiriesSearch);
+        }
+
         this.setupPaginationEventListeners();
     }
 
