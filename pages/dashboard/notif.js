@@ -125,7 +125,7 @@ class NotificationManager {
         });
     }
 
-    handleNotificationClick(inquiryId, docId) {
+    async handleNotificationClick(inquiryId, docId) {
         console.log('Clicked inquiry:', inquiryId, 'DocId:', docId);
 
         const notif = this.notifications.find(n => n.inquiryId === inquiryId && n.docId === docId);
@@ -145,16 +145,19 @@ class NotificationManager {
                 .filter(n => n.docId === docId)
                 .map(n => n.inquiryId === inquiryId ? { ...n, read: true } : n);
 
-            updateDoc(docRef, { notifications: updatedNotifs })
+            await updateDoc(docRef, { notifications: updatedNotifs })
                 .then(() => console.log(`Marked ${inquiryId} as read`))
                 .catch(err => console.error('Error marking read:', err));
 
-            // 🔹 Open the same modal as the dashboard table "View" button
-            if (typeof window.viewInquiry === 'function') {
-                window.viewInquiry(inquiryId);
-            } else {
-                console.warn('viewInquiry is not exposed globally.');
+            // 🔹 Only open modal if status is NOT "Completed"
+            if (notif.status !== 'Completed') {
+                if (typeof window.viewInquiry === 'function') {
+                    window.viewInquiry(inquiryId);
+                } else {
+                    console.warn('viewInquiry is not exposed globally.');
+                }
             }
+            // If status is "Completed", just mark as read (no modal opens)
         }
 
         $('#notificationDropdown').hide();
