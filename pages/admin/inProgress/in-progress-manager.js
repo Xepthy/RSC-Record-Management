@@ -554,8 +554,8 @@ class InProgressManager {
                     const newNotification = {
                         inquiryId: item.pendingDocId,
                         status: 'Completed',
-                        requestTitle: item.planName || 'Project',
-                        message: `Your project has been completed. Reference code: ${referenceCode}`,
+                        requestTitle: item.requestDescription || item.planName || 'Project',
+                        message: `Your request has been completed. Claim the original copy at Rafallo's office.`,
                         timestamp: new Date(),
                         read: false
                     };
