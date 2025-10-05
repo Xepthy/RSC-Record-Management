@@ -520,7 +520,6 @@ class InProgressManager {
             return;
         }
 
-
         try {
             $('#confirmCompletionBtn').prop('disabled', true).text('Verifying...');
 
@@ -542,27 +541,11 @@ class InProgressManager {
                 createdAt: serverTimestamp()
             };
 
-            // Add to completed collection
+            // Add to completed collection (ONLY ONCE!)
             await setDoc(doc(collection(db, 'completed')), completionData);
+            console.log('Added to completed collection');
 
-            if (item.accountInfo?.uid && item.pendingDocId) {
-                try {
-                    const pendingDocRef = doc(db, 'client', item.accountInfo.uid, 'pending', item.pendingDocId);
-                    await updateDoc(pendingDocRef, {
-                        lastUpdated: serverTimestamp(),
-                        status: 'completed',
-                        projectFiles: item.projectFiles
-                    });
-                    console.log('Updated client pending document lastUpdated timestamp');
-                } catch (error) {
-                    console.error('Error updating client pending document:', error);
-                    // Continue even if this fails - don't block the completion
-                }
-            }
-
-            await setDoc(doc(collection(db, 'completed')), completionData);
-
-            // Create notification for client
+            // Update client pending document AND create notification
             if (item.accountInfo?.uid && item.pendingDocId) {
                 try {
                     const pendingDocRef = doc(db, 'client', item.accountInfo.uid, 'pending', item.pendingDocId);
@@ -587,16 +570,24 @@ class InProgressManager {
                             projectFiles: item.projectFiles
                         });
 
-                        console.log('Notification sent to client');
+                        console.log('✅ Notification sent to client');
+                    } else {
+                        console.warn('Pending document does not exist');
                     }
                 } catch (error) {
-                    console.error('Error sending notification:', error);
+                    console.error('Error updating client pending document:', error);
                     // Continue even if this fails - don't block the completion
                 }
+            } else {
+                console.warn('Missing accountInfo.uid or pendingDocId:', {
+                    uid: item.accountInfo?.uid,
+                    pendingDocId: item.pendingDocId
+                });
             }
 
             // Remove from inProgress
             await deleteDoc(doc(db, 'inProgress', item.id));
+            console.log('Removed from inProgress');
 
             this.parent.inquiryManager.showToast('Successfully moved to completed!', 'success');
 
