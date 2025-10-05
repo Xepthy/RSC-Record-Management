@@ -20,7 +20,8 @@ import {
     auth,
     deleteObject,
     EmailAuthProvider,
-    reauthenticateWithCredential
+    reauthenticateWithCredential,
+    arrayUnion
 } from '../../../firebase-config.js';
 class InProgressManager {
     constructor(parentInstance) {
@@ -549,31 +550,25 @@ class InProgressManager {
             if (item.accountInfo?.uid && item.pendingDocId) {
                 try {
                     const pendingDocRef = doc(db, 'client', item.accountInfo.uid, 'pending', item.pendingDocId);
-                    const pendingDoc = await getDoc(pendingDocRef);
 
-                    if (pendingDoc.exists()) {
-                        const existingNotifs = pendingDoc.data().notifications || [];
+                    const newNotification = {
+                        inquiryId: item.pendingDocId,  // The pending doc ID
+                        status: 'Completed',
+                        requestTitle: item.planName || 'Project',
+                        message: `Your project has been completed. Reference code: ${referenceCode}`,
+                        timestamp: new Date(),  // Use new Date() like in sendNotifClient
+                        read: false
+                    };
 
-                        const newNotification = {
-                            inquiryId: item.pendingDocId,
-                            status: 'Completed',
-                            requestTitle: item.planName || 'Project',
-                            message: `Your project has been completed. Reference code: ${referenceCode}`,
-                            timestamp: serverTimestamp(),
-                            read: false
-                        };
+                    // Use arrayUnion like sendNotifClient does
+                    await updateDoc(pendingDocRef, {
+                        notifications: arrayUnion(newNotification),
+                        lastUpdated: serverTimestamp(),
+                        status: 'completed',
+                        projectFiles: item.projectFiles
+                    });
 
-                        await updateDoc(pendingDocRef, {
-                            notifications: [...existingNotifs, newNotification],
-                            lastUpdated: serverTimestamp(),
-                            status: 'completed',
-                            projectFiles: item.projectFiles
-                        });
-
-                        console.log('✅ Notification sent to client');
-                    } else {
-                        console.warn('Pending document does not exist');
-                    }
+                    console.log('✅ Notification sent to client:', newNotification);
                 } catch (error) {
                     console.error('Error updating client pending document:', error);
                     // Continue even if this fails - don't block the completion
