@@ -889,6 +889,7 @@ class InquiryManager {
                         selectedTeam: $('#teamSelect').val(), // SURVEY TASK INFORMATION
                         pendingDocId: inquiry.pendingDocId, // this is for the user's pending doc | client/{uid}/pending/{pendingDocId}
                         accountInfo: inquiry.accountInfo,
+                        requestDescription: inquiry.requestDescription,
                         clientInfo: {
                             clientName: inquiry.clientName,
                             classification: inquiry.classification,
