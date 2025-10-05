@@ -867,6 +867,7 @@ class InquiryManager {
                         selectedTeam: $('#teamSelect').val(),
                         pendingDocId: inquiry.pendingDocId,
                         accountInfo: inquiry.accountInfo,
+                        requestDescription: inquiry.requestDescription,
                         clientInfo: {
                             clientName: inquiry.clientName,
                             classification: inquiry.classification,
