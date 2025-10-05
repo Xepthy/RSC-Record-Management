@@ -542,7 +542,7 @@ class InProgressManager {
                 createdAt: serverTimestamp()
             };
 
-            // Add to completed collection (ONLY ONCE!)
+            // Add to completed collection
             await setDoc(doc(collection(db, 'completed')), completionData);
             console.log('Added to completed collection');
 
@@ -552,15 +552,14 @@ class InProgressManager {
                     const pendingDocRef = doc(db, 'client', item.accountInfo.uid, 'pending', item.pendingDocId);
 
                     const newNotification = {
-                        inquiryId: item.pendingDocId,  // The pending doc ID
+                        inquiryId: item.pendingDocId,
                         status: 'Completed',
                         requestTitle: item.planName || 'Project',
                         message: `Your project has been completed. Reference code: ${referenceCode}`,
-                        timestamp: new Date(),  // Use new Date() like in sendNotifClient
+                        timestamp: new Date(),
                         read: false
                     };
 
-                    // Use arrayUnion like sendNotifClient does
                     await updateDoc(pendingDocRef, {
                         notifications: arrayUnion(newNotification),
                         lastUpdated: serverTimestamp(),
@@ -602,7 +601,6 @@ class InProgressManager {
             $('#confirmCompletionBtn').prop('disabled', false).text('Confirm');
         }
     }
-
 
     setupCompletionModalEventListeners(item) {
         // Close modal
