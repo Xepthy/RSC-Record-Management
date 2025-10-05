@@ -232,7 +232,10 @@ function showInquiryModal(inquiry, accountData) {
         : 'No documents';
 
     const projectFiles = inquiry.projectFiles && inquiry.projectFiles.length > 0
-        ? inquiry.projectFiles.map(doc => `<a href="${doc.url}" target="_blank">${doc.name}</a>`).join('<br>')
+        ? inquiry.projectFiles.map(file => {
+            // Generate download button instead of direct link since we need to fetch URL
+            return `<button class="view-project-file-btn" data-storage-path="${file.storagePath || ''}" data-file-url="${file.url || ''}" data-file-name="${file.name}">${file.name}</button>`;
+        }).join('<br>')
         : 'No Project Files Yet';
 
     // Format account data with fallbacks
@@ -324,6 +327,35 @@ function showInquiryModal(inquiry, accountData) {
 
     // Add modal to body
     $('body').append(modalHtml);
+
+    // Handle project file viewing
+    $(document).on('click', '.view-project-file-btn', async function () {
+        const storagePath = $(this).data('storage-path');
+        const legacyUrl = $(this).data('file-url');
+        const fileName = $(this).data('file-name');
+
+        try {
+            let downloadURL;
+
+            if (legacyUrl) {
+                // Use existing URL for backward compatibility
+                downloadURL = legacyUrl;
+            } else if (storagePath) {
+                // Generate URL on demand (requires importing Firebase Storage)
+                const { ref, getDownloadURL } = await import('../../firebase-config.js');
+                const { storage } = await import('../../firebase-config.js');
+                const fileRef = ref(storage, storagePath);
+                downloadURL = await getDownloadURL(fileRef);
+            } else {
+                throw new Error('No file path available');
+            }
+
+            window.open(downloadURL, '_blank');
+        } catch (error) {
+            console.error('Error opening file:', error);
+            alert('Unable to open file. Please try again.');
+        }
+    });
 
     // Show modal
     $('#inquiryDetailsModal').show();

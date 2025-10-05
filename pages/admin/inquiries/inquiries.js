@@ -7,6 +7,7 @@ import AuthManager from './auth-manager.js';
 import InquiryManager from './inquiry-manager.js';
 import UIRenderer from './ui-renderer.js';
 import InProgressManager from '../inProgress/in-progress-manager.js';
+import CompletedManager from '../completed/completed-manager.js';
 
 class InquiriesPage {
     constructor() {
@@ -19,12 +20,15 @@ class InquiriesPage {
         this.archivedInquiries = [];
         this.unsubscribeArchive = null;
         this.unsubscribeInProgress = null;
+        this.completedItems = [];
+        this.unsubscribeCompleted = null;
 
         // Initialize sub-modules
         this.authManager = new AuthManager(this);
         this.inquiryManager = new InquiryManager(this);
         this.uiRenderer = new UIRenderer(this);
         this.inProgressManager = new InProgressManager(this);
+        this.completedManager = new CompletedManager(this);
 
         this.init();
     }
@@ -68,7 +72,7 @@ class InquiriesPage {
             this.setupEventListeners();
             await this.inquiryManager.setupInquiryListener();
             await this.inProgressManager.setupInProgressListener();
-
+            await this.completedManager.setupCompletedListener();
             this.updateInProgressNotificationCount();
 
         } catch (error) {
@@ -131,7 +135,30 @@ class InquiriesPage {
         }
     }
 
+    updateCompletedNotificationCount() {
+        const unreadCount = this.completedItems.filter(item => !item.read).length;
+        const $countElement = $('#completedCount');
 
+        if (unreadCount > 0) {
+            $countElement.text(unreadCount).show();
+        } else {
+            $countElement.hide();
+        }
+    }
+
+    showCompletedSection() {
+        $('.nav-item').removeClass('active');
+        $('#completedNav').addClass('active');
+
+        $('.content-header h1').text('Completed Projects');
+        $('.content-header p').text('View all completed projects and their reference codes.');
+
+        if (!this.unsubscribeCompleted) {
+            this.completedManager.setupCompletedListener();
+        } else {
+            this.uiRenderer.showCompletedItems();
+        }
+    }
 
 
 
@@ -182,6 +209,11 @@ class InquiriesPage {
         $('#inProgressNav').on('click', async () => {
             await this.inquiryManager.closeInquiryAndReleaseLock();
             this.showInProgressSection();
+        });
+
+        $('#completedNav').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
+            this.showCompletedSection();
         });
 
         // Logout button click
@@ -238,6 +270,11 @@ class InquiriesPage {
         if (this.unsubscribeInProgress) {
             this.unsubscribeInProgress();
             this.unsubscribeInProgress = null;
+        }
+
+        if (this.unsubscribeCompleted) {
+            this.unsubscribeCompleted();
+            this.unsubscribeCompleted = null;
         }
 
     }

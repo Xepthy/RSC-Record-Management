@@ -545,6 +545,21 @@ class InProgressManager {
             // Add to completed collection
             await setDoc(doc(collection(db, 'completed')), completionData);
 
+            if (item.accountInfo?.uid && item.pendingDocId) {
+                try {
+                    const pendingDocRef = doc(db, 'client', item.accountInfo.uid, 'pending', item.pendingDocId);
+                    await updateDoc(pendingDocRef, {
+                        lastUpdated: serverTimestamp(),
+                        status: 'completed',
+                        projectFiles: item.projectFiles
+                    });
+                    console.log('Updated client pending document lastUpdated timestamp');
+                } catch (error) {
+                    console.error('Error updating client pending document:', error);
+                    // Continue even if this fails - don't block the completion
+                }
+            }
+
             // Remove from inProgress
             await deleteDoc(doc(db, 'inProgress', item.id));
 
@@ -1092,10 +1107,13 @@ class InProgressManager {
             // Exit edit mode and refresh with saved data
             this.toggleEditMode(false);
 
-            // Get fresh data from the array (updated by real-time listener)
-            const updatedItem = this.parent.inProgressItems.find(i => i.id === item.id);
-            if (updatedItem) {
-                this.refreshModalContent(updatedItem);
+            Object.assign(item, updates);
+            this.refreshModalContent(item);
+
+            // Also update the parent array
+            const itemIndex = this.parent.inProgressItems.findIndex(i => i.id === item.id);
+            if (itemIndex !== -1) {
+                Object.assign(this.parent.inProgressItems[itemIndex], updates);
             }
 
         } catch (error) {

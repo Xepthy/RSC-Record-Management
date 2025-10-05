@@ -6,8 +6,57 @@ class UIRenderer {
         this.inquiriesCurrentPage = 1;
         this.archiveCurrentPage = 1;
         this.inProgressCurrentPage = 1;
-
+        this.completedCurrentPage = 1;
         this.setupGlobalSearchListeners();
+        this.setupClearButtonListeners();
+    }
+
+    setupClearButtonListeners() {
+        document.addEventListener('input', (e) => {
+            const searchInput = e.target;
+            console.log('Input detected:', searchInput.id); // DEBUG
+            if (searchInput.id && searchInput.id.includes('Search')) {
+                const clearBtn = searchInput.nextElementSibling;
+                console.log('Clear button found:', clearBtn);
+                console.log('Has search-clear-btn class?', clearBtn?.classList.contains('search-clear-btn')); // ADD THIS
+                if (clearBtn && clearBtn.classList.contains('search-clear-btn')) {
+                    if (searchInput.value.length > 0) {
+                        clearBtn.classList.add('visible');
+                    } else {
+                        clearBtn.classList.remove('visible');
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('search-clear-btn')) {
+                const searchInput = e.target.previousElementSibling;
+                if (searchInput) {
+                    searchInput.value = '';
+                    e.target.classList.remove('visible');
+
+                    // Trigger search with empty value
+                    if (searchInput.id === 'inquiriesSearch') {
+                        this.lastInquiriesSearch = '';
+                        this.inquiriesCurrentPage = 1;
+                        this.displayInquiriesTable();
+                    } else if (searchInput.id === 'archiveSearch') {
+                        this.lastArchiveSearch = '';
+                        this.archiveCurrentPage = 1;
+                        this.showArchivedInquiries();
+                    } else if (searchInput.id === 'inProgressSearch') {
+                        this.lastInProgressSearch = '';
+                        this.inProgressCurrentPage = 1;
+                        this.showInProgressItems();
+                    } else if (searchInput.id === 'completedSearch') {
+                        this.lastCompletedSearch = '';
+                        this.completedCurrentPage = 1;
+                        this.showCompletedItems();
+                    }
+                }
+            }
+        });
     }
 
     setupGlobalSearchListeners() {
@@ -20,22 +69,32 @@ class UIRenderer {
                 searchTimeout = setTimeout(() => {  // Change 300 to 600 or 800
                     this.inquiriesCurrentPage = 1;
                     this.displayInquiriesTable();
-                }, 600);  // <-- Changed from 300 to 600
+                }, 900);  // <-- Changed from 300 to 600
             } else if (e.target.id === 'archiveSearch') {
                 this.lastArchiveSearch = e.target.value;
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => {
                     this.archiveCurrentPage = 1;
                     this.showArchivedInquiries();
-                }, 600);  // <-- Changed from 300 to 600
+                }, 900);  // <-- Changed from 300 to 600
             } else if (e.target.id === 'inProgressSearch') {
                 this.lastInProgressSearch = e.target.value;
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => {
                     this.inProgressCurrentPage = 1;
                     this.showInProgressItems();
-                }, 600);  // <-- Changed from 300 to 600
+                }, 900);  // <-- Changed from 300 to 600
             }
+
+            else if (e.target.id === 'completedSearch') {
+                this.lastCompletedSearch = e.target.value;
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.completedCurrentPage = 1;
+                    this.showCompletedItems();
+                }, 900);
+            }
+
         });
     }
     handleBulkDelete() {
@@ -93,6 +152,7 @@ class UIRenderer {
             case 'inquiries': return this.inquiriesCurrentPage;
             case 'archive': return this.archiveCurrentPage;
             case 'inprogress': return this.inProgressCurrentPage;
+            case 'completed': return this.completedCurrentPage;
         }
     }
 
@@ -101,6 +161,7 @@ class UIRenderer {
             case 'inquiries': this.inquiriesCurrentPage = page; break;
             case 'archive': this.archiveCurrentPage = page; break;
             case 'inprogress': this.inProgressCurrentPage = page; break;
+            case 'completed': this.completedCurrentPage = page; break;
         }
     }
 
@@ -109,6 +170,7 @@ class UIRenderer {
             case 'inquiries': this.showInquiriesLoaded(); break;
             case 'archive': this.showArchivedInquiries(); break;
             case 'inprogress': this.showInProgressItems(); break;
+            case 'completed': this.showCompletedItems(); break;
         }
     }
 
@@ -161,6 +223,7 @@ class UIRenderer {
                 <div class="table-header">
                     <div class="search-bar">
                         <input type="text" id="inProgressSearch" placeholder="🔍 Search by client, plan name, or services..." value="${searchQuery}" />
+                        <button class="search-clear-btn" id="clearInProgressSearch">×</button>
                     </div>
                 </div>
                 <div class="empty-state">
@@ -173,7 +236,11 @@ class UIRenderer {
 
             // Restore search value after render
             if (this.lastInProgressSearch) {
-                $('#inProgressSearch').val(this.lastInProgressSearch);
+                const $searchInput = $('#inProgressSearch');
+                $searchInput.val(this.lastInProgressSearch);
+                if (this.lastInProgressSearch.length > 0) {
+                    $searchInput.next('.search-clear-btn').addClass('visible');
+                }
             }
             return;
         }
@@ -277,6 +344,7 @@ class UIRenderer {
             <div class="table-header">
                 <div class="search-bar">
                     <input type="text" id="inProgressSearch" placeholder="Search by client, plan name, or services..." />
+                    <button class="search-clear-btn" id="clearInProgressSearch">×</button>
                 </div>
                 <div class="table-stats">
                     <span class="total-count">${this.parent.inProgressItems.length} In Progress</span>
@@ -318,7 +386,11 @@ class UIRenderer {
         this.setupInProgressTableEventListeners();
 
         if (this.lastInProgressSearch) {
-            $('#inProgressSearch').val(this.lastInProgressSearch);
+            const $searchInput = $('#inProgressSearch');
+            $searchInput.val(this.lastInProgressSearch);
+            if (this.lastInProgressSearch.length > 0) {
+                $searchInput.next('.search-clear-btn').addClass('visible');
+            }
         }
 
         this.setupPaginationEventListeners();
@@ -408,6 +480,36 @@ class UIRenderer {
                     team.includes(query);
             }
 
+            if (type === 'completed') {
+                const referenceCode = item.referenceCode?.toLowerCase() || '';
+                const clientName = item.clientInfo?.clientName?.toLowerCase() || '';
+                const planName = item.planName?.toLowerCase() || '';
+                const services = item.selectedServices?.join(' ').toLowerCase() || '';
+                const location = item.clientInfo?.location?.toLowerCase() || '';
+
+                // Format the date for searching (mm/dd/yyyy format)
+                let formattedDate = '';
+                if (item.completedDate) {
+                    const parts = item.completedDate.split('-');
+                    if (parts.length === 3) {
+                        const [year, month, day] = parts;
+                        formattedDate = `${month}/${day}/${year}`;
+                    }
+                }
+
+                // Also search the raw date format
+                const rawDate = item.completedDate?.toLowerCase() || '';
+
+                return referenceCode.includes(query) ||
+                    clientName.includes(query) ||
+                    planName.includes(query) ||
+                    services.includes(query) ||
+                    location.includes(query) ||
+                    formattedDate.includes(query) ||
+                    rawDate.includes(query);
+            }
+
+
             return false;
         });
     }
@@ -432,6 +534,7 @@ class UIRenderer {
                 <div class="table-header">
                     <div class="search-bar">
                         <input type="text" id="archiveSearch" placeholder="🔍 Search by name, email, subject, or status..." value="${searchQuery}" />
+                        <button class="search-clear-btn" id="clearArchiveSearch">×</button>
                     </div>
                 </div>
                 <div class="empty-state">
@@ -444,7 +547,11 @@ class UIRenderer {
 
             // Restore search value after render
             if (this.lastArchiveSearch) {
-                $('#archiveSearch').val(this.lastArchiveSearch);
+                const $searchInput = $('#archiveSearch');
+                $searchInput.val(this.lastArchiveSearch);
+                if (this.lastArchiveSearch.length > 0) {
+                    $searchInput.next('.search-clear-btn').addClass('visible');
+                }
             }
             return;
         }
@@ -515,6 +622,7 @@ class UIRenderer {
 
                 <div class="search-bar">
                     <input type="text" id="archiveSearch" placeholder="🔍 Search by name, email, subject, or status..." />
+                    <button class="search-clear-btn" id="clearArchiveSearch">×</button>
                 </div>
 
                 <div class="table-stats">
@@ -552,7 +660,11 @@ class UIRenderer {
         this.setupArchiveTableEventListeners();
 
         if (this.lastArchiveSearch) {
-            $('#archiveSearch').val(this.lastArchiveSearch);
+            const $searchInput = $('#archiveSearch');
+            $searchInput.val(this.lastArchiveSearch);
+            if (this.lastArchiveSearch.length > 0) {
+                $searchInput.next('.search-clear-btn').addClass('visible');
+            }
         }
 
         this.setupPaginationEventListeners();
@@ -669,6 +781,7 @@ class UIRenderer {
                 <div class="table-header">
                     <div class="search-bar">
                         <input type="text" id="inquiriesSearch" placeholder="🔍 Search by name, email, or subject..." value="${searchQuery}" />
+                        <button class="search-clear-btn" id="clearInquiriesSearch">×</button>
                     </div>
                 </div>
                 <div class="empty-state">
@@ -678,6 +791,14 @@ class UIRenderer {
             </div>
         `;
             $('#inquiryContent').html(emptyHTML);
+
+            if (this.lastInquiriesSearch) {
+                const $searchInput = $('#inquiriesSearch');
+                $searchInput.val(this.lastInquiriesSearch);
+                if (this.lastInquiriesSearch.length > 0) {
+                    $searchInput.next('.search-clear-btn').addClass('visible');
+                }
+            }
             return;
 
 
@@ -758,6 +879,7 @@ class UIRenderer {
                 <div class="table-header">
                     <div class="search-bar">
                         <input type="text" id="inquiriesSearch" placeholder="🔍 Search by name, email, or subject..." value="${searchQuery}" />
+                        <button class="search-clear-btn" id="clearInquiriesSearch">×</button>
                     </div>
                     <div class="table-stats">
                         <span class="total-count">${this.parent.inquiries.length} Total</span>
@@ -787,7 +909,11 @@ class UIRenderer {
         this.setupTableEventListeners();
 
         if (this.lastInquiriesSearch) {
-            $('#inquiriesSearch').val(this.lastInquiriesSearch);
+            const $searchInput = $('#inquiriesSearch');
+            $searchInput.val(this.lastInquiriesSearch);
+            if (this.lastInquiriesSearch.length > 0) {
+                $searchInput.next('.search-clear-btn').addClass('visible');
+            }
         }
 
         this.setupPaginationEventListeners();
@@ -861,6 +987,173 @@ class UIRenderer {
             </div>
         `);
     }
+
+    showCompletedItems() {
+        if (this.parent.completedItems.length === 0) {
+            $('#inquiryContent').html(`
+            <div class="empty-state">
+                <h3>✅ No completed projects</h3>
+                <p>Completed projects will appear here.</p>
+            </div>
+        `);
+            return;
+        }
+
+        const searchQuery = this.lastCompletedSearch || $('#completedSearch').val() || '';
+        const filteredItems = this.filterItems(this.parent.completedItems, searchQuery, 'completed');
+
+        if (filteredItems.length === 0) {
+            const emptyHTML = `
+            <div class="inquiries-table-container">
+                <div class="table-header">
+                    <div class="search-bar">
+                        <input type="text" id="completedSearch" placeholder="🔍 Search by reference code, client, or plan name..." value="${searchQuery}" />
+                        <button class="search-clear-btn" id="clearCompletedSearch">×</button>
+                    </div>
+                </div>
+                <div class="empty-state">
+                    <h3>✅ No completed projects found</h3>
+                    <p>Try a different search term.</p>
+                </div>
+            </div>
+        `;
+            $('#inquiryContent').html(emptyHTML);
+
+            if (this.lastCompletedSearch) {
+                const $searchInput = $('#completedSearch');
+                $searchInput.val(this.lastCompletedSearch);
+                if (this.lastCompletedSearch.length > 0) {
+                    $searchInput.next('.search-clear-btn').addClass('visible');
+                }
+            }
+            return;
+        }
+
+        const totalItems = filteredItems.length;
+        const totalPages = Math.ceil(totalItems / this.itemsPerPage);
+        const startIndex = (this.completedCurrentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const currentItems = filteredItems.slice(startIndex, endIndex);
+
+        const tableRows = currentItems.map(item => {
+            const referenceCode = item.referenceCode || 'N/A';
+            const clientName = item.clientInfo?.clientName || 'Unknown Client';
+            const contact = item.clientInfo?.contact || '';
+            const planName = item.planName || 'Not specified';
+            const services = this.parent.completedManager.formatServices(item.selectedServices);
+            const completedDate = this.parent.completedManager.formatDateDisplay(item.completedDate);
+            const location = item.clientInfo?.location || 'Not provided';
+            const readClass = item.read ? 'read' : 'unread';
+
+            return `
+            <tr class="completed-row ${readClass}" data-item-id="${item.id}">
+                <td class="reference-column">
+                    <div class="reference-code">${referenceCode}</div>
+                </td>
+                <td class="client-column">
+                    <div class="client-name">${clientName}</div>
+                    ${contact ? `<div class="client-contact">${contact}</div>` : ''}
+                </td>
+                <td class="plan-column">
+                    <div class="plan-name">${planName}</div>
+                </td>
+                <td class="services-column">
+                    <div class="services-text" title="${item.selectedServices?.join('\n') || 'None'}">${services}</div>
+                </td>
+                <td class="date-column">
+                    <div class="date-text">${completedDate}</div>
+                </td>
+                <td class="location-column">
+                    <div class="location-text">${location}</div>
+                </td>
+            </tr>
+        `;
+        }).join('');
+
+        const paginationHTML = this.generatePaginationControls(totalPages, 'completed');
+
+        const tableHTML = `
+        <div class="inquiries-table-container">
+            <div class="table-header">
+                <div class="search-bar">
+                    <input type="text" id="completedSearch" placeholder="🔍 Search by reference code, client, or plan name..." />
+                    <button class="search-clear-btn" id="clearCompletedSearch">×</button>
+                </div>
+                <div class="table-stats">
+                    <span class="total-count">${this.parent.completedItems.length} Completed</span>
+                    <span class="unread-count">${this.parent.completedItems.filter(item => !item.read).length} Unread</span>
+                    <span class="page-info">Page ${this.completedCurrentPage} of ${totalPages}</span>
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table class="inquiries-table completed-table">
+                    <thead>
+                        <tr>
+                            <th class="reference-header">Reference Code</th>
+                            <th class="client-header">Client</th>
+                            <th class="plan-header">Plan Name</th>
+                            <th class="services-header">Services</th>
+                            <th class="date-header">Completed Date</th>
+                            <th class="location-header">Location</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </div>
+            ${paginationHTML}
+        </div>
+    `;
+
+        $('#inquiryContent').html(tableHTML);
+        this.setupCompletedTableEventListeners();
+
+        if (this.lastCompletedSearch) {
+            const $searchInput = $('#completedSearch');
+            $searchInput.val(this.lastCompletedSearch);
+            if (this.lastCompletedSearch.length > 0) {
+                $searchInput.next('.search-clear-btn').addClass('visible');
+            }
+        }
+
+        this.setupPaginationEventListeners();
+    }
+
+    setupCompletedTableEventListeners() {
+        $('.completed-row').on('click', async (e) => {
+            const itemId = $(e.currentTarget).data('item-id');
+            const item = this.parent.completedItems.find(item => item.id === itemId);
+
+            if (item && !item.read) {
+                await this.parent.completedManager.markAsRead(itemId);
+                $(e.currentTarget).removeClass('unread').addClass('read');
+                this.parent.updateCompletedNotificationCount();
+            }
+
+            this.parent.completedManager.showCompletedDetails(itemId);
+        });
+
+        $('.completed-row').on('mouseenter', function () {
+            $(this).css({
+                'opacity': '0.8',
+                'transform': 'translateX(2px)',
+                'transition': 'all 0.2s ease'
+            });
+        }).on('mouseleave', function () {
+            $(this).css({
+                'opacity': '1',
+                'transform': 'translateX(0)',
+                'transition': 'all 0.2s ease'
+            });
+        });
+
+        $('.completed-row').css('cursor', 'pointer');
+    }
+
+
+
 }
 
 export default UIRenderer;

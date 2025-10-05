@@ -46,6 +46,26 @@ td {
     font-weight: bold;
 }
 
+.status-badge[data-status="completed"] {
+    color: #3fdc13;
+    font-weight: bold;
+}
+
+.view-project-file-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 2px 0;
+    font-size: 14px;
+}
+
+.view-project-file-btn:hover {
+    background: #0056b3;
+}
+
 
 
 /* View button styling */
