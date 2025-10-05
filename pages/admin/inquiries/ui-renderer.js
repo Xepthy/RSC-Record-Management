@@ -1047,6 +1047,9 @@ class UIRenderer {
 
             return `
             <tr class="completed-row ${readClass}" data-item-id="${item.id}">
+                <td class="checkbox-column">
+                    <input type="checkbox" class="completed-row-checkbox" value="${item.id}">
+                </td>
                 <td class="reference-column">
                     <div class="reference-code">${referenceCode}</div>
                 </td>
@@ -1084,12 +1087,19 @@ class UIRenderer {
                     <span class="unread-count">${this.parent.completedItems.filter(item => !item.read).length} Unread</span>
                     <span class="page-info">Page ${this.completedCurrentPage} of ${totalPages}</span>
                 </div>
+                <div class="bulk-actions" style="display: none;">
+                    <span class="selected-count">0 selected</span>
+                    <button class="mark-read-btn" id="markCompletedReadBtn">Mark as Read</button>
+                </div>
             </div>
             
             <div class="table-wrapper">
                 <table class="inquiries-table completed-table">
                     <thead>
                         <tr>
+                            <th class="checkbox-header">
+                                <input type="checkbox" id="selectAllCompletedCheckbox">
+                            </th>
                             <th class="reference-header">Reference Code</th>
                             <th class="client-header">Client</th>
                             <th class="plan-header">Plan Name</th>
@@ -1121,8 +1131,63 @@ class UIRenderer {
         this.setupPaginationEventListeners();
     }
 
+    updateCompletedBulkActions() {
+        const selectedCount = $('.completed-row-checkbox:checked').length;
+        const $bulkActions = $('.bulk-actions');
+        const $selectedCount = $('.selected-count');
+
+        if (selectedCount > 0) {
+            $bulkActions.show();
+            $selectedCount.text(`${selectedCount} selected`);
+        } else {
+            $bulkActions.hide();
+        }
+    }
+
+    updateCompletedSelectAllState() {
+        const totalRows = $('.completed-row-checkbox').length;
+        const selectedRows = $('.completed-row-checkbox:checked').length;
+        const $selectAll = $('#selectAllCompletedCheckbox');
+
+        if (selectedRows === 0) {
+            $selectAll.prop('checked', false).prop('indeterminate', false);
+        } else if (selectedRows === totalRows) {
+            $selectAll.prop('checked', true).prop('indeterminate', false);
+        } else {
+            $selectAll.prop('checked', false).prop('indeterminate', true);
+        }
+    }
+
+    async handleCompletedMarkAsRead() {
+        const selectedIds = $('.completed-row-checkbox:checked').map(function () {
+            return $(this).val();
+        }).get();
+
+        if (selectedIds.length === 0) return;
+
+        try {
+            for (const id of selectedIds) {
+                await this.parent.completedManager.markAsRead(id);
+            }
+
+            this.parent.inquiryManager.showToast(`${selectedIds.length} item(s) marked as read`, 'success');
+
+            // Refresh the table
+            this.showCompletedItems();
+        } catch (error) {
+            console.error('Error marking as read:', error);
+            this.parent.inquiryManager.showToast('Failed to mark items as read', 'error');
+        }
+    }
+
+
+
     setupCompletedTableEventListeners() {
+        // Handle row clicks (avoid checkbox column)
         $('.completed-row').on('click', async (e) => {
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
             const itemId = $(e.currentTarget).data('item-id');
             const item = this.parent.completedItems.find(item => item.id === itemId);
 
@@ -1135,6 +1200,25 @@ class UIRenderer {
             this.parent.completedManager.showCompletedDetails(itemId);
         });
 
+        // Handle individual checkboxes
+        $('.completed-row-checkbox').on('change', () => {
+            this.updateCompletedBulkActions();
+            this.updateCompletedSelectAllState();
+        });
+
+        // Handle select all checkbox
+        $('#selectAllCompletedCheckbox').on('change', (e) => {
+            const isChecked = $(e.target).is(':checked');
+            $('.completed-row-checkbox').prop('checked', isChecked);
+            this.updateCompletedBulkActions();
+        });
+
+        // Handle mark as read button
+        $('#markCompletedReadBtn').on('click', () => {
+            this.handleCompletedMarkAsRead();
+        });
+
+        // Hover effects (KEEP THIS)
         $('.completed-row').on('mouseenter', function () {
             $(this).css({
                 'opacity': '0.8',

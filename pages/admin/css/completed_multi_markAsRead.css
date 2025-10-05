@@ -1,0 +1,13 @@
+.mark-read-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.mark-read-btn:hover {
+    background: #218838;
+}
