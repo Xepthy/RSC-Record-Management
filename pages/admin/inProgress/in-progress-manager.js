@@ -560,6 +560,41 @@ class InProgressManager {
                 }
             }
 
+            await setDoc(doc(collection(db, 'completed')), completionData);
+
+            // Create notification for client
+            if (item.accountInfo?.uid && item.pendingDocId) {
+                try {
+                    const pendingDocRef = doc(db, 'client', item.accountInfo.uid, 'pending', item.pendingDocId);
+                    const pendingDoc = await getDoc(pendingDocRef);
+
+                    if (pendingDoc.exists()) {
+                        const existingNotifs = pendingDoc.data().notifications || [];
+
+                        const newNotification = {
+                            inquiryId: item.pendingDocId,
+                            status: 'Completed',
+                            requestTitle: item.planName || 'Project',
+                            message: `Your project has been completed. Reference code: ${referenceCode}`,
+                            timestamp: serverTimestamp(),
+                            read: false
+                        };
+
+                        await updateDoc(pendingDocRef, {
+                            notifications: [...existingNotifs, newNotification],
+                            lastUpdated: serverTimestamp(),
+                            status: 'completed',
+                            projectFiles: item.projectFiles
+                        });
+
+                        console.log('Notification sent to client');
+                    }
+                } catch (error) {
+                    console.error('Error sending notification:', error);
+                    // Continue even if this fails - don't block the completion
+                }
+            }
+
             // Remove from inProgress
             await deleteDoc(doc(db, 'inProgress', item.id));
 
@@ -581,6 +616,7 @@ class InProgressManager {
             $('#confirmCompletionBtn').prop('disabled', false).text('Confirm');
         }
     }
+
 
     setupCompletionModalEventListeners(item) {
         // Close modal
