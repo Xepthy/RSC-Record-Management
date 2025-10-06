@@ -321,6 +321,9 @@
     background-position: right 8px center;
     background-size: 16px;
     padding-right: 32px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
 }
 
 /* Textarea styling */

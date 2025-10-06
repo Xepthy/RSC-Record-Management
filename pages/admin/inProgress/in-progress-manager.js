@@ -555,7 +555,8 @@ class InProgressManager {
                         inquiryId: item.pendingDocId,
                         status: 'Completed',
                         requestTitle: item.requestDescription || item.planName || 'Project',
-                        message: `Your request has been completed. Claim the original copy at Rafallo's office.`,
+                        message: `Your request has been completed. You can claim the original copy of the document at Rafallo's office.
+                        Reference Code: ${referenceCode}`,
                         timestamp: new Date(),
                         read: false
                     };
