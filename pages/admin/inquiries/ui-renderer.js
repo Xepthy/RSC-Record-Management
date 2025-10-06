@@ -1236,6 +1236,173 @@ class UIRenderer {
         $('.completed-row').css('cursor', 'pointer');
     }
 
+    showAuditLogs() {
+        if (this.parent.auditLogs.length === 0) {
+            $('#inquiryContent').html(`
+            <div class="empty-state">
+                <h3>📋 No audit logs</h3>
+                <p>System modifications will appear here.</p>
+            </div>
+        `);
+            return;
+        }
+
+        const sortBy = $('#auditSortSelect').val() || 'date-desc';
+        let sortedLogs = [...this.parent.auditLogs];
+
+        // Apply sorting
+        switch (sortBy) {
+            case 'date-desc':
+                sortedLogs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                break;
+            case 'date-asc':
+                sortedLogs.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+                break;
+            case 'category':
+                sortedLogs.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
+                break;
+            case 'modified-by':
+                sortedLogs.sort((a, b) => (a.modifiedBy || '').localeCompare(b.modifiedBy || ''));
+                break;
+            case 'action-type':
+                sortedLogs.sort((a, b) => (a.actionType || '').localeCompare(b.actionType || ''));
+                break;
+        }
+
+        const tableRows = sortedLogs.map(log => {
+            const { date, time } = this.parent.auditLogsManager.formatTimestamp(log.timestamp);
+
+            // Truncate action type with ellipsis if too long
+            const actionType = log.actionType || 'Unknown';
+            const displayAction = actionType.length > 40 ? actionType.substring(0, 40) + '...' : actionType;
+
+            // Parse old/new values
+            let oldValueDisplay = '--';
+            let newValueDisplay = '--';
+
+            try {
+                if (log.oldValue && log.oldValue !== '--') {
+                    const oldObj = JSON.parse(log.oldValue);
+                    const values = Object.values(oldObj);
+                    oldValueDisplay = values.length > 0 ? values[0] : '--';
+                    if (typeof oldValueDisplay === 'string' && oldValueDisplay.length > 50) {
+                        oldValueDisplay = oldValueDisplay.substring(0, 50) + '...';
+                    }
+                }
+
+                if (log.newValue && log.newValue !== '--') {
+                    const newObj = JSON.parse(log.newValue);
+                    const values = Object.values(newObj);
+                    newValueDisplay = values.length > 0 ? values[0] : '--';
+                    if (typeof newValueDisplay === 'string' && newValueDisplay.length > 50) {
+                        newValueDisplay = newValueDisplay.substring(0, 50) + '...';
+                    }
+                }
+            } catch (e) {
+                oldValueDisplay = log.oldValue || '--';
+                newValueDisplay = log.newValue || '--';
+            }
+
+            return `
+            <tr class="audit-row" data-log-id="${log.id}">
+                <td class="profile-column" style="cursor: pointer;">
+                    <div class="profile-name">${log.profileAffected || 'Unknown'}</div>
+                </td>
+                <td class="action-column">
+                    <div class="action-text" title="${actionType}">${displayAction}</div>
+                </td>
+                <td class="category-column">
+                    <span class="category-badge ${log.category?.toLowerCase().replace(' ', '-')}">${log.category || 'Unknown'}</span>
+                </td>
+                <td class="modified-by-column">
+                    <div class="modifier-email">${log.modifiedBy || 'Unknown'}</div>
+                    <div class="modifier-role">${log.modifiedByRole || ''}</div>
+                </td>
+                <td class="old-value-column">
+                    <div class="value-text">${oldValueDisplay}</div>
+                </td>
+                <td class="new-value-column">
+                    <div class="value-text">${newValueDisplay}</div>
+                </td>
+                <td class="timestamp-column">
+                    <div class="timestamp-date">${date}</div>
+                    <div class="timestamp-time">${time}</div>
+                </td>
+            </tr>
+        `;
+        }).join('');
+
+        const tableHTML = `
+        <div class="inquiries-table-container">
+            <div class="table-header">
+                <div class="sort-controls">
+                    <label>Sort by:</label>
+                    <select id="auditSortSelect">
+                        <option value="date-desc">Date (Newest First)</option>
+                        <option value="date-asc">Date (Oldest First)</option>
+                        <option value="category">Category</option>
+                        <option value="modified-by">Modified By</option>
+                        <option value="action-type">Action Type</option>
+                    </select>
+                </div>
+                <div class="table-stats">
+                    <span class="total-count">${this.parent.auditLogs.length} Total Logs</span>
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table class="inquiries-table audit-logs-table">
+                    <thead>
+                        <tr>
+                            <th class="profile-header">Profile Affected</th>
+                            <th class="action-header">Action Type</th>
+                            <th class="category-header">Category</th>
+                            <th class="modified-by-header">Modified By</th>
+                            <th class="old-value-header">Old Value</th>
+                            <th class="new-value-header">New Value</th>
+                            <th class="timestamp-header">Modified At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+        $('#inquiryContent').html(tableHTML);
+        this.setupAuditLogsEventListeners();
+    }
+
+    setupAuditLogsEventListeners() {
+        // Sort change handler
+        $('#auditSortSelect').on('change', () => {
+            this.showAuditLogs();
+        });
+
+        // Profile click handler - show modal
+        $('.profile-column').on('click', async (e) => {
+            const logId = $(e.currentTarget).parent().data('log-id');
+            await this.parent.auditLogsManager.showAuditLogModal(logId);
+        });
+
+        // Hover effects
+        $('.audit-row').on('mouseenter', function () {
+            $(this).css({
+                'opacity': '0.8',
+                'transform': 'translateX(2px)',
+                'transition': 'all 0.2s ease'
+            });
+        }).on('mouseleave', function () {
+            $(this).css({
+                'opacity': '1',
+                'transform': 'translateX(0)',
+                'transition': 'all 0.2s ease'
+            });
+        });
+    }
+
 
 
 }

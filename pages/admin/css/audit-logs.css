@@ -1,0 +1,69 @@
+.audit-logs-table {
+    width: 100%;
+    font-size: 13px;
+}
+
+.profile-column { width: 15%; cursor: pointer; }
+.action-column { width: 20%; }
+.category-column { width: 12%; text-align: center; }
+.modified-by-column { width: 15%; }
+.old-value-column { width: 15%; }
+.new-value-column { width: 15%; }
+.timestamp-column { width: 12%; text-align: center; }
+
+.category-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.category-badge.inquiries { background: #e3f2fd; color: #1565c0; }
+.category-badge.in-progress { background: #fff3cd; color: #856404; }
+.category-badge.completed { background: #d4edda; color: #155724; }
+
+.modifier-email {
+    font-weight: 600;
+    color: #333;
+}
+
+.modifier-role {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.timestamp-date {
+    font-weight: 600;
+    color: #333;
+}
+
+.timestamp-time {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-controls select {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.action-text,
+.value-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.profile-name:hover {
+    color: #007bff;
+    text-decoration: underline;
+}

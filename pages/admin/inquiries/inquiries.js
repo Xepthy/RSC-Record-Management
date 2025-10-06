@@ -8,7 +8,7 @@ import InquiryManager from './inquiry-manager.js';
 import UIRenderer from './ui-renderer.js';
 import InProgressManager from '../inProgress/in-progress-manager.js';
 import CompletedManager from '../completed/completed-manager.js';
-
+import AuditLogsManager from '../audit-logs/audit-logs-manager.js';
 class InquiriesPage {
     constructor() {
         this.inquiries = [];
@@ -22,6 +22,10 @@ class InquiriesPage {
         this.unsubscribeInProgress = null;
         this.completedItems = [];
         this.unsubscribeCompleted = null;
+
+        this.auditLogs = [];
+        this.unsubscribeAuditLogs = null;
+        this.auditLogsManager = new AuditLogsManager(this);
 
         // Initialize sub-modules
         this.authManager = new AuthManager(this);
@@ -74,6 +78,11 @@ class InquiriesPage {
             await this.inProgressManager.setupInProgressListener();
             await this.completedManager.setupCompletedListener();
             this.updateInProgressNotificationCount();
+
+
+            if (this.isSuperAdmin) {
+                await this.auditLogsManager.setupAuditLogsListener();
+            }
 
         } catch (error) {
             console.error('Error initializing admin panel:', error);
@@ -216,12 +225,36 @@ class InquiriesPage {
             this.showCompletedSection();
         });
 
+        if (this.isSuperAdmin) {
+            $('#auditLogsNav').on('click', async () => {
+                await this.inquiryManager.closeInquiryAndReleaseLock();
+                this.showAuditLogsSection();
+            });
+        } else {
+            $('#auditLogsNav').hide(); // Hide for non-super admins
+        }
+
         // Logout button click
         $('#logoutBtn').on('click', async () => {
             await this.inquiryManager.closeInquiryAndReleaseLock();
             await this.authManager.handleLogout();
         });
     }
+
+    showAuditLogsSection() {
+        $('.nav-item').removeClass('active');
+        $('#auditLogsNav').addClass('active');
+
+        $('.content-header h1').text('Audit Logs');
+        $('.content-header p').text('Track all modifications made to inquiries and projects.');
+
+        if (!this.unsubscribeAuditLogs) {
+            this.auditLogsManager.setupAuditLogsListener();
+        } else {
+            this.uiRenderer.showAuditLogs();
+        }
+    }
+
 
     updateNotificationCount() {
         const unreadCount = this.inquiries.filter(inquiry => inquiry.read === false || inquiry.read === undefined).length;
@@ -256,6 +289,11 @@ class InquiriesPage {
     destroy() {
         if (this.inquiryManager) {
             this.inquiryManager.closeInquiryAndReleaseLock();
+        }
+
+        if (this.unsubscribeAuditLogs) {
+            this.unsubscribeAuditLogs();
+            this.unsubscribeAuditLogs = null;
         }
 
         if (this.unsubscribe) {
