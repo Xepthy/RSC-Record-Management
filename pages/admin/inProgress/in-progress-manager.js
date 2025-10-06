@@ -23,6 +23,9 @@ import {
     reauthenticateWithCredential,
     arrayUnion
 } from '../../../firebase-config.js';
+import auditLogger from '../audit-logs/audit-logger.js';
+
+
 class InProgressManager {
     constructor(parentInstance) {
         this.parent = parentInstance;
@@ -584,6 +587,14 @@ class InProgressManager {
             await deleteDoc(doc(db, 'inProgress', item.id));
             console.log('Removed from inProgress');
 
+            // After deleteDoc and before closing modals
+            await auditLogger.logSimpleAction(
+                item.id,
+                'In Progress',
+                item.clientInfo?.clientName || 'Unknown',
+                'Moved to Completed'
+            );
+
             this.parent.inquiryManager.showToast('Successfully moved to completed!', 'success');
 
             // Close both modals
@@ -704,6 +715,17 @@ class InProgressManager {
                     editingStartedAt: serverTimestamp()
                 });
 
+
+                const clientName = currentItem.clientInfo?.clientName || 'Unknown';
+                await auditLogger.logSimpleAction(
+                    this.currentItemId,
+                    'In Progress',
+                    clientName,
+                    'Started editing'
+                );
+
+
+
                 this.toggleEditMode(true);
 
                 this.lockHeartbeat = setInterval(async () => {
@@ -718,6 +740,9 @@ class InProgressManager {
         });
 
         $('#cancelEditBtn').on('click', async () => {
+
+            const currentItem = this.parent.inProgressItems.find(item => item.id === this.currentItemId);
+
             // Release the lock
             await updateDoc(doc(db, 'inProgress', this.currentItemId), {
                 beingEditedBy: null,
@@ -728,6 +753,16 @@ class InProgressManager {
                 clearInterval(this.lockHeartbeat);
                 this.lockHeartbeat = null;
             }
+
+            // After releasing lock, before toggleEditMode(false)
+            const clientName = currentItem.clientInfo?.clientName || 'Unknown';
+            await auditLogger.logSimpleAction(
+                this.currentItemId,
+                'In Progress',
+                clientName,
+                'Cancelled editing'
+            );
+
 
             this.toggleEditMode(false);
             this.resetFormValues(item);
@@ -1106,12 +1141,142 @@ class InProgressManager {
                 updates.read = true;
             }
 
+            // After collecting all updates, before updateDoc
+            const clientName = currentItem.clientInfo?.clientName || 'Unknown';
+            auditLogger.startBatch(item.id, 'In Progress', clientName);
+
+            // Check quotation change
+            if (this.parent.isSuperAdmin && totalAmount !== currentItem.totalAmount) {
+                auditLogger.addChange(
+                    'Changed Quotation',
+                    `₱${currentItem.totalAmount.toLocaleString()}`,
+                    `₱${totalAmount.toLocaleString()}`
+                );
+            }
+
+            // Check payment checkboxes
+            if (this.parent.isSuperAdmin) {
+                if (is40 !== currentItem.is40) {
+                    auditLogger.addChange(
+                        'Downpayment (40%)',
+                        auditLogger.formatPaymentStatus(currentItem.is40),
+                        auditLogger.formatPaymentStatus(is40)
+                    );
+                }
+                if (is60 !== currentItem.is60) {
+                    auditLogger.addChange(
+                        'Upon Delivery (60%)',
+                        auditLogger.formatPaymentStatus(currentItem.is60),
+                        auditLogger.formatPaymentStatus(is60)
+                    );
+                }
+            }
+
+            // Check services
+            const oldServices = currentItem.selectedServices || [];
+            const newServices = updates.selectedServices;
+            if (JSON.stringify(oldServices) !== JSON.stringify(newServices)) {
+                auditLogger.addChange(
+                    'Changed Services',
+                    auditLogger.formatServices(oldServices),
+                    auditLogger.formatServices(newServices)
+                );
+            }
+
+            // Check schedule
+            if (updates.isScheduleDone !== currentItem.isScheduleDone) {
+                auditLogger.addChange(
+                    'Survey Schedule Status',
+                    currentItem.isScheduleDone ? 'Done' : 'Pending',
+                    updates.isScheduleDone ? 'Done' : 'Pending'
+                );
+            }
+
+            if (updates.schedule !== currentItem.schedule) {
+                auditLogger.addChange(
+                    'Survey Schedule Date',
+                    currentItem.schedule || 'Not set',
+                    updates.schedule || 'Not set'
+                );
+            }
+
+            // Check team
+            if (updates.selectedTeam !== currentItem.selectedTeam) {
+                auditLogger.addChange(
+                    'Survey Team',
+                    `Team ${currentItem.selectedTeam || 'Not assigned'}`,
+                    `Team ${updates.selectedTeam || 'Not assigned'}`
+                );
+            }
+
+            // Check findings
+            if (updates.isEncroachment !== currentItem.isEncroachment) {
+                auditLogger.addChange(
+                    'Finding: Encroachment',
+                    currentItem.isEncroachment ? 'Yes' : 'No',
+                    updates.isEncroachment ? 'Yes' : 'No'
+                );
+            }
+            if (updates.isNeedResearch !== currentItem.isNeedResearch) {
+                auditLogger.addChange(
+                    'Finding: Need Research',
+                    currentItem.isNeedResearch ? 'Yes' : 'No',
+                    updates.isNeedResearch ? 'Yes' : 'No'
+                );
+            }
+            if (updates.isDoneLayout !== currentItem.isDoneLayout) {
+                auditLogger.addChange(
+                    'Finding: Done Layout',
+                    currentItem.isDoneLayout ? 'Yes' : 'No',
+                    updates.isDoneLayout ? 'Yes' : 'No'
+                );
+            }
+
+            // Check remarks
+            if (updates.remarks !== currentItem.remarks) {
+                auditLogger.addChange(
+                    'Changed Remarks',
+                    currentItem.remarks || 'None',
+                    updates.remarks || 'None'
+                );
+            }
+
+            // Check project files
+            const oldFiles = currentItem.projectFiles || [];
+            const newFiles = finalProjectFiles || [];
+            const oldFileNames = Array.isArray(oldFiles) ? oldFiles.map(f => f.name).join(', ') : (oldFiles.name || 'None');
+            const newFileNames = Array.isArray(newFiles) ? newFiles.map(f => f.name).join(', ') : (newFiles.name || 'None');
+
+            if (oldFileNames !== newFileNames) {
+                auditLogger.addChange(
+                    'Project Files',
+                    oldFileNames,
+                    newFileNames
+                );
+            }
+
+            // Commit batch
+            await auditLogger.commitBatch();
+
+
+
+
+
             // Update Firestore
             await updateDoc(doc(db, 'inProgress', item.id), {
                 ...updates,
                 beingEditedBy: null,
                 editingStartedAt: null
             });
+
+
+            await auditLogger.logSimpleAction(
+                item.id,
+                'In Progress',
+                clientName,
+                'Finished editing'
+            );
+
 
             // Clear temporary data
             this.tempProjectFiles = null;

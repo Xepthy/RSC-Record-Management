@@ -1047,6 +1047,9 @@ class UIRenderer {
 
             return `
             <tr class="completed-row ${readClass}" data-item-id="${item.id}">
+                <td class="checkbox-column">
+                    <input type="checkbox" class="completed-row-checkbox" value="${item.id}">
+                </td>
                 <td class="reference-column">
                     <div class="reference-code">${referenceCode}</div>
                 </td>
@@ -1084,12 +1087,19 @@ class UIRenderer {
                     <span class="unread-count">${this.parent.completedItems.filter(item => !item.read).length} Unread</span>
                     <span class="page-info">Page ${this.completedCurrentPage} of ${totalPages}</span>
                 </div>
+                <div class="bulk-actions" style="display: none;">
+                    <span class="selected-count">0 selected</span>
+                    <button class="mark-read-btn" id="markCompletedReadBtn">Mark as Read</button>
+                </div>
             </div>
             
             <div class="table-wrapper">
                 <table class="inquiries-table completed-table">
                     <thead>
                         <tr>
+                            <th class="checkbox-header">
+                                <input type="checkbox" id="selectAllCompletedCheckbox">
+                            </th>
                             <th class="reference-header">Reference Code</th>
                             <th class="client-header">Client</th>
                             <th class="plan-header">Plan Name</th>
@@ -1121,8 +1131,63 @@ class UIRenderer {
         this.setupPaginationEventListeners();
     }
 
+    updateCompletedBulkActions() {
+        const selectedCount = $('.completed-row-checkbox:checked').length;
+        const $bulkActions = $('.bulk-actions');
+        const $selectedCount = $('.selected-count');
+
+        if (selectedCount > 0) {
+            $bulkActions.show();
+            $selectedCount.text(`${selectedCount} selected`);
+        } else {
+            $bulkActions.hide();
+        }
+    }
+
+    updateCompletedSelectAllState() {
+        const totalRows = $('.completed-row-checkbox').length;
+        const selectedRows = $('.completed-row-checkbox:checked').length;
+        const $selectAll = $('#selectAllCompletedCheckbox');
+
+        if (selectedRows === 0) {
+            $selectAll.prop('checked', false).prop('indeterminate', false);
+        } else if (selectedRows === totalRows) {
+            $selectAll.prop('checked', true).prop('indeterminate', false);
+        } else {
+            $selectAll.prop('checked', false).prop('indeterminate', true);
+        }
+    }
+
+    async handleCompletedMarkAsRead() {
+        const selectedIds = $('.completed-row-checkbox:checked').map(function () {
+            return $(this).val();
+        }).get();
+
+        if (selectedIds.length === 0) return;
+
+        try {
+            for (const id of selectedIds) {
+                await this.parent.completedManager.markAsRead(id);
+            }
+
+            this.parent.inquiryManager.showToast(`${selectedIds.length} item(s) marked as read`, 'success');
+
+            // Refresh the table
+            this.showCompletedItems();
+        } catch (error) {
+            console.error('Error marking as read:', error);
+            this.parent.inquiryManager.showToast('Failed to mark items as read', 'error');
+        }
+    }
+
+
+
     setupCompletedTableEventListeners() {
+        // Handle row clicks (avoid checkbox column)
         $('.completed-row').on('click', async (e) => {
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
             const itemId = $(e.currentTarget).data('item-id');
             const item = this.parent.completedItems.find(item => item.id === itemId);
 
@@ -1135,6 +1200,25 @@ class UIRenderer {
             this.parent.completedManager.showCompletedDetails(itemId);
         });
 
+        // Handle individual checkboxes
+        $('.completed-row-checkbox').on('change', () => {
+            this.updateCompletedBulkActions();
+            this.updateCompletedSelectAllState();
+        });
+
+        // Handle select all checkbox
+        $('#selectAllCompletedCheckbox').on('change', (e) => {
+            const isChecked = $(e.target).is(':checked');
+            $('.completed-row-checkbox').prop('checked', isChecked);
+            this.updateCompletedBulkActions();
+        });
+
+        // Handle mark as read button
+        $('#markCompletedReadBtn').on('click', () => {
+            this.handleCompletedMarkAsRead();
+        });
+
+        // Hover effects (KEEP THIS)
         $('.completed-row').on('mouseenter', function () {
             $(this).css({
                 'opacity': '0.8',
@@ -1150,6 +1234,173 @@ class UIRenderer {
         });
 
         $('.completed-row').css('cursor', 'pointer');
+    }
+
+    showAuditLogs() {
+        if (this.parent.auditLogs.length === 0) {
+            $('#inquiryContent').html(`
+            <div class="empty-state">
+                <h3>📋 No audit logs</h3>
+                <p>System modifications will appear here.</p>
+            </div>
+        `);
+            return;
+        }
+
+        const sortBy = $('#auditSortSelect').val() || 'date-desc';
+        let sortedLogs = [...this.parent.auditLogs];
+
+        // Apply sorting
+        switch (sortBy) {
+            case 'date-desc':
+                sortedLogs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                break;
+            case 'date-asc':
+                sortedLogs.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+                break;
+            case 'category':
+                sortedLogs.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
+                break;
+            case 'modified-by':
+                sortedLogs.sort((a, b) => (a.modifiedBy || '').localeCompare(b.modifiedBy || ''));
+                break;
+            case 'action-type':
+                sortedLogs.sort((a, b) => (a.actionType || '').localeCompare(b.actionType || ''));
+                break;
+        }
+
+        const tableRows = sortedLogs.map(log => {
+            const { date, time } = this.parent.auditLogsManager.formatTimestamp(log.timestamp);
+
+            // Truncate action type with ellipsis if too long
+            const actionType = log.actionType || 'Unknown';
+            const displayAction = actionType.length > 40 ? actionType.substring(0, 40) + '...' : actionType;
+
+            // Parse old/new values
+            let oldValueDisplay = '--';
+            let newValueDisplay = '--';
+
+            try {
+                if (log.oldValue && log.oldValue !== '--') {
+                    const oldObj = JSON.parse(log.oldValue);
+                    const values = Object.values(oldObj);
+                    oldValueDisplay = values.length > 0 ? values[0] : '--';
+                    if (typeof oldValueDisplay === 'string' && oldValueDisplay.length > 50) {
+                        oldValueDisplay = oldValueDisplay.substring(0, 50) + '...';
+                    }
+                }
+
+                if (log.newValue && log.newValue !== '--') {
+                    const newObj = JSON.parse(log.newValue);
+                    const values = Object.values(newObj);
+                    newValueDisplay = values.length > 0 ? values[0] : '--';
+                    if (typeof newValueDisplay === 'string' && newValueDisplay.length > 50) {
+                        newValueDisplay = newValueDisplay.substring(0, 50) + '...';
+                    }
+                }
+            } catch (e) {
+                oldValueDisplay = log.oldValue || '--';
+                newValueDisplay = log.newValue || '--';
+            }
+
+            return `
+            <tr class="audit-row" data-log-id="${log.id}">
+                <td class="profile-column" style="cursor: pointer;">
+                    <div class="profile-name">${log.profileAffected || 'Unknown'}</div>
+                </td>
+                <td class="action-column">
+                    <div class="action-text" title="${actionType}">${displayAction}</div>
+                </td>
+                <td class="category-column">
+                    <span class="category-badge ${log.category?.toLowerCase().replace(' ', '-')}">${log.category || 'Unknown'}</span>
+                </td>
+                <td class="modified-by-column">
+                    <div class="modifier-email">${log.modifiedBy || 'Unknown'}</div>
+                    <div class="modifier-role">${log.modifiedByRole || ''}</div>
+                </td>
+                <td class="old-value-column">
+                    <div class="value-text">${oldValueDisplay}</div>
+                </td>
+                <td class="new-value-column">
+                    <div class="value-text">${newValueDisplay}</div>
+                </td>
+                <td class="timestamp-column">
+                    <div class="timestamp-date">${date}</div>
+                    <div class="timestamp-time">${time}</div>
+                </td>
+            </tr>
+        `;
+        }).join('');
+
+        const tableHTML = `
+        <div class="inquiries-table-container">
+            <div class="table-header">
+                <div class="sort-controls">
+                    <label>Sort by:</label>
+                    <select id="auditSortSelect">
+                        <option value="date-desc">Date (Newest First)</option>
+                        <option value="date-asc">Date (Oldest First)</option>
+                        <option value="category">Category</option>
+                        <option value="modified-by">Modified By</option>
+                        <option value="action-type">Action Type</option>
+                    </select>
+                </div>
+                <div class="table-stats">
+                    <span class="total-count">${this.parent.auditLogs.length} Total Logs</span>
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table class="inquiries-table audit-logs-table">
+                    <thead>
+                        <tr>
+                            <th class="profile-header">Profile Affected</th>
+                            <th class="action-header">Action Type</th>
+                            <th class="category-header">Category</th>
+                            <th class="modified-by-header">Modified By</th>
+                            <th class="old-value-header">Old Value</th>
+                            <th class="new-value-header">New Value</th>
+                            <th class="timestamp-header">Modified At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+        $('#inquiryContent').html(tableHTML);
+        this.setupAuditLogsEventListeners();
+    }
+
+    setupAuditLogsEventListeners() {
+        // Sort change handler
+        $('#auditSortSelect').on('change', () => {
+            this.showAuditLogs();
+        });
+
+        // Profile click handler - show modal
+        $('.profile-column').on('click', async (e) => {
+            const logId = $(e.currentTarget).parent().data('log-id');
+            await this.parent.auditLogsManager.showAuditLogModal(logId);
+        });
+
+        // Hover effects
+        $('.audit-row').on('mouseenter', function () {
+            $(this).css({
+                'opacity': '0.8',
+                'transform': 'translateX(2px)',
+                'transition': 'all 0.2s ease'
+            });
+        }).on('mouseleave', function () {
+            $(this).css({
+                'opacity': '1',
+                'transform': 'translateX(0)',
+                'transition': 'all 0.2s ease'
+            });
+        });
     }
 
 

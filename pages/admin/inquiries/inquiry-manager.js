@@ -16,6 +16,8 @@ import {
     EmailAuthProvider,
     reauthenticateWithCredential
 } from '../../../firebase-config.js';
+import auditLogger from '../audit-logs/audit-logger.js';
+
 
 // Note: ung recent service sa client side wala pa yun pero dagdagin yun sa HULI fucntions dito
 
@@ -864,6 +866,44 @@ class InquiryManager {
                 const remarks = $('#remarksInput').val().trim();
                 const status = $('#statusDropdown').val();
                 const selectedServices = this.getSelectedServices();
+
+                const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
+                const clientName = inquiry.clientInfo?.clientName || inquiry.clientName || 'Unknown';
+
+                auditLogger.startBatch(this.parent.currentInquiryId, 'Inquiries', clientName);
+
+                // Check what changed
+                if (status !== inquiry.status) {
+                    auditLogger.addChange(
+                        status, // Action type is the new status
+                        inquiry.status || 'Not set',
+                        status
+                    );
+                }
+
+                if (remarks !== (inquiry.remarks || '')) {
+                    auditLogger.addChange(
+                        'Updated Remarks',
+                        inquiry.remarks || 'None',
+                        remarks
+                    );
+                }
+
+                // Check services changes
+                const oldServices = inquiry.selectedServices || [];
+                const addedServices = selectedServices.filter(s => !oldServices.includes(s));
+                const removedServices = oldServices.filter(s => !selectedServices.includes(s));
+
+                if (addedServices.length > 0 || removedServices.length > 0) {
+                    auditLogger.addChange(
+                        'Changed Services',
+                        auditLogger.formatServices(oldServices),
+                        auditLogger.formatServices(selectedServices)
+                    );
+                }
+
+                // Commit all changes as one entry
+                await auditLogger.commitBatch();
 
                 await this.batchUpdateInquiryAndPending({
                     remarks: remarks,
