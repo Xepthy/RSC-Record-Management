@@ -91,7 +91,7 @@ class InProgressManager {
     }
 
 
-    showInProgressDetails(itemId) {
+    showInProgressDetails(itemId, readOnly = false) {
         const item = this.parent.inProgressItems.find(item => item.id === itemId);
         if (!item) return;
 
@@ -367,8 +367,8 @@ class InProgressManager {
                     </div>
                 </div>
                 <div class="modal-footer">
-                ${this.parent.isAdmin || this.parent.isSuperAdmin ? `<button class="btn-success" id="moveToCompletedBtn">Move to Completed</button>` : ''}
-                    ${this.parent.isAdmin || this.parent.isSuperAdmin ? `<button class="btn-secondary" id="editBtn">Edit</button>` : ''}
+                    ${!readOnly && this.parent.isAdmin || this.parent.isSuperAdmin ? `<button class="btn-success" id="moveToCompletedBtn">Move to Completed</button>` : ''}
+                    ${!readOnly && this.parent.isAdmin || this.parent.isSuperAdmin ? `<button class="btn-secondary" id="editBtn">Edit</button>` : ''}
                     <button class="btn-primary" id="saveBtn" style="display: none;">Save</button>
                     <button class="btn-secondary" id="cancelEditBtn" style="display: none;">Cancel</button>
                     <button class="btn-cancel" id="cancelBtn">Close</button>
@@ -381,7 +381,16 @@ class InProgressManager {
         this.loadTeamOptions().then(teams => {
             this.populateTeamDropdown(teams, item.selectedTeam);
         });
-        this.setupModalEventListeners(item);
+
+        // Only setup edit listeners if not readOnly
+        if (!readOnly) {
+            this.setupModalEventListeners(item);
+        } else {
+            // Only setup close button
+            $('#modalCloseBtn, #cancelBtn').on('click', () => {
+                $('#inProgressModal').remove();
+            });
+        }
     }
 
 
@@ -542,6 +551,7 @@ class InProgressManager {
                 projectFiles: item.projectFiles,
                 isReceive: false,
                 read: false,
+                originalInProgressId: item.id,
                 createdAt: serverTimestamp()
             };
 

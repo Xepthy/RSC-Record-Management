@@ -7,6 +7,8 @@ class UIRenderer {
         this.archiveCurrentPage = 1;
         this.inProgressCurrentPage = 1;
         this.completedCurrentPage = 1;
+        this.auditLogsCurrentPage = 1;
+        this.currentAuditSort = 'date-desc';
         this.setupGlobalSearchListeners();
         this.setupClearButtonListeners();
     }
@@ -153,6 +155,7 @@ class UIRenderer {
             case 'archive': return this.archiveCurrentPage;
             case 'inprogress': return this.inProgressCurrentPage;
             case 'completed': return this.completedCurrentPage;
+            case 'auditlogs': return this.auditLogsCurrentPage;
         }
     }
 
@@ -162,6 +165,7 @@ class UIRenderer {
             case 'archive': this.archiveCurrentPage = page; break;
             case 'inprogress': this.inProgressCurrentPage = page; break;
             case 'completed': this.completedCurrentPage = page; break;
+            case 'auditlogs': this.auditLogsCurrentPage = page; break;
         }
     }
 
@@ -171,6 +175,7 @@ class UIRenderer {
             case 'archive': this.showArchivedInquiries(); break;
             case 'inprogress': this.showInProgressItems(); break;
             case 'completed': this.showCompletedItems(); break;
+            case 'auditlogs': this.showAuditLogs(); break;
         }
     }
 
@@ -1239,16 +1244,17 @@ class UIRenderer {
     showAuditLogs() {
         if (this.parent.auditLogs.length === 0) {
             $('#inquiryContent').html(`
-            <div class="empty-state">
-                <h3>📋 No audit logs</h3>
-                <p>System modifications will appear here.</p>
-            </div>
-        `);
+        <div class="empty-state">
+            <h3>📋 No audit logs</h3>
+            <p>System modifications will appear here.</p>
+        </div>
+    `);
             return;
         }
 
         const sortBy = $('#auditSortSelect').val() || 'date-desc';
         let sortedLogs = [...this.parent.auditLogs];
+        this.currentAuditSort = sortBy;
 
         // Apply sorting
         switch (sortBy) {
@@ -1269,33 +1275,60 @@ class UIRenderer {
                 break;
         }
 
-        const tableRows = sortedLogs.map(log => {
+        // PAGINATION LOGIC
+        const totalItems = sortedLogs.length;
+        const totalPages = Math.ceil(totalItems / this.itemsPerPage);
+        const startIndex = (this.auditLogsCurrentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const currentLogs = sortedLogs.slice(startIndex, endIndex);
+
+        const tableRows = currentLogs.map(log => {
             const { date, time } = this.parent.auditLogsManager.formatTimestamp(log.timestamp);
 
             // Truncate action type with ellipsis if too long
             const actionType = log.actionType || 'Unknown';
             const displayAction = actionType.length > 40 ? actionType.substring(0, 40) + '...' : actionType;
+            const actionTooltip = actionType.replace(/,\s*/g, ',\n');
 
-            // Parse old/new values
             let oldValueDisplay = '--';
             let newValueDisplay = '--';
+            let oldValueTooltip = '';
+            let newValueTooltip = '';
 
             try {
                 if (log.oldValue && log.oldValue !== '--') {
                     const oldObj = JSON.parse(log.oldValue);
-                    const values = Object.values(oldObj);
-                    oldValueDisplay = values.length > 0 ? values[0] : '--';
-                    if (typeof oldValueDisplay === 'string' && oldValueDisplay.length > 50) {
-                        oldValueDisplay = oldValueDisplay.substring(0, 50) + '...';
+                    const entries = Object.entries(oldObj);
+
+                    if (entries.length > 0) {
+                        // Create display text (show all values separated by " | ")
+                        const fullText = entries.map(([key, val]) => val).join(' | ');
+                        oldValueTooltip = entries.map(([key, val]) => `${key}: ${val}`).join('\n');
+
+                        // Truncate if too long
+                        if (fullText.length > 50) {
+                            oldValueDisplay = fullText.substring(0, 50) + '...';
+                        } else {
+                            oldValueDisplay = fullText;
+                        }
                     }
                 }
 
                 if (log.newValue && log.newValue !== '--') {
                     const newObj = JSON.parse(log.newValue);
-                    const values = Object.values(newObj);
-                    newValueDisplay = values.length > 0 ? values[0] : '--';
-                    if (typeof newValueDisplay === 'string' && newValueDisplay.length > 50) {
-                        newValueDisplay = newValueDisplay.substring(0, 50) + '...';
+                    const entries = Object.entries(newObj);
+
+                    if (entries.length > 0) {
+                        // Create display text (show all values separated by " | ")
+                        const fullText = entries.map(([key, val]) => val).join(' | ');
+                        newValueTooltip = entries.map(([key, val]) => `${key}: ${val}`).join('\n');
+
+                        // Truncate if too long
+                        if (fullText.length > 50) {
+                            newValueDisplay = fullText.substring(0, 50) + '...';
+                        } else {
+                            newValueDisplay = fullText;
+                        }
                     }
                 }
             } catch (e) {
@@ -1304,80 +1337,86 @@ class UIRenderer {
             }
 
             return `
-            <tr class="audit-row" data-log-id="${log.id}">
-                <td class="profile-column" style="cursor: pointer;">
-                    <div class="profile-name">${log.profileAffected || 'Unknown'}</div>
-                </td>
-                <td class="action-column">
-                    <div class="action-text" title="${actionType}">${displayAction}</div>
-                </td>
-                <td class="category-column">
-                    <span class="category-badge ${log.category?.toLowerCase().replace(' ', '-')}">${log.category || 'Unknown'}</span>
-                </td>
-                <td class="modified-by-column">
-                    <div class="modifier-email">${log.modifiedBy || 'Unknown'}</div>
-                    <div class="modifier-role">${log.modifiedByRole || ''}</div>
-                </td>
-                <td class="old-value-column">
-                    <div class="value-text">${oldValueDisplay}</div>
-                </td>
-                <td class="new-value-column">
-                    <div class="value-text">${newValueDisplay}</div>
-                </td>
-                <td class="timestamp-column">
-                    <div class="timestamp-date">${date}</div>
-                    <div class="timestamp-time">${time}</div>
-                </td>
-            </tr>
-        `;
+        <tr class="audit-row" data-log-id="${log.id}">
+            <td class="profile-column" style="cursor: pointer;">
+                <div class="profile-name">${log.profileAffected || 'Unknown'}</div>
+            </td>
+            <td class="action-column">
+                <div class="action-text" title="${actionTooltip}">${displayAction}</div>
+            </td>
+            <td class="category-column">
+                <span class="category-badge ${log.category?.toLowerCase().replace(' ', '-')}">${log.category || 'Unknown'}</span>
+            </td>
+            <td class="modified-by-column">
+                <div class="modifier-email">${log.modifiedBy || 'Unknown'}</div>
+                <div class="modifier-role">${log.modifiedByRole || ''}</div>
+            </td>
+            <td class="old-value-column">
+                <div class="value-text" title="${oldValueTooltip || oldValueDisplay}">${oldValueDisplay}</div>
+            </td>
+            <td class="new-value-column">
+                <div class="value-text" title="${newValueTooltip || newValueDisplay}">${newValueDisplay}</div>
+            </td>
+            <td class="timestamp-column">
+                <div class="timestamp-date">${date}</div>
+                <div class="timestamp-time">${time}</div>
+            </td>
+        </tr>
+    `;
         }).join('');
 
+        const paginationHTML = this.generatePaginationControls(totalPages, 'auditlogs');
+
         const tableHTML = `
-        <div class="inquiries-table-container">
-            <div class="table-header">
-                <div class="sort-controls">
-                    <label>Sort by:</label>
-                    <select id="auditSortSelect">
-                        <option value="date-desc">Date (Newest First)</option>
-                        <option value="date-asc">Date (Oldest First)</option>
-                        <option value="category">Category</option>
-                        <option value="modified-by">Modified By</option>
-                        <option value="action-type">Action Type</option>
-                    </select>
-                </div>
-                <div class="table-stats">
-                    <span class="total-count">${this.parent.auditLogs.length} Total Logs</span>
-                </div>
+    <div class="inquiries-table-container">
+        <div class="table-header">
+            <div class="sort-controls">
+                <label>Sort by:</label>
+                <select id="auditSortSelect">
+                    <option value="date-desc" ${this.currentAuditSort === 'date-desc' ? 'selected' : ''}>Date (Newest First)</option>
+                    <option value="date-asc" ${this.currentAuditSort === 'date-asc' ? 'selected' : ''}>Date (Oldest First)</option>
+                    <option value="category" ${this.currentAuditSort === 'category' ? 'selected' : ''}>Category</option>
+                    <option value="modified-by" ${this.currentAuditSort === 'modified-by' ? 'selected' : ''}>Modified By</option>
+                    <option value="action-type" ${this.currentAuditSort === 'action-type' ? 'selected' : ''}>Action Type</option>
+                </select>
             </div>
-            
-            <div class="table-wrapper">
-                <table class="inquiries-table audit-logs-table">
-                    <thead>
-                        <tr>
-                            <th class="profile-header">Profile Affected</th>
-                            <th class="action-header">Action Type</th>
-                            <th class="category-header">Category</th>
-                            <th class="modified-by-header">Modified By</th>
-                            <th class="old-value-header">Old Value</th>
-                            <th class="new-value-header">New Value</th>
-                            <th class="timestamp-header">Modified At</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tableRows}
-                    </tbody>
-                </table>
+            <div class="table-stats">
+                <span class="total-count">${this.parent.auditLogs.length} Total Logs</span>
+                <span class="page-info">Page ${this.auditLogsCurrentPage} of ${totalPages}</span>
             </div>
         </div>
+        
+        <div class="table-wrapper">
+            <table class="inquiries-table audit-logs-table">
+                <thead>
+                    <tr>
+                        <th class="profile-header">Profile Affected</th>
+                        <th class="action-header">Action Type</th>
+                        <th class="category-header">Category</th>
+                        <th class="modified-by-header">Modified By</th>
+                        <th class="old-value-header">Old Value</th>
+                        <th class="new-value-header">New Value</th>
+                        <th class="timestamp-header">Modified At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        </div>
+        ${paginationHTML}
+    </div>
     `;
 
         $('#inquiryContent').html(tableHTML);
         this.setupAuditLogsEventListeners();
+        this.setupPaginationEventListeners();
     }
 
     setupAuditLogsEventListeners() {
         // Sort change handler
         $('#auditSortSelect').on('change', () => {
+            this.auditLogsCurrentPage = 1;
             this.showAuditLogs();
         });
 
@@ -1400,6 +1439,60 @@ class UIRenderer {
                 'transform': 'translateX(0)',
                 'transition': 'all 0.2s ease'
             });
+        });
+    }
+
+    showDashboard(data) {
+        const maxValue = Math.max(...Object.values(data.serviceCounts));
+        const barHeight = maxValue > 0 ? 300 / maxValue : 0;
+
+        const barsHTML = Object.entries(data.serviceCounts)
+            .map(([service, count]) => `
+            <div class="bar-container">
+                <div class="bar" style="height: ${count * barHeight}px" title="${service}: ${count}">
+                    <span class="bar-value">${count}</span>
+                </div>
+                <div class="bar-label">${service.split(',')}</div>
+            </div>
+            `).join('');
+
+        const resetDate = this.parent.dashboardManager.getResetDate();
+
+        const dashboardHTML = `
+        <div class="dashboard-container">
+            <div class="dashboard-graph">
+                <h3>Services Availed (Completed Projects)</h3>
+                <p class="reset-info">Statistics reset on: ${resetDate}</p>
+                <div class="bar-chart">
+                    ${barsHTML}
+                </div>
+            </div>
+            
+            <div class="dashboard-stats">
+                <div class="stat-card" data-nav="inquiriesNav">
+                    <h4>Inquiries</h4>
+                    <div class="stat-number">${data.inquiries}</div>
+                </div>
+                <div class="stat-card" data-nav="inProgressNav">
+                    <h4>In Progress</h4>
+                    <div class="stat-number">${data.inProgress}</div>
+                </div>
+                <div class="stat-card" data-nav="completedNav">
+                    <h4>Completed</h4>
+                    <div class="stat-number">${data.completed}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+        $('#inquiryContent').html(dashboardHTML);
+        this.setupDashboardEventListeners();
+    }
+
+    setupDashboardEventListeners() {
+        $('.stat-card').on('click', function () {
+            const navId = $(this).data('nav');
+            $(`#${navId}`).click();
         });
     }
 

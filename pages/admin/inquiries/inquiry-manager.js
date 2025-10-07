@@ -547,7 +547,7 @@ class InquiryManager {
 
         // dateString comes as "2025-01-15" (yyyy-mm-dd)
         const [year, month, day] = dateString.split('-');
-        return `${month}/${day}/${year}`; // Convert to mm/dd/yyyy
+        return `${day}/${month}/${year}`;
     }
 
     showPasswordModal(onConfirm) {
@@ -1373,6 +1373,7 @@ class InquiryManager {
         // Load any saved progress
         $('#inquiryContent').html(detailsHTML);
 
+
         // Edit button handler
         $('#editInquiryBtn').on('click', async () => {
             const currentInquiry = this.parent.inquiries.find(inq => inq.id === inquiryId);
@@ -1466,10 +1467,6 @@ class InquiryManager {
 
         $('#applyRemarksBtn').on('click', () => this.handleRemarksApply());
     }
-
-
-
-
 
 
     formatDate(dateSubmitted) {

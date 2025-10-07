@@ -9,6 +9,7 @@ import UIRenderer from './ui-renderer.js';
 import InProgressManager from '../inProgress/in-progress-manager.js';
 import CompletedManager from '../completed/completed-manager.js';
 import AuditLogsManager from '../audit-logs/audit-logs-manager.js';
+import DashboardManager from '../dashboard/dashboard-manager.js';
 class InquiriesPage {
     constructor() {
         this.inquiries = [];
@@ -22,6 +23,7 @@ class InquiriesPage {
         this.unsubscribeInProgress = null;
         this.completedItems = [];
         this.unsubscribeCompleted = null;
+        this.dashboardManager = new DashboardManager(this);
 
         this.auditLogs = [];
         this.unsubscribeAuditLogs = null;
@@ -198,11 +200,31 @@ class InquiriesPage {
         }
     }
 
+    async showDashboardSection() {
+        $('.nav-item').removeClass('active');
+        $('#dashboardNav').addClass('active');
+
+        $('.content-header h1').text('Dashboard');
+        $('.content-header p').text('Overview of system statistics and service trends.');
+
+        this.uiRenderer.showLoading();
+        const data = await this.dashboardManager.loadDashboardData();
+        if (data) {
+            this.uiRenderer.showDashboard(data);
+        }
+    }
+
+
     setupEventListeners() {
 
         if (this.isStaff || this.isAdmin) {
             $('#archiveNav').hide();
         }
+
+        $('#dashboardNav').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
+            this.showDashboardSection();
+        });
 
         // Inquiries navigation click
         $('#inquiriesNav').on('click', async () => {
