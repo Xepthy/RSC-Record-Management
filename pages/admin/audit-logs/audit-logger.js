@@ -101,7 +101,7 @@ class AuditLogger {
                 timestamp: serverTimestamp()
             };
 
-            await addDoc(collection(db, 'audit_logs'), auditEntry);
+            await addDoc(collection(db, 'audit-logs'), auditEntry);
             console.log('Audit log created:', auditEntry);
 
         } catch (error) {
@@ -116,8 +116,14 @@ class AuditLogger {
     }
 
     // Helper to format payment status
+    // Helper to format payment status
     formatPaymentStatus(isChecked) {
-        return isChecked ? 'Checked' : 'Unchecked';
+        return isChecked ? 'Paid' : 'Not Paid';
+    }
+
+    // Helper to format schedule status
+    formatScheduleStatus(isDone) {
+        return isDone ? 'Schedule Completed' : 'Schedule Pending';
     }
 }
 

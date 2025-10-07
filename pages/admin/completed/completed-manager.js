@@ -91,7 +91,7 @@ class CompletedManager {
 
         // Assuming completedDate is stored as yyyy-mm-dd
         const [year, month, day] = dateString.split('-');
-        return `${month}/${day}/${year}`;
+        return `${day}/${month}/${year}`;
     }
 
     showCompletedDetails(itemId) {
