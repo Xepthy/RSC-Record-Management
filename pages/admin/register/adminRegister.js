@@ -153,7 +153,7 @@ $(document).ready(function () {
                 AdminSessionManager.clearTempData();
                 AdminInputUtils.clearSensitiveFields();
                 alert("Admin account created successfully! Redirecting to admin dashboard...");
-                window.location.href = "../inquiries/admin_dashboard.html";
+                window.location.href = "../inquiries/dashboard_admin.html";
 
                 // Reset rate limiter on success
                 AdminRateLimiter.reset();
