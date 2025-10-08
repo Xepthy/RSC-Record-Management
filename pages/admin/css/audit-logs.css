@@ -5,11 +5,11 @@
 
 .profile-column { width: 15%; cursor: pointer; }
 .action-column { width: 20%; }
-.category-column { width: 12%; text-align: center; }
-.modified-by-column { width: 15%; }
+.category-column { width: 12%; text-align: left ; }
+.modified-by-column { width: 15%; text-align: left !important }
 .old-value-column { width: 15%; }
 .new-value-column { width: 15%; }
-.timestamp-column { width: 12%; text-align: center; }
+.timestamp-column { width: 12%; text-align: left; }
 
 .category-badge {
     padding: 4px 8px;
