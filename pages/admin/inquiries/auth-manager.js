@@ -77,7 +77,7 @@ class AuthManager {
             const accountDocRef = doc(db, 'accounts', uid);
             const accountDoc = await getDoc(accountDocRef);
 
-            return accountDoc.exists() && accountDoc.data().role === 'admin';
+            return accountDoc.exists() && ['super_admin', 'admin', 'staff'].includes(accountDoc.data().role);
         } catch (error) {
             console.error('Error checking admin status:', error);
             return false;
@@ -119,7 +119,7 @@ class AuthManager {
         `);
 
         setTimeout(() => {
-            window.location.href = '../login/adminLogin.html';
+            window.location.href = '../../admin/login/adminLogin.html';
         }, 1500);
     }
 
@@ -186,7 +186,7 @@ class AuthManager {
                     Your account has been disabled by an administrator. 
                     Please contact support for assistance.
                 </p>
-                <button onclick="window.location.href='/admin/login.html'" style="
+                <button onclick="window.location.href='../../admin/login/adminLogin.html'" style="
                     background: #667eea;
                     color: white;
                     border: none;
@@ -222,7 +222,7 @@ class AuthManager {
 
             } else {
                 // Not authenticated
-                window.location.href = '/admin/login.html';
+                window.location.href = '../../admin/login/adminLogin.html';
             }
         });
     }

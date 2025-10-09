@@ -156,7 +156,7 @@ class AdminLogin {
             const accountDocRef = doc(db, 'accounts', uid);
             const accountDoc = await getDoc(accountDocRef);
 
-            return accountDoc.exists() && accountDoc.data().role === 'admin';
+            return accountDoc.exists() && ['super_admin', 'admin', 'staff'].includes(accountDoc.data().role);
         } catch (error) {
             console.error('Error checking admin status:', error);
             return false;
