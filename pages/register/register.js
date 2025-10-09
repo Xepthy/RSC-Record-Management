@@ -80,6 +80,7 @@ $(document).ready(function () {
 
             $('#verifySection').slideDown();
             $('#password').val('');
+            $('password-container').hide();
             $('#registerBtn').hide();
 
 
