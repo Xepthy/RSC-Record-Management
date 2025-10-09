@@ -1244,11 +1244,11 @@ class UIRenderer {
     showAuditLogs() {
         if (this.parent.auditLogs.length === 0) {
             $('#inquiryContent').html(`
-        <div class="empty-state">
-            <h3>📋 No audit logs</h3>
-            <p>System modifications will appear here.</p>
-        </div>
-    `);
+            <div class="empty-state">
+                <h3>📋 No audit logs</h3>
+                <p>System modifications will appear here.</p>
+            </div>
+             `);
             return;
         }
 
@@ -1348,7 +1348,7 @@ class UIRenderer {
                 <span class="category-badge ${log.category?.toLowerCase().replace(' ', '-')}">${log.category || 'Unknown'}</span>
             </td>
             <td class="modified-by-column">
-                <div class="modifier-email">${log.modifiedBy || 'Unknown'}</div>
+                <div class="modifier-name">${log.modifiedByName || log.modifiedBy || 'Unknown'}</div>
                 <div class="modifier-role">${log.modifiedByRole || ''}</div>
             </td>
             <td class="old-value-column">

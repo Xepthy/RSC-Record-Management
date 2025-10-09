@@ -91,15 +91,19 @@ class AuditLogsManager {
                     isArchived = false;
                 }
 
+            } else if (log.category === 'Account Management') {
+                const accountSnap = await getDoc(doc(db, 'accounts', log.documentId));
+                if (accountSnap.exists()) {
+                    documentData = { id: log.documentId, ...accountSnap.data() };
+                }
+
             } else if (log.category === 'In Progress') {
-                // First try to find in inProgress
                 const inProgressSnap = await getDoc(doc(db, 'inProgress', log.documentId));
 
                 if (inProgressSnap.exists()) {
                     documentData = { id: log.documentId, ...inProgressSnap.data() };
                     actualCategory = 'In Progress';
                 } else {
-                    // If not in inProgress, search completed by originalInProgressId
                     const { getDocs, query: firestoreQuery, where, collection } = await import('../../../firebase-config.js');
                     const completedQuery = firestoreQuery(
                         collection(db, 'completed'),
@@ -139,6 +143,12 @@ class AuditLogsManager {
                     }
                     this.parent.inquiryManager.showInquiryDetails(documentData.id);
                 }
+            } else if (actualCategory === 'Account Management') {
+                const account = documentData;
+                this.parent.inquiryManager.showToast(
+                    `Account: ${account.firstName} ${account.lastName} (${account.email})`,
+                    'info'
+                );
             } else if (actualCategory === 'In Progress') {
                 const existingIndex = this.parent.inProgressItems.findIndex(i => i.id === documentData.id);
                 if (existingIndex === -1) {

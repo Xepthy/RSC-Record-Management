@@ -300,7 +300,7 @@ class InquiriesPage {
         $('#auditLogsNav').addClass('active');
 
         $('.content-header h1').text('Audit Logs');
-        $('.content-header p').text('Track all modifications made to inquiries and projects.');
+        $('.content-header p').text('Track all modifications.');
 
         if (!this.unsubscribeAuditLogs) {
             this.auditLogsManager.setupAuditLogsListener();
