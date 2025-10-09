@@ -92,6 +92,8 @@ class InquiriesPage {
                 await this.auditLogsManager.setupAuditLogsListener();
             }
 
+            await this.showDashboardSection();
+
         } catch (error) {
             console.error('Error initializing admin panel:', error);
             this.uiRenderer.showError('Failed to initialize admin panel');
