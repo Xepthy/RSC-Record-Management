@@ -1444,12 +1444,12 @@ class UIRenderer {
 
     showDashboard(data) {
         const maxValue = Math.max(...Object.values(data.serviceCounts));
-        const barHeight = maxValue > 0 ? 300 / maxValue : 0;
+        const barHeightRatio = maxValue > 0 ? 240 / maxValue : 0; // 240px is the max bar height
 
         const barsHTML = Object.entries(data.serviceCounts)
             .map(([service, count]) => `
             <div class="bar-container">
-                <div class="bar" style="height: ${count * barHeight}px" title="${service}: ${count}">
+                <div class="bar" style="height: ${count * barHeightRatio}px" title="${service}: ${count}">
                     <span class="bar-value">${count}</span>
                 </div>
                 <div class="bar-label">${service.split(',')}</div>
