@@ -7,7 +7,8 @@ import {
     signOut,
     onAuthStateChanged,
     EmailAuthProvider,
-    reauthenticateWithCredential
+    reauthenticateWithCredential,
+    sendPasswordResetEmail
 
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
@@ -58,6 +59,8 @@ export {
     auth,
     db,
     storage,
+    firebaseConfig,
+    getAuth,
     createUserWithEmailAndPassword,
     sendEmailVerification,
     signInWithEmailAndPassword,
@@ -83,5 +86,6 @@ export {
     EmailAuthProvider,
     reauthenticateWithCredential,
     deleteDoc,
-    arrayUnion
+    arrayUnion,
+    sendPasswordResetEmail
 };

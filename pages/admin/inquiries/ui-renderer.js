@@ -1496,7 +1496,153 @@ class UIRenderer {
         });
     }
 
+    showAccountManagement(accounts = []) {
+        if (!this.parent.isSuperAdmin) {
+            $('#inquiryContent').html(`
+            <div class="error-state">
+                <h3>🚫 Access Denied</h3>
+                <p>Only Super Admin can access Account Management.</p>
+            </div>
+        `);
+            return;
+        }
 
+        // Empty state
+        if (accounts.length === 0) {
+            $('#inquiryContent').html(`
+            <div class="empty-state">
+                <h3>👥 No accounts yet</h3>
+                <p>Create your first admin or staff account.</p>
+                <button class="btn-primary" id="createFirstAccount">Create Account</button>
+            </div>
+        `);
+            $('#createFirstAccount').on('click', () => this.parent.accountManager.openCreateForm());
+            return;
+        }
+
+        // Filter by name OR email
+        const searchQuery = (this.lastAccountSearch || '').toLowerCase();
+        const filteredAccounts = searchQuery
+            ? accounts.filter(acc => {
+                const name = `${acc.firstName || ''} ${acc.lastName || ''}`.toLowerCase();
+                const email = (acc.email || '').toLowerCase();
+                return name.includes(searchQuery) || email.includes(searchQuery);
+            })
+            : accounts;
+
+        // Build table rows
+        const rowsHTML = filteredAccounts.map(acc => {
+            const isDisabled = acc.isDisabled || false;
+            const isSuperAdmin = acc.role === 'super_admin';
+            const roleClass = acc.role || 'unknown';
+            const roleDisplay = (acc.role || 'unknown').toUpperCase();
+            const createdDate = acc.createdAt?.toDate ? acc.createdAt.toDate().toLocaleDateString() : 'Unknown';
+
+            const statusBadge = isDisabled ?
+                '<span class="status-badge disabled">DISABLED</span>' :
+                '<span class="status-badge active">ACTIVE</span>';
+
+            return `
+            <tr class="account-row ${isDisabled ? 'row-disabled' : ''}" data-account-id="${acc.id}">
+                <td>
+                    <div class="account-name">${acc.firstName || ''} ${acc.lastName || ''}</div>
+                    <div class="account-email">${acc.email || ''}</div>
+                </td>
+                <td><span class="role-badge ${roleClass}">${roleDisplay}</span></td>
+                <td>${statusBadge}</td>
+                <td>${createdDate}</td>
+                <td>
+                    <button class="account-actions-btn" data-account-id="${acc.id}">⋮</button>
+                </td>
+            </tr>
+        `;
+        }).join('');
+
+        // Final table layout
+        $('#inquiryContent').html(`
+        <div class="inquiries-table-container">
+            <div class="table-header">
+                <div class="search-bar">
+                    <input type="text" id="accountSearch" placeholder="🔍 Search by name or email..." value="${searchQuery}">
+                    <button class="search-clear-btn" id="clearAccountSearch">×</button>
+                </div>
+                <button class="btn-primary" id="createNewAccount">➕ Create Account</button>
+            </div>
+            <table class="inquiries-table accounts-table">
+                <thead>
+                    <tr>
+                        <th>Name & Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th style="width: 80px; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>${rowsHTML}</tbody>
+            </table>
+        </div>
+    `);
+
+        // Attach event listeners
+        this.setupAccountEventListeners(accounts);
+    }
+
+    setupAccountEventListeners() {
+        const $container = $('#inquiryContent');
+
+        // ➕ Create Account
+        $container.off('click', '#createNewAccount').on('click', '#createNewAccount', () => {
+            this.parent.accountManager.openCreateForm();
+        });
+
+        $container.off('click', '.account-actions-btn').on('click', '.account-actions-btn', (e) => {
+            e.stopPropagation();
+            const accountId = $(e.currentTarget).data('account-id');
+            const accounts = this.allAccounts || this.parent.accountManager.accounts;
+            const account = accounts.find(a => a.id === accountId);
+            if (account) {
+                this.parent.accountManager.openActionsMenu(account, e.currentTarget);
+            }
+        });
+
+        // 🔍 Search (Client-side filtering) - FIXED: Much smoother
+        let searchTimeout;
+        $container.off('input', '#accountSearch').on('input', '#accountSearch', (e) => {
+            const value = e.target.value;
+            this.lastAccountSearch = value;
+
+            // Show/hide clear button
+            const clearBtn = e.target.nextElementSibling;
+            if (clearBtn && clearBtn.classList.contains('search-clear-btn')) {
+                if (value.length > 0) {
+                    clearBtn.classList.add('visible');
+                } else {
+                    clearBtn.classList.remove('visible');
+                }
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                // Re-render with filtered results
+                this.showAccountManagement(this.allAccounts || this.parent.accountManager.accounts);
+            }, 600); // Slightly faster than other searches since it's client-side
+        });
+
+        // ❌ Clear search
+        $container.off('click', '#clearAccountSearch').on('click', '#clearAccountSearch', () => {
+            this.lastAccountSearch = '';
+            this.showAccountManagement(this.allAccounts || this.parent.accountManager.accounts);
+        });
+
+        // ✨ Hover effect
+        $container.off('mouseenter mouseleave', '.account-row')
+            .on('mouseenter', '.account-row', function () {
+                $(this).css({ opacity: '0.8', transition: 'all 0.2s ease' });
+            })
+            .on('mouseleave', '.account-row', function () {
+                $(this).css({ opacity: '1', transition: 'all 0.2s ease' });
+            });
+    }
 
 }
 

@@ -10,6 +10,7 @@ import InProgressManager from '../inProgress/in-progress-manager.js';
 import CompletedManager from '../completed/completed-manager.js';
 import AuditLogsManager from '../audit-logs/audit-logs-manager.js';
 import DashboardManager from '../dashboard/dashboard-manager.js';
+import AccountManager from '../account/account-management.js';
 class InquiriesPage {
     constructor() {
         this.inquiries = [];
@@ -75,12 +76,17 @@ class InquiriesPage {
             this.isAdmin = this.userRole === 'admin';
             this.isStaff = this.userRole === 'staff';
 
+            // ✅ Account Management setup (only for super admin)
+            if (this.isSuperAdmin) {
+                this.accountManager = new AccountManager(this);
+                $('#accountManagementNav').show(); // Show the nav button
+            }
+
             this.setupEventListeners();
             await this.inquiryManager.setupInquiryListener();
             await this.inProgressManager.setupInProgressListener();
             await this.completedManager.setupCompletedListener();
             this.updateInProgressNotificationCount();
-
 
             if (this.isSuperAdmin) {
                 await this.auditLogsManager.setupAuditLogsListener();
@@ -91,6 +97,7 @@ class InquiriesPage {
             this.uiRenderer.showError('Failed to initialize admin panel');
         }
     }
+
 
     updateUserInfo() {
         if (this.currentUser) {
@@ -200,6 +207,22 @@ class InquiriesPage {
         }
     }
 
+    async showAccountManagementSection() {
+        $('.nav-item').removeClass('active');
+        $('#accountManagementNav').addClass('active');
+
+        $('.content-header h1').text('Account Management');
+        $('.content-header p').text('Manage admin and staff accounts. Create new accounts and reset passwords.');
+
+        // Make sure the content section is visible
+        $('.content-section').show();
+
+        // Load accounts and display
+        if (this.accountManager) {
+            await this.accountManager.loadAccounts();
+            this.uiRenderer.showAccountManagement(this.accountManager.accounts);
+        }
+    }
     async showDashboardSection() {
         $('.nav-item').removeClass('active');
         $('#dashboardNav').addClass('active');
@@ -254,6 +277,13 @@ class InquiriesPage {
             });
         } else {
             $('#auditLogsNav').hide(); // Hide for non-super admins
+        }
+
+        if (this.isSuperAdmin) {
+            $('#accountManagementNav').on('click', async () => {
+                await this.inquiryManager.closeInquiryAndReleaseLock();
+                this.showAccountManagementSection();
+            });
         }
 
         // Logout button click

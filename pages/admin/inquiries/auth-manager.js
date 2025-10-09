@@ -122,6 +122,109 @@ class AuthManager {
             window.location.href = '../login/adminLogin.html';
         }, 1500);
     }
-}
 
+    // This should be called in your setupAuthListener or after successful authentication
+
+    async checkAccountStatus(uid) {
+        try {
+            const accountDoc = await getDoc(doc(db, 'accounts', uid));
+
+            if (accountDoc.exists()) {
+                const accountData = accountDoc.data();
+
+                if (accountData.isDisabled === true) {
+                    // Account is disabled - sign out the user
+                    await signOut(auth);
+
+                    // Show disabled message
+                    this.showDisabledAccountMessage();
+
+                    return false; // Account is disabled
+                }
+            }
+
+            return true; // Account is active or not found (allow access)
+
+        } catch (error) {
+            console.error('Error checking account status:', error);
+            return true; // On error, allow access (fail-safe)
+        }
+    }
+
+    showDisabledAccountMessage() {
+        // Clear the page content
+        $('body').html(`
+        <div style="
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        ">
+            <div style="
+                background: white;
+                padding: 40px;
+                border-radius: 12px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                text-align: center;
+                max-width: 400px;
+            ">
+                <div style="font-size: 64px; margin-bottom: 20px;">🚫</div>
+                <h1 style="
+                    color: #d32f2f;
+                    font-size: 24px;
+                    margin-bottom: 16px;
+                    font-weight: 600;
+                ">Account Disabled</h1>
+                <p style="
+                    color: #666;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    margin-bottom: 24px;
+                ">
+                    Your account has been disabled by an administrator. 
+                    Please contact support for assistance.
+                </p>
+                <button onclick="window.location.href='/admin/login.html'" style="
+                    background: #667eea;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background 0.2s;
+                ">
+                    Return to Login
+                </button>
+            </div>
+        </div>
+    `);
+    }
+
+    // Update your setupAuthListener method to include this check:
+    setupAuthListener() {
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Check if account is disabled
+                const isActive = await this.checkAccountStatus(user.uid);
+
+                if (!isActive) {
+                    // Account is disabled, showDisabledAccountMessage already called
+                    return;
+                }
+
+                // Continue with normal initialization
+                this.parent.currentUser = user;
+                await this.parent.initializeAdminPanel();
+
+            } else {
+                // Not authenticated
+                window.location.href = '/admin/login.html';
+            }
+        });
+    }
+}
 export default AuthManager;
