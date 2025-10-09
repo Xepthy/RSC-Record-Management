@@ -12,15 +12,18 @@ import {
     sendPasswordResetEmail,
     getAuth,
     createUserWithEmailAndPassword,
-    signOut
+    signOut,
+    functions
 } from '../../../firebase-config.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-functions.js";
 
 export default class AccountManager {
     constructor(parent) {
         this.parent = parent;
         this.accounts = [];
-        this.collectionName = 'accounts'; 
+        this.collectionName = 'accounts';
+        this.functions = functions;
 
         this.secondaryApp = initializeApp(firebaseConfig, "Secondary");
         this.secondaryAuth = getAuth(this.secondaryApp);
@@ -245,10 +248,10 @@ export default class AccountManager {
         }
 
         try {
-            await updateDoc(doc(db, this.collectionName, account.id), {
-                isDisabled: !isCurrentlyDisabled,
-                updatedAt: serverTimestamp(),
-                updatedBy: this.parent.currentUser?.uid
+            const toggleDisableFunction = httpsCallable(this.functions, 'toggleDisableAccount');
+            await toggleDisableFunction({
+                uid: account.id,
+                disable: !isCurrentlyDisabled
             });
 
             this.parent.inquiryManager.showToast(
@@ -280,8 +283,8 @@ export default class AccountManager {
         }
 
         try {
-            // Delete from Firestore
-            await deleteDoc(doc(db, this.collectionName, account.id));
+            const deleteUserFunction = httpsCallable(this.functions, 'deleteUserAccount');
+            await deleteUserFunction({ uid: account.id });
 
             this.parent.inquiryManager.showToast(
                 `✅ Account deleted successfully`,

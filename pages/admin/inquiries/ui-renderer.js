@@ -1536,7 +1536,9 @@ class UIRenderer {
             const isSuperAdmin = acc.role === 'super_admin';
             const roleClass = acc.role || 'unknown';
             const roleDisplay = (acc.role || 'unknown').toUpperCase();
-            const createdDate = acc.createdAt?.toDate ? acc.createdAt.toDate().toLocaleDateString() : 'Unknown';
+            const createdDate = acc.createdAt?.toDate
+                ? acc.createdAt.toDate().toLocaleDateString('en-GB') // en-GB uses dd/mm/yyyy
+                : 'Unknown';
 
             const statusBadge = isDisabled ?
                 '<span class="status-badge disabled">DISABLED</span>' :
