@@ -21,7 +21,9 @@ class DashboardManager {
                 'Engineering Services',
                 'Topographic Survey',
                 'As-Built Survey',
-                'Tilting Assistance'
+                'Tilting Assistance Survey',
+                'Consilidation Survey',
+                'Parcellary Survey'
             ];
 
             allServices.forEach(service => serviceCounts[service] = 0);

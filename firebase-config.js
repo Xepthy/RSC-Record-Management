@@ -40,6 +40,8 @@ import {
     deleteObject
 } from 'https://www.gstatic.com/firebasejs/11.9.1/firebase-storage.js';
 
+import { getFunctions } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-functions.js";
+
 
 const firebaseConfig = {
     apiKey: "AIzaSyDAAqEWKTCqfIPZOByAFWl5CHFrto2ngAo",
@@ -54,6 +56,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+
+
+
+export const functions = getFunctions(app, 'asia-southeast1');
 
 export {
     auth,

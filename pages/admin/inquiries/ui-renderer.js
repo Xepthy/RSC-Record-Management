@@ -1244,11 +1244,11 @@ class UIRenderer {
     showAuditLogs() {
         if (this.parent.auditLogs.length === 0) {
             $('#inquiryContent').html(`
-        <div class="empty-state">
-            <h3>📋 No audit logs</h3>
-            <p>System modifications will appear here.</p>
-        </div>
-    `);
+            <div class="empty-state">
+                <h3>📋 No audit logs</h3>
+                <p>System modifications will appear here.</p>
+            </div>
+             `);
             return;
         }
 
@@ -1348,7 +1348,7 @@ class UIRenderer {
                 <span class="category-badge ${log.category?.toLowerCase().replace(' ', '-')}">${log.category || 'Unknown'}</span>
             </td>
             <td class="modified-by-column">
-                <div class="modifier-email">${log.modifiedBy || 'Unknown'}</div>
+                <div class="modifier-name">${log.modifiedByName || log.modifiedBy || 'Unknown'}</div>
                 <div class="modifier-role">${log.modifiedByRole || ''}</div>
             </td>
             <td class="old-value-column">
@@ -1444,12 +1444,12 @@ class UIRenderer {
 
     showDashboard(data) {
         const maxValue = Math.max(...Object.values(data.serviceCounts));
-        const barHeight = maxValue > 0 ? 300 / maxValue : 0;
+        const barHeightRatio = maxValue > 0 ? 240 / maxValue : 0; // 240px is the max bar height
 
         const barsHTML = Object.entries(data.serviceCounts)
             .map(([service, count]) => `
             <div class="bar-container">
-                <div class="bar" style="height: ${count * barHeight}px" title="${service}: ${count}">
+                <div class="bar" style="height: ${count * barHeightRatio}px" title="${service}: ${count}">
                     <span class="bar-value">${count}</span>
                 </div>
                 <div class="bar-label">${service.split(',')}</div>
@@ -1536,7 +1536,9 @@ class UIRenderer {
             const isSuperAdmin = acc.role === 'super_admin';
             const roleClass = acc.role || 'unknown';
             const roleDisplay = (acc.role || 'unknown').toUpperCase();
-            const createdDate = acc.createdAt?.toDate ? acc.createdAt.toDate().toLocaleDateString() : 'Unknown';
+            const createdDate = acc.createdAt?.toDate
+                ? acc.createdAt.toDate().toLocaleDateString('en-GB') // en-GB uses dd/mm/yyyy
+                : 'Unknown';
 
             const statusBadge = isDisabled ?
                 '<span class="status-badge disabled">DISABLED</span>' :

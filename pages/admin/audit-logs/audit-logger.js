@@ -56,13 +56,13 @@ class AuditLogger {
 
         try {
             const role = await this.getUserRole();
-
+            const userName = await this.getUserName();
             const auditEntry = {
                 documentId: this.batchedChanges.documentId,
                 category: this.batchedChanges.category,
                 profileAffected: this.batchedChanges.clientName,
                 actionType: this.batchedChanges.actions.join(', '),
-                modifiedBy: auth.currentUser.email,
+                modifiedBy: userName,
                 modifiedByRole: role,
                 oldValue: JSON.stringify(this.batchedChanges.oldValues),
                 newValue: JSON.stringify(this.batchedChanges.newValues),
@@ -88,13 +88,13 @@ class AuditLogger {
     async logSimpleAction(documentId, category, clientName, actionType) {
         try {
             const role = await this.getUserRole();
-
+            const userName = await this.getUserName();
             const auditEntry = {
                 documentId,
                 category,
                 profileAffected: clientName,
                 actionType,
-                modifiedBy: auth.currentUser.email,
+                modifiedBy: userName,
                 modifiedByRole: role,
                 oldValue: '--',
                 newValue: '--',
@@ -109,6 +109,22 @@ class AuditLogger {
         }
     }
 
+    async getUserName() {
+        if (!auth.currentUser) return null;
+
+        try {
+            const { doc, getDoc } = await import('../../../firebase-config.js');
+            const userDoc = await getDoc(doc(db, 'accounts', auth.currentUser.uid));
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                return `${data.firstName || ''} ${data.lastName || ''}`.trim() || null;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error getting user name:', error);
+            return null;
+        }
+    }
     // Helper to format services array for display
     formatServices(services) {
         if (!services || services.length === 0) return 'None';

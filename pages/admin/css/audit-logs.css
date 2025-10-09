@@ -21,6 +21,7 @@
 .category-badge.inquiries { background: #e3f2fd; color: #1565c0; }
 .category-badge.in-progress { background: #fff3cd; color: #856404; }
 .category-badge.completed { background: #d4edda; color: #155724; }
+.category-badge.account-management { background: #f3e5f5; color: #6a1b9a; }
 
 .modifier-email {
     font-weight: 600;
@@ -66,4 +67,20 @@
 .profile-name:hover {
     color: #007bff;
     text-decoration: underline;
+}
+.modifier-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.modifier-email {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.modifier-role {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
 }

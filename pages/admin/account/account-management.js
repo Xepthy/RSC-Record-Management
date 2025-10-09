@@ -12,15 +12,19 @@ import {
     sendPasswordResetEmail,
     getAuth,
     createUserWithEmailAndPassword,
-    signOut
+    signOut,
+    functions
 } from '../../../firebase-config.js';
+import auditLogger from '../audit-logs/audit-logger.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-functions.js";
 
 export default class AccountManager {
     constructor(parent) {
         this.parent = parent;
         this.accounts = [];
-        this.collectionName = 'accounts'; 
+        this.collectionName = 'accounts';
+        this.functions = functions;
 
         this.secondaryApp = initializeApp(firebaseConfig, "Secondary");
         this.secondaryAuth = getAuth(this.secondaryApp);
@@ -135,6 +139,14 @@ export default class AccountManager {
             };
             await setDoc(doc(db, this.collectionName, uid), accountData);
 
+            // ADD AUDIT LOG HERE
+            await auditLogger.logSimpleAction(
+                uid,
+                'Account Management',
+                `${firstName} ${lastName}`,
+                'Account Created'
+            )
+
             await sendPasswordResetEmail(this.secondaryAuth, email);
             await signOut(this.secondaryAuth);
 
@@ -245,11 +257,18 @@ export default class AccountManager {
         }
 
         try {
-            await updateDoc(doc(db, this.collectionName, account.id), {
-                isDisabled: !isCurrentlyDisabled,
-                updatedAt: serverTimestamp(),
-                updatedBy: this.parent.currentUser?.uid
+            const toggleDisableFunction = httpsCallable(this.functions, 'toggleDisableAccount');
+            await toggleDisableFunction({
+                uid: account.id,
+                disable: !isCurrentlyDisabled
             });
+
+            await auditLogger.logSimpleAction(
+                account.id,
+                'Account Management',
+                `${account.firstName} ${account.lastName}`,
+                isCurrentlyDisabled ? 'Account Enabled' : 'Account Disabled'
+            );
 
             this.parent.inquiryManager.showToast(
                 `✅ Account ${action}d successfully`,
@@ -280,8 +299,15 @@ export default class AccountManager {
         }
 
         try {
-            // Delete from Firestore
-            await deleteDoc(doc(db, this.collectionName, account.id));
+            const deleteUserFunction = httpsCallable(this.functions, 'deleteUserAccount');
+            await deleteUserFunction({ uid: account.id });
+
+            await auditLogger.logSimpleAction(
+                account.id,
+                'Account Management',
+                `${account.firstName} ${account.lastName}`,
+                'Account Deleted'
+            );
 
             this.parent.inquiryManager.showToast(
                 `✅ Account deleted successfully`,

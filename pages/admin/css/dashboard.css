@@ -39,7 +39,8 @@
     align-items: center;
     flex: 1;
     position: relative;
-    max-height: 250px;
+    height: 280px; /* Fixed height for all containers */
+    justify-content: flex-end; /* Push bars to bottom */
 }
 
 .bar {
@@ -49,6 +50,7 @@
     position: relative;
     transition: background 0.2s ease;
     max-height: 240px;
+    min-height: 1px; /* Ensures bars with 0 value still show */
 }
 
 .bar:hover {
@@ -63,6 +65,7 @@
     font-weight: 500;
     color: #1a1a1a;
     font-size: 13px;
+    white-space: nowrap;
 }
 
 .bar-label {
