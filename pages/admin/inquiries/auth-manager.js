@@ -16,12 +16,34 @@ class AuthManager {
         try {
             const userDoc = await getDoc(doc(db, 'accounts', uid));
             if (userDoc.exists()) {
-                return userDoc.data().role || 'staff'; // default to staff if no role
+                return userDoc.data().role || 'staff';
             }
             return 'staff';
         } catch (error) {
             console.error('Error getting user role:', error);
-            return 'staff'; // default to staff on error
+            return 'staff';
+        }
+    }
+
+    async checkAccountStatus(uid) {
+        try {
+            const accountDoc = await getDoc(doc(db, 'accounts', uid));
+
+            if (accountDoc.exists()) {
+                const accountData = accountDoc.data();
+
+                if (accountData.isDisabled === true) {
+                    await signOut(auth);
+                    this.showDisabledAccountMessage();
+                    return false;
+                }
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error('Error checking account status:', error);
+            return true;
         }
     }
 
@@ -29,9 +51,24 @@ class AuthManager {
         console.log('Setting up auth listener...');
         onAuthStateChanged(auth, async (user) => {
             console.log('Auth state changed:', user ? 'User logged in' : 'No user');
+            
             if (user) {
-                console.log('User details:', { uid: user.uid, email: user.email, displayName: user.displayName });
+                console.log('User details:', { 
+                    uid: user.uid, 
+                    email: user.email, 
+                    displayName: user.displayName 
+                });
+
+                // Check if account is disabled first
+                const isActive = await this.checkAccountStatus(user.uid);
+                if (!isActive) {
+                    return;
+                }
+
+                // Set current user
                 this.parent.currentUser = user;
+                
+                // Handle authenticated user with role check
                 await this.handleUserAuthenticated(user);
             } else {
                 console.log('No authenticated user found');
@@ -42,15 +79,17 @@ class AuthManager {
 
     async handleUserAuthenticated(user) {
         try {
-            // Get user role instead of just checking admin
             const userRole = await this.getUserRole(user.uid);
 
             if (['super_admin', 'admin', 'staff'].includes(userRole)) {
                 this.parent.isAdmin = (userRole === 'admin');
                 this.parent.isSuperAdmin = (userRole === 'super_admin');
                 this.parent.isStaff = (userRole === 'staff');
+                
+                console.log('User role:', userRole);
                 await this.parent.initializeAdminPanel();
             } else {
+                console.log('Access denied - invalid role:', userRole);
                 this.parent.uiRenderer.showAccessDenied();
             }
         } catch (error) {
@@ -61,14 +100,16 @@ class AuthManager {
 
     handleUserNotAuthenticated() {
         console.log('User not authenticated - redirecting to login');
-        // Clear any stored user data
         sessionStorage.removeItem('adminUser');
 
-        // Update UI to show unauthenticated state
-        $('#userName').text('Not logged in');
-        $('#userEmail').text('Authentication required');
+        // Update UI if elements exist
+        if ($('#userName').length) {
+            $('#userName').text('Not logged in');
+        }
+        if ($('#userEmail').length) {
+            $('#userEmail').text('Authentication required');
+        }
 
-        // Redirect to login page
         this.redirectToLogin();
     }
 
@@ -86,22 +127,15 @@ class AuthManager {
 
     async handleLogout() {
         try {
-            // Show loading state on logout button
             const $logoutBtn = $('#logoutBtn');
             $logoutBtn.prop('disabled', true).text('Logging out...');
 
-            // Sign out from Firebase
             await signOut(auth);
-
-            // Clear session storage
             sessionStorage.removeItem('adminUser');
-
-            // Redirect will be handled by auth state change
 
         } catch (error) {
             console.error('Logout error:', error);
 
-            // Reset logout button
             const $logoutBtn = $('#logoutBtn');
             $logoutBtn.prop('disabled', false).html('<span>Logout</span>');
 
@@ -110,49 +144,27 @@ class AuthManager {
     }
 
     redirectToLogin() {
-        // Show message briefly before redirect
-        $('#inquiryContent').html(`
-            <div class="error-state">
-                <h3>Authentication Required</h3>
-                <p>Redirecting to login page...</p>
-            </div>
-        `);
+        // Update the path to match your actual login page location
+        const loginPath = '../login/adminLogin.html'; // Adjust this path as needed
+
+        if ($('#inquiryContent').length) {
+            $('#inquiryContent').html(`
+                <div class="error-state">
+                    <h3>Authentication Required</h3>
+                    <p>Redirecting to login page...</p>
+                </div>
+            `);
+        }
 
         setTimeout(() => {
-            window.location.href = '../login/adminLogin.html';
+            window.location.href = loginPath;
         }, 1500);
     }
 
-    // This should be called in your setupAuthListener or after successful authentication
-
-    async checkAccountStatus(uid) {
-        try {
-            const accountDoc = await getDoc(doc(db, 'accounts', uid));
-
-            if (accountDoc.exists()) {
-                const accountData = accountDoc.data();
-
-                if (accountData.isDisabled === true) {
-                    // Account is disabled - sign out the user
-                    await signOut(auth);
-
-                    // Show disabled message
-                    this.showDisabledAccountMessage();
-
-                    return false; // Account is disabled
-                }
-            }
-
-            return true; // Account is active or not found (allow access)
-
-        } catch (error) {
-            console.error('Error checking account status:', error);
-            return true; // On error, allow access (fail-safe)
-        }
-    }
-
     showDisabledAccountMessage() {
-        // Clear the page content
+        // Update the path to match your actual login page location
+        const loginPath = '../login/adminLogin.html'; // Adjust this path as needed
+
         $('body').html(`
         <div style="
             display: flex;
@@ -186,7 +198,7 @@ class AuthManager {
                     Your account has been disabled by an administrator. 
                     Please contact support for assistance.
                 </p>
-                <button onclick="window.location.href='/admin/login.html'" style="
+                <button onclick="window.location.href='${loginPath}'" style="
                     background: #667eea;
                     color: white;
                     border: none;
@@ -201,30 +213,8 @@ class AuthManager {
                 </button>
             </div>
         </div>
-    `);
-    }
-
-    // Update your setupAuthListener method to include this check:
-    setupAuthListener() {
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // Check if account is disabled
-                const isActive = await this.checkAccountStatus(user.uid);
-
-                if (!isActive) {
-                    // Account is disabled, showDisabledAccountMessage already called
-                    return;
-                }
-
-                // Continue with normal initialization
-                this.parent.currentUser = user;
-                await this.parent.initializeAdminPanel();
-
-            } else {
-                // Not authenticated
-                window.location.href = '/admin/login.html';
-            }
-        });
+        `);
     }
 }
+
 export default AuthManager;
