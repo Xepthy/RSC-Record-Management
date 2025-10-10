@@ -1053,7 +1053,7 @@ class InquiryManager {
 
             switch (status) {
                 case 'Approved':
-                    notifData.message = `Your inquiry "${inquiry.requestDescription}" has been approved. You may now proceed to the next step.`;
+                    notifData.message = `Your inquiry "${inquiry.requestDescription}" has been approved. Wait for further updates.`;
                     break;
                 case 'Rejected':
                     notifData.message = `Your inquiry "${inquiry.requestDescription}" was rejected. Remarks: ${remarks || 'Please contact Rafallo office for details.'}`;
