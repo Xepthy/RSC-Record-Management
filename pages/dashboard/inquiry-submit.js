@@ -197,7 +197,6 @@ async function submitFormData() {
         formData.read = false;
 
         // write to client/{uid}/pending
-        formData.notifications = [];
         await setDoc(pendingDocRef, formData);
 
         // write to main inquiries collection
