@@ -1303,7 +1303,16 @@ class UIRenderer {
                     if (entries.length > 0) {
                         // Create display text (show all values separated by " | ")
                         const fullText = entries.map(([key, val]) => val).join(' | ');
-                        oldValueTooltip = entries.map(([key, val]) => `${key}: ${val}`).join('\n');
+
+                        // Format tooltip - special handling for services
+                        oldValueTooltip = entries.map(([key, val]) => {
+                            if (key.toLowerCase().includes('service')) {
+                                // Split services by comma and put each on new line
+                                const services = val.split(',').map(s => s.trim()).join('\n• ');
+                                return `${key}:\n• ${services}`;
+                            }
+                            return `${key}: ${val}`;
+                        }).join('\n\n');
 
                         // Truncate if too long
                         if (fullText.length > 50) {
@@ -1321,7 +1330,16 @@ class UIRenderer {
                     if (entries.length > 0) {
                         // Create display text (show all values separated by " | ")
                         const fullText = entries.map(([key, val]) => val).join(' | ');
-                        newValueTooltip = entries.map(([key, val]) => `${key}: ${val}`).join('\n');
+
+                        // Format tooltip - special handling for services
+                        newValueTooltip = entries.map(([key, val]) => {
+                            if (key.toLowerCase().includes('service')) {
+                                // Split services by comma and put each on new line
+                                const services = val.split(',').map(s => s.trim()).join('\n• ');
+                                return `${key}:\n• ${services}`;
+                            }
+                            return `${key}: ${val}`;
+                        }).join('\n\n');
 
                         // Truncate if too long
                         if (fullText.length > 50) {
@@ -1352,10 +1370,10 @@ class UIRenderer {
                 <div class="modifier-role">${log.modifiedByRole || ''}</div>
             </td>
             <td class="old-value-column">
-                <div class="value-text" title="${oldValueTooltip || oldValueDisplay}">${oldValueDisplay}</div>
+                <div class="value-text hoverable-value" data-tooltip="${oldValueTooltip || oldValueDisplay}">${oldValueDisplay}</div>
             </td>
             <td class="new-value-column">
-                <div class="value-text" title="${newValueTooltip || newValueDisplay}">${newValueDisplay}</div>
+                <div class="value-text hoverable-value" data-tooltip="${newValueTooltip || newValueDisplay}">${newValueDisplay}</div>
             </td>
             <td class="timestamp-column">
                 <div class="timestamp-date">${date}</div>
@@ -1439,6 +1457,99 @@ class UIRenderer {
                 'transform': 'translateX(0)',
                 'transition': 'all 0.2s ease'
             });
+        });
+        // Tooltip for old/new values
+        let tooltipEl = null;
+        let hideTimeout = null;
+
+        $('.hoverable-value').on('mouseenter', function (e) {
+            clearTimeout(hideTimeout);
+
+            const tooltipText = $(this).data('tooltip');
+            if (!tooltipText || tooltipText === '--' || tooltipText === $(this).text()) return;
+
+            // Remove existing tooltip
+            if (tooltipEl) {
+                tooltipEl.remove();
+            }
+
+            // Create tooltip with formatted content
+            tooltipEl = $('<div class="value-tooltip"></div>');
+
+            // Format the text nicely
+            const lines = tooltipText.split('\n').filter(line => line.trim());
+            const formattedHTML = lines.map(line => {
+                if (line.includes(':')) {
+                    const [key, ...valueParts] = line.split(':');
+                    const value = valueParts.join(':').trim();
+                    return `<div><strong>${key.trim()}:</strong> ${value}</div>`;
+                }
+                return `<div>${line}</div>`;
+            }).join('');
+
+            tooltipEl.html(formattedHTML);
+            $('body').append(tooltipEl);
+
+            // Get element position
+            const rect = this.getBoundingClientRect();
+            const tooltipHeight = tooltipEl.outerHeight();
+            const tooltipWidth = tooltipEl.outerWidth();
+            const windowHeight = $(window).height();
+
+            // Check if tooltip fits below
+            const spaceBelow = windowHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            const showAbove = spaceBelow < tooltipHeight + 20 && spaceAbove > tooltipHeight + 20;
+
+            // Center tooltip horizontally
+            const left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+            let top;
+
+            if (showAbove) {
+                top = rect.top - tooltipHeight - 12;
+                tooltipEl.addClass('tooltip-above');
+            } else {
+                top = rect.bottom + 12;
+                tooltipEl.removeClass('tooltip-above');
+            }
+
+            tooltipEl.css({
+                top: top + 'px',
+                left: Math.max(10, left) + 'px'
+            });
+
+            setTimeout(() => tooltipEl.addClass('visible'), 50);
+
+            // Keep tooltip when hovering over it
+            tooltipEl.on('mouseenter', function () {
+                clearTimeout(hideTimeout);
+            });
+
+            tooltipEl.on('mouseleave', function () {
+                hideTimeout = setTimeout(() => {
+                    if (tooltipEl) {
+                        tooltipEl.remove();
+                        tooltipEl = null;
+                    }
+                }, 150);
+            });
+        });
+
+        $('.hoverable-value').on('mouseleave', function () {
+            hideTimeout = setTimeout(() => {
+                if (tooltipEl && !tooltipEl.is(':hover')) {
+                    tooltipEl.remove();
+                    tooltipEl = null;
+                }
+            }, 150);
+        });
+
+        $(window).on('scroll', function () {
+            clearTimeout(hideTimeout);
+            if (tooltipEl) {
+                tooltipEl.remove();
+                tooltipEl = null;
+            }
         });
     }
 

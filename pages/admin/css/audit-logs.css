@@ -84,3 +84,77 @@
     color: #666;
     margin-top: 2px;
 }
+.value-tooltip {
+    position: fixed;
+    background: #2c3e50;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    z-index: 1000;
+    max-width: 320px;
+    max-height: 250px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    line-height: 1.6;
+}
+
+.value-tooltip.visible {
+    opacity: 1;
+}
+
+/* Arrow pointing UP (tooltip below element) */
+.value-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 12px;
+    height: 12px;
+    background: #2c3e50;
+    pointer-events: none;
+}
+
+/* Arrow pointing DOWN (tooltip above element) */
+.value-tooltip.tooltip-above::before {
+    top: auto;
+    bottom: -6px;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.value-tooltip div {
+    margin: 4px 0;
+}
+
+.value-tooltip strong {
+    color: #3498db;
+    margin-right: 6px;
+}
+
+.hoverable-value {
+    cursor: help;
+    position: relative;
+}
+
+/* Visible scrollbar */
+.value-tooltip::-webkit-scrollbar {
+    width: 10px;
+}
+
+.value-tooltip::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.value-tooltip::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 5px;
+}
+
+.value-tooltip::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.6);
+}
