@@ -401,8 +401,11 @@ class InProgressManager {
             'Subdivision Survey',
             'Engineering Services',
             'Topographic Survey',
+            'Consolidation Survey',
+            'Parcellary Survey',
             'As-Built Survey',
-            'Tilting Assistance'
+            'Titling Assistance',
+            'All'
         ];
 
         return allServices.map(service => {

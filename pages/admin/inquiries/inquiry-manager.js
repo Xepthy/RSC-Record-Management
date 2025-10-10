@@ -927,9 +927,9 @@ class InquiryManager {
                         isLock: false,
                         isNeedResearch: false,
                         isScheduleDone: false,
-                        schedule: this.formatDateForStorage($('#scheduleInput').val()), // SURVEY TASK INFORMATION
-                        selectedTeam: $('#teamSelect').val(), // SURVEY TASK INFORMATION
-                        pendingDocId: inquiry.pendingDocId, // this is for the user's pending doc | client/{uid}/pending/{pendingDocId}
+                        schedule: this.formatDateForStorage($('#scheduleInput').val()),
+                        selectedTeam: $('#teamSelect').val(),
+                        pendingDocId: inquiry.pendingDocId,
                         accountInfo: inquiry.accountInfo,
                         requestDescription: inquiry.requestDescription,
                         clientInfo: {
