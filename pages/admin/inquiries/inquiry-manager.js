@@ -14,7 +14,8 @@ import {
     serverTimestamp,
     auth,
     EmailAuthProvider,
-    reauthenticateWithCredential
+    reauthenticateWithCredential,
+    arrayUnion
 } from '../../../firebase-config.js';
 import auditLogger from '../audit-logs/audit-logger.js';
 
