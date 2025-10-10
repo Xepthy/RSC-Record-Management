@@ -915,7 +915,7 @@ class InquiryManager {
                     processed: true,
 
                 });
-                
+
                 await this.sendNotifClient(inquiry, status, remarks);
 
                 if (status === 'Approved') {
@@ -1051,6 +1051,7 @@ class InquiryManager {
                 timestamp: serverTimestamp(),
             };
 
+            // 📨 Create dynamic message
             switch (status) {
                 case 'Approved':
                     notifData.message = `Your inquiry "${inquiry.requestDescription}" has been approved. You may now proceed to the next step.`;
@@ -1068,25 +1069,35 @@ class InquiryManager {
                     notifData.message = `Status update: "${status}"`;
             }
 
+            // 🔹 Get client pending doc reference
             const clientPendingRef = doc(db, 'client', inquiry.accountInfo.uid, 'pending', inquiry.pendingDocId);
-            const pendingSnap = await getDoc(clientPendingRef);
 
+            // 🔹 Ensure the field exists before using arrayUnion
+            // (if this doc was created before notifications array existed)
+            const pendingSnap = await getDoc(clientPendingRef);
             if (!pendingSnap.exists()) {
                 console.warn(`⚠️ Pending document not found for uid: ${inquiry.accountInfo.uid}`);
                 return;
             }
 
-            const existingData = pendingSnap.data();
-            const existingNotifications = existingData.notifications || [];
-            const updatedNotifications = [...existingNotifications, notifData];
+            const pendingData = pendingSnap.data();
+            if (!Array.isArray(pendingData.notifications)) {
+                console.log('🔧 Initializing missing notifications array...');
+                await updateDoc(clientPendingRef, { notifications: [] });
+            }
 
-            await updateDoc(clientPendingRef, { notifications: updatedNotifications });
+            // 🔹 Push new notif safely with arrayUnion
+            await updateDoc(clientPendingRef, {
+                notifications: arrayUnion(notifData)
+            });
 
             console.log(`✅ Notification sent to ${inquiry.accountInfo.uid}: ${status}`);
+
         } catch (error) {
             console.error('❌ Error sending notification:', error);
         }
     }
+
 
 
     async setupInquiryListener() {
