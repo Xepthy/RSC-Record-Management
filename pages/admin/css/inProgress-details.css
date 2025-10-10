@@ -584,6 +584,16 @@ textarea:disabled {
     line-height: 1;
 }
 
+
+.toast {
+    z-index: 10000 !important; 
+}
+
+
+.modal-overlay {
+    z-index: 9999;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .modal-footer {
