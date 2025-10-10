@@ -14,8 +14,7 @@ import {
     serverTimestamp,
     auth,
     EmailAuthProvider,
-    reauthenticateWithCredential,
-    arrayUnion
+    reauthenticateWithCredential
 } from '../../../firebase-config.js';
 import auditLogger from '../audit-logs/audit-logger.js';
 
@@ -916,7 +915,7 @@ class InquiryManager {
                     processed: true,
 
                 });
-
+                
                 await this.sendNotifClient(inquiry, status, remarks);
 
                 if (status === 'Approved') {
@@ -1049,10 +1048,9 @@ class InquiryManager {
                 message: '',
                 status: status,
                 read: false,
-                timestamp: serverTimestamp(),
+                timestamp: new Date(),
             };
 
-            // 📨 Create dynamic message
             switch (status) {
                 case 'Approved':
                     notifData.message = `Your inquiry "${inquiry.requestDescription}" has been approved. You may now proceed to the next step.`;
@@ -1070,35 +1068,25 @@ class InquiryManager {
                     notifData.message = `Status update: "${status}"`;
             }
 
-            // 🔹 Get client pending doc reference
             const clientPendingRef = doc(db, 'client', inquiry.accountInfo.uid, 'pending', inquiry.pendingDocId);
-
-            // 🔹 Ensure the field exists before using arrayUnion
-            // (if this doc was created before notifications array existed)
             const pendingSnap = await getDoc(clientPendingRef);
+
             if (!pendingSnap.exists()) {
                 console.warn(`⚠️ Pending document not found for uid: ${inquiry.accountInfo.uid}`);
                 return;
             }
 
-            const pendingData = pendingSnap.data();
-            if (!Array.isArray(pendingData.notifications)) {
-                console.log('🔧 Initializing missing notifications array...');
-                await updateDoc(clientPendingRef, { notifications: [] });
-            }
+            const existingData = pendingSnap.data();
+            const existingNotifications = existingData.notifications || [];
+            const updatedNotifications = [...existingNotifications, notifData];
 
-            // 🔹 Push new notif safely with arrayUnion
-            await updateDoc(clientPendingRef, {
-                notifications: arrayUnion(notifData)
-            });
+            await updateDoc(clientPendingRef, { notifications: updatedNotifications });
 
             console.log(`✅ Notification sent to ${inquiry.accountInfo.uid}: ${status}`);
-
         } catch (error) {
             console.error('❌ Error sending notification:', error);
         }
     }
-
 
 
     async setupInquiryListener() {
