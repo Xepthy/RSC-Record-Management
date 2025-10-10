@@ -915,7 +915,8 @@ class InquiryManager {
                     processed: true,
 
                 });
-
+                
+                await this.sendNotifClient(inquiry, status, remarks);
 
                 if (status === 'Approved') {
                     const progressData = {
@@ -1033,6 +1034,60 @@ class InquiryManager {
             }
         });
     }
+
+    async sendNotifClient(inquiry, status, remarks) {
+        try {
+            if (!inquiry || !inquiry.accountInfo?.uid) {
+                console.warn('⚠️ Missing accountInfo or uid in inquiry.');
+                return;
+            }
+
+            const notifData = {
+                inquiryId: inquiry.id,
+                requestTitle: inquiry.requestDescription || 'Inquiry Update',
+                message: '',
+                status: status,
+                read: false,
+                timestamp: serverTimestamp(),
+            };
+
+            switch (status) {
+                case 'Approved':
+                    notifData.message = `Your inquiry "${inquiry.requestDescription}" has been approved. You may now proceed to the next step.`;
+                    break;
+                case 'Rejected':
+                    notifData.message = `Your inquiry "${inquiry.requestDescription}" was rejected. Remarks: ${remarks || 'Please contact Rafallo office for details.'}`;
+                    break;
+                case 'Update Documents':
+                    notifData.message = `Additional documents are required for your inquiry "${inquiry.requestDescription}". Remarks: ${remarks || 'Please check your account for details.'}`;
+                    break;
+                case 'Completed':
+                    notifData.message = `Your request "${inquiry.requestDescription}" is now completed. You can get the original document at Rafallo's office. Reference Code: ${inquiry.referenceCode || 'N/A'}`;
+                    break;
+                default:
+                    notifData.message = `Status update: "${status}"`;
+            }
+
+            const clientPendingRef = doc(db, 'client', inquiry.accountInfo.uid, 'pending', inquiry.pendingDocId);
+            const pendingSnap = await getDoc(clientPendingRef);
+
+            if (!pendingSnap.exists()) {
+                console.warn(`⚠️ Pending document not found for uid: ${inquiry.accountInfo.uid}`);
+                return;
+            }
+
+            const existingData = pendingSnap.data();
+            const existingNotifications = existingData.notifications || [];
+            const updatedNotifications = [...existingNotifications, notifData];
+
+            await updateDoc(clientPendingRef, { notifications: updatedNotifications });
+
+            console.log(`✅ Notification sent to ${inquiry.accountInfo.uid}: ${status}`);
+        } catch (error) {
+            console.error('❌ Error sending notification:', error);
+        }
+    }
+
 
     async setupInquiryListener() {
         try {
