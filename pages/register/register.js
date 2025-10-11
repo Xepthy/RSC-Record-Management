@@ -44,6 +44,10 @@ $(document).ready(function () {
         const email = SecurityUtils.sanitizeInput($('#email').val());
         const password = $('#password').val();
 
+        if (!firstName || !lastName || !classification) {
+            alert('Incomplete Form: Please fill out all required fields.');
+            return;
+        }
         // Custom validation for things HTML can't handle well
         if (!SecurityUtils.validateEmail(email)) {
             alert("Please enter a valid email address.");

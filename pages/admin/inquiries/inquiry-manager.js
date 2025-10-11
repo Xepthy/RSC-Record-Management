@@ -15,7 +15,6 @@ import {
     auth,
     EmailAuthProvider,
     reauthenticateWithCredential,
-    arrayUnion
 } from '../../../firebase-config.js';
 import auditLogger from '../audit-logs/audit-logger.js';
 
@@ -1297,6 +1296,15 @@ class InquiryManager {
                                 <div class="info-row">
                                     <span class="label">Client Name:</span>
                                     <span class="value">${inquiry.clientName || 'Not specified'}</span>
+                                </div>
+
+                                <div class="info-row">
+                                    <span class="label">Contractor Name:</span>
+                                    <span class="value">${inquiry.contractorName || 'None'}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Company Name:</span>
+                                    <span class="value">${inquiry.companyName || 'None'}</span>
                                 </div>
 
                                 <div class="info-row">

@@ -281,12 +281,14 @@ function showInquiryModal(inquiry, accountData) {
         ).join('<br>')
         : 'No documents';
 
-    const projectFiles = inquiry.projectFiles && inquiry.projectFiles.length > 0
-        ? inquiry.projectFiles.map(file => {
-            // Generate download button instead of direct link since we need to fetch URL
-            return `<button class="view-project-file-btn" data-storage-path="${file.storagePath || ''}" data-file-url="${file.url || ''}" data-file-name="${file.name}">${file.name}</button>`;
-        }).join('<br>')
-        : 'No Project Files Yet';
+    const projectFiles = (inquiry.status === 'Completed' || inquiry.status === 'completed') && inquiry.projectFiles && inquiry.projectFiles.length > 0
+    ? inquiry.projectFiles.map(file => {
+        return `<button class="view-project-file-btn" 
+                        data-storage-path="${file.storagePath || ''}" 
+                        data-file-url="${file.url || ''}" 
+                        data-file-name="${file.name}">${file.name}</button>`;
+    }).join('<br>')
+    : (inquiry.status === 'Completed' ? 'No Project Files Yet' : ''); // empty for non-completed
 
     // Format account data with fallbacks
     const firstName = accountData?.firstName || 'N/A';
@@ -326,9 +328,9 @@ function showInquiryModal(inquiry, accountData) {
             <p><strong>Classification:</strong> ${inquiry.classification || 'N/A'}</p>
             <p><strong>Representative:</strong> ${inquiry.representative || 'None'}</p>
             <p><strong>Rep. Classification:</strong> ${inquiry.repClassification || 'N/A'}</p>
-            <p><strong>Location:</strong> ${inquiry.location || 'N/A'}</p>
             <p><strong>Contractor Name:</strong> ${inquiry.contractorName || 'None'}</p>
             <p><strong>Company Name:</strong> ${inquiry.companyName || 'None'}</p>
+            <p><strong>Location:</strong> ${inquiry.location || 'N/A'}</p>
             <p><strong>Contact:</strong> ${inquiry.contact || 'N/A'}</p>
         </div>
           
@@ -353,12 +355,11 @@ function showInquiryModal(inquiry, accountData) {
         <div class="inquiry-box documents-list">
             ${documentsText}
         </div>
-        
-        <h3>Project Files</h3>
+    
+        ${projectFiles ? `<h3>Project Files</h3>
         <div class="inquiry-box documents-list">
             ${projectFiles}
-        </div>
-
+        </div>` : ''}
     </div>
     </div>
     `;
