@@ -41,13 +41,13 @@
 .archive-table td:nth-child(4) {
     min-width: 140px;
     max-width: 160px;
-    text-align: left; /* Align header to the right */
+    text-align: left; 
     padding: 14px 18px;
 }
 
 /* Ensure timestamp content is also right-aligned */
 .archive-table td:nth-child(4) {
-    text-align: right;
+    text-align: center;
 }
 
 /* Status Badge Styles */

@@ -36,7 +36,7 @@
 .actions {
   position: fixed;
   bottom: 30px;
-  right: 340px; /* Positioned to the left of sidebar (320px sidebar + 20px margin) */
+  right: 20px;
   z-index: 1000;
 }
 
@@ -124,5 +124,18 @@
   .btn-inquire {
     padding: 12px 20px;
     font-size: 13px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .actions {
+    right: 20px;
+    bottom: 25px;
+  }
+}
+
+@media (min-width: 1401px) {
+  .actions {
+    right: 340px; /* Sidebar width (320px) + small margin */
   }
 }

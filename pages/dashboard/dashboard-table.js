@@ -117,8 +117,11 @@ function renderTable(inquiries) {
     // Clear all table bodies
     $('#pendingTableBody, #completedTableBody, #rejectedTableBody').empty();
 
+    // If there are no inquiries at all
     if (inquiries.length === 0) {
-        showEmptyState();
+        showEmptyState('#pendingTableBody');
+        showEmptyState('#completedTableBody', 'No completed inquiries');
+        showEmptyState('#rejectedTableBody', 'No rejected inquiries');
         return;
     }
 
@@ -130,41 +133,37 @@ function renderTable(inquiries) {
         inq.status === 'Completed' || inq.status === 'completed'
     );
     const rejectedInquiries = inquiries.filter(inq =>
-        inq.status === 'Rejected' || inq.status === 'Rejected'
+        inq.status === 'Rejected'
     );
 
-    // Render each category
+    // Pending
     if (pendingInquiries.length > 0) {
         pendingInquiries.forEach(inquiry => {
             const row = createTableRow(inquiry);
             $('#pendingTableBody').append(row);
         });
     } else {
-        $('#pendingTableBody').html(`
-            <tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">No pending inquiries</td></tr>
-        `);
+        showEmptyState('#pendingTableBody', 'No pending inquiries');
     }
 
+    // Completed
     if (completedInquiries.length > 0) {
         completedInquiries.forEach(inquiry => {
             const row = createTableRow(inquiry);
             $('#completedTableBody').append(row);
         });
     } else {
-        $('#completedTableBody').html(`
-            <tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">No completed inquiries</td></tr>
-        `);
+        showEmptyState('#completedTableBody', 'No completed inquiries');
     }
 
+    // Rejected
     if (rejectedInquiries.length > 0) {
         rejectedInquiries.forEach(inquiry => {
             const row = createTableRow(inquiry);
             $('#rejectedTableBody').append(row);
         });
     } else {
-        $('#rejectedTableBody').html(`
-            <tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">No rejected inquiries</td></tr>
-        `);
+        showEmptyState('#rejectedTableBody', 'No rejected inquiries');
     }
 }
 
@@ -759,16 +758,17 @@ function showLoading() {
     `);
 }
 
-function showEmptyState() {
-    $('table tbody').html(`
+function showEmptyState(targetSelector, message = "No inquiries found.", subMessage = 'Click "Submit Inquiry" to create your first inquiry.') {
+    $(targetSelector).html(`
         <tr>
             <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
-                <p>No inquiries found.</p>
-                <p>Click "Submit Inquiry" to create your first inquiry.</p>
+                <p>${message}</p>
+                <p>${subMessage}</p>
             </td>
         </tr>
     `);
 }
+
 
 function showError(message) {
     $('table tbody').html(`
