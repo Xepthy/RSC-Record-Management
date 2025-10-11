@@ -722,9 +722,15 @@ class InProgressManager {
             }
 
             try {
+
+                const userDoc = await getDoc(doc(db, 'accounts', auth.currentUser.uid));
+                const userData = userDoc.data();
+                const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+
                 // Lock the item
                 await updateDoc(doc(db, 'inProgress', this.currentItemId), {
-                    beingEditedBy: auth.currentUser.email,
+                    beingEditedBy: auth.currentUser.uid,
+                    beingEditedByName: fullName,
                     editingStartedAt: serverTimestamp()
                 });
 

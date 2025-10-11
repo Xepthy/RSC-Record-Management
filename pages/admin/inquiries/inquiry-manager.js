@@ -916,7 +916,7 @@ class InquiryManager {
                     processed: true,
 
                 });
-                
+
                 await this.sendNotifClient(inquiry, status, remarks);
 
                 if (status === 'Approved') {
@@ -1442,8 +1442,14 @@ class InquiryManager {
             }
 
             try {
+                // Get current user's name
+                const userDoc = await getDoc(doc(db, 'accounts', auth.currentUser.uid));
+                const userData = userDoc.data();
+                const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+
                 await updateDoc(doc(db, 'inquiries', inquiryId), {
-                    beingEditedBy: auth.currentUser.email,
+                    beingEditedBy: auth.currentUser.uid,
+                    beingEditedByName: fullName,
                     editingStartedAt: serverTimestamp()
                 });
 
