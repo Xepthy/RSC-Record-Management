@@ -114,18 +114,58 @@ function setupRealtimeListener() {
 }
 
 function renderTable(inquiries) {
-    // Clear existing content
-    $('table tbody').empty();
+    // Clear all table bodies
+    $('#pendingTableBody, #completedTableBody, #rejectedTableBody').empty();
 
     if (inquiries.length === 0) {
         showEmptyState();
         return;
     }
 
-    inquiries.forEach(inquiry => {
-        const row = createTableRow(inquiry);
-        $('table tbody').append(row);
-    });
+    // Separate inquiries by status
+    const pendingInquiries = inquiries.filter(inq =>
+        inq.status === 'pending' || inq.status === 'Update Documents'
+    );
+    const completedInquiries = inquiries.filter(inq =>
+        inq.status === 'Completed' || inq.status === 'completed'
+    );
+    const rejectedInquiries = inquiries.filter(inq =>
+        inq.status === 'Rejected' || inq.status === 'Rejected'
+    );
+
+    // Render each category
+    if (pendingInquiries.length > 0) {
+        pendingInquiries.forEach(inquiry => {
+            const row = createTableRow(inquiry);
+            $('#pendingTableBody').append(row);
+        });
+    } else {
+        $('#pendingTableBody').html(`
+            <tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">No pending inquiries</td></tr>
+        `);
+    }
+
+    if (completedInquiries.length > 0) {
+        completedInquiries.forEach(inquiry => {
+            const row = createTableRow(inquiry);
+            $('#completedTableBody').append(row);
+        });
+    } else {
+        $('#completedTableBody').html(`
+            <tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">No completed inquiries</td></tr>
+        `);
+    }
+
+    if (rejectedInquiries.length > 0) {
+        rejectedInquiries.forEach(inquiry => {
+            const row = createTableRow(inquiry);
+            $('#rejectedTableBody').append(row);
+        });
+    } else {
+        $('#rejectedTableBody').html(`
+            <tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">No rejected inquiries</td></tr>
+        `);
+    }
 }
 
 function createTableRow(inquiry) {
@@ -314,7 +354,12 @@ function showInquiryModal(inquiry, accountData) {
         <div class="inquiry-box documents-list">
             ${documentsText}
         </div>
+        
+        <h3>Project Files</h3>
+        <div class="inquiry-box documents-list">
+            ${projectFiles}
         </div>
+
     </div>
     </div>
     `;

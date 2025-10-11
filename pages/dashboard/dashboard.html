@@ -98,11 +98,9 @@
       </div>
     </div>
 
-    <!-- Content wrapper for table and sidebar -->
-    <div class="content-wrapper">
-
-      <!-- Main content (Table) - Priority on mobile -->
+          <!-- Main content (Table) - Priority on mobile -->
       <main class="main-section">
+        <!-- Pending/Update Documents Table -->
         <div class="table-wrapper">
           <h3>Status Inquiry</h3>
           <div class="table-container">
@@ -117,14 +115,55 @@
                   <th>Action</th>
                 </tr>
               </thead>
-              <tbody></tbody>
+              <tbody id="pendingTableBody"></tbody>
             </table>
           </div>
-          <div class="actions">
-            <button id="openModalBtn" class="btn-inquire">Submit Inquiry</button>
-          </div>
-      </main>
+        </div>
 
+        <!-- Completed Table -->
+        <div class="table-wrapper">
+          <h3>Completed</h3>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Request Title</th>
+                  <th>Date Submitted</th>
+                  <th>Current Status</th>
+                  <th>Last Updated</th>
+                  <th>Remarks</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="completedTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Rejected Table -->
+        <div class="table-wrapper">
+          <h3>Rejected</h3>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Request Title</th>
+                  <th>Date Submitted</th>
+                  <th>Current Status</th>
+                  <th>Last Updated</th>
+                  <th>Remarks</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="rejectedTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="openModalBtn" class="btn-inquire">Submit Inquiry</button>
+        </div>
+      </main>
       <!-- Sidebar - Secondary on mobile -->
       <aside class="sidebar">
         <div class="sidebar-cards">
