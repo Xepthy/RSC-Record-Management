@@ -6,10 +6,36 @@ import {
     doc,
     setDoc,
     getDoc,
-    collection
+    collection,
+    onAuthStateChanged
 } from '../../firebase-config.js';
 
 import { SecurityUtils, LoginRateLimiter, LoginErrorHandler, InputUtils, LoginValidationHandlers } from './loginUtils.js';
+
+// Check if current user is a client (not admin/staff)
+async function isClientUser(uid) {
+    try {
+        const clientDoc = await getDoc(doc(db, 'client', uid));
+        return clientDoc.exists();
+    } catch (error) {
+        console.error('Error checking client status:', error);
+        return false;
+    }
+}
+
+// Auto-login check on page load (only for clients)
+onAuthStateChanged(auth, async (user) => {
+    if (user && user.emailVerified) {
+        // Check if user is a client
+        const isClient = await isClientUser(user.uid);
+
+        if (isClient) {
+            // Silently redirect to dashboard for verified clients
+            window.location.href = '../dashboard/dashboard.html';
+        }
+        // If not a client (admin/staff), do nothing - let them stay on login page
+    }
+});
 
 $(document).ready(() => {
     // Initialize validation handlers
@@ -61,13 +87,22 @@ $(document).ready(() => {
                 return;
             }
 
+            // Check if user is a client
+            const isClient = await isClientUser(user.uid);
+
+            if (!isClient) {
+                // User is admin/staff, sign them out and show message
+                alert('This login page is for clients only. Please use the admin login page.');
+                await signOut(auth);
+                LoginRateLimiter.recordAttempt(true);
+                return;
+            }
+
             // Successful login - reset rate limiter
             LoginRateLimiter.recordAttempt(false);
 
             // Check if user has complete profile data
             await ensureUserProfile(user);
-
-            // alert('Login successful!');
 
             // Clear sensitive data
             InputUtils.clearSensitiveFields();
