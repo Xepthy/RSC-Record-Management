@@ -119,9 +119,9 @@ function renderTable(inquiries) {
 
     // If there are no inquiries at all
     if (inquiries.length === 0) {
-        showEmptyState('#pendingTableBody');
-        showEmptyState('#completedTableBody', 'No completed inquiries');
-        showEmptyState('#rejectedTableBody', 'No rejected inquiries');
+        showEmptyState('#pendingTableBody'); // with sub message
+        showEmptyState('#completedTableBody', 'No completed inquiries', ''); // no sub message
+        showEmptyState('#rejectedTableBody', 'No rejected inquiries', ''); // no sub message
         return;
     }
 
@@ -153,7 +153,7 @@ function renderTable(inquiries) {
             $('#completedTableBody').append(row);
         });
     } else {
-        showEmptyState('#completedTableBody', 'No completed inquiries');
+        showEmptyState('#completedTableBody', 'No completed inquiries', '');
     }
 
     // Rejected
@@ -163,7 +163,7 @@ function renderTable(inquiries) {
             $('#rejectedTableBody').append(row);
         });
     } else {
-        showEmptyState('#rejectedTableBody', 'No rejected inquiries');
+        showEmptyState('#rejectedTableBody', 'No rejected inquiries', '');
     }
 }
 
@@ -759,11 +759,12 @@ function showLoading() {
 }
 
 function showEmptyState(targetSelector, message = "No inquiries found.", subMessage = 'Click "Submit Inquiry" to create your first inquiry.') {
+    const subText = subMessage ? `<p>${subMessage}</p>` : ''; 
     $(targetSelector).html(`
         <tr>
             <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
                 <p>${message}</p>
-                <p>${subMessage}</p>
+                ${subText}
             </td>
         </tr>
     `);

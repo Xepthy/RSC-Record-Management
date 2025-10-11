@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/pages/login/css/logo.css">
     <link rel="stylesheet" href="/pages/login/css/sign-up.css">
     <link rel="stylesheet" href="/pages/login/css/typography.css">
+    <link rel="stylesheet" href="/pages/login/css/adminBtn.css">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -52,24 +53,31 @@
                 <a href="/pages/register/register.html" class="link-blue">Sign Up</a>
             </div>
         </form>
+        <div class="divider"></div>
+        <p style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 0.75rem;">
+            For admin users only
+        </p>
+        <a href="/pages/admin/login/adminLogin.html" class="admin-login-btn">
+            Admin Log-In
+        </a>
     </div>
 
     <script>
-    $(document).ready(function () {
-        $("#togglePassword").on("click", function () {
-            const $password = $("#loginPassword");
-            const isHidden = $password.attr("type") === "password";
+        $(document).ready(function () {
+            $("#togglePassword").on("click", function () {
+                const $password = $("#loginPassword");
+                const isHidden = $password.attr("type") === "password";
 
-            // Toggle type
-            $password.attr("type", isHidden ? "text" : "password");
+                // Toggle type
+                $password.attr("type", isHidden ? "text" : "password");
 
-            // Switch icon
-            $(this)
-                .toggleClass("fa-eye", isHidden)
-                .toggleClass("fa-eye-slash", !isHidden);
+                // Switch icon
+                $(this)
+                    .toggleClass("fa-eye", isHidden)
+                    .toggleClass("fa-eye-slash", !isHidden);
+            });
         });
-    });
-</script>
+    </script>
 
 </body>
 

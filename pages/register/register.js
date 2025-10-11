@@ -68,7 +68,7 @@ $(document).ready(function () {
             const user = userCredential.user;
 
             await sendEmailVerification(user);
-            alert("Verification email sent. Please check your inbox.");
+            alert("Verification email sent. Please check your inbox or spam folder.");
 
             const tempUserData = {
                 firstName, middleName, lastName, suffix,
