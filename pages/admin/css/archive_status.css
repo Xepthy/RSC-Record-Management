@@ -1,12 +1,81 @@
+
+/* Archive Table Styles */
+.archive-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout: auto;
+    min-width: 900px;
+}
+
+.archive-table thead th,
+.archive-table td {
+    border-bottom: 1px solid #ddd;
+    box-sizing: border-box;
+    padding: 14px 18px;
+}
+
+/* Column Specific Styles */
+.archive-table .checkbox-header,
+.archive-table td:first-child {
+    min-width: 50px;
+    max-width: 60px;
+    text-align: center;
+    padding: 14px 12px;
+}
+
+.archive-table .from-header,
+.archive-table td:nth-child(2) {
+    min-width: 200px;
+    max-width: 250px;
+    text-align: left;
+}
+
+.archive-table .subject-header,
+.archive-table td:nth-child(3) {
+    min-width: 350px;
+    text-align: left;
+}
+
+.archive-table .sent-header,
+.archive-table td:nth-child(4) {
+    min-width: 140px;
+    max-width: 160px;
+    text-align: right; /* Align header to the right */
+    padding: 14px 18px;
+}
+
+/* Ensure timestamp content is also right-aligned */
+.archive-table td:nth-child(4) {
+    text-align: right;
+}
+
+/* Status Badge Styles */
 .status-indicator { 
     padding: 2px 6px; 
     border-radius: 3px; 
     font-size: 11px; 
     margin-left: 8px;
+    display: inline-block;
+    white-space: nowrap;
 }
-.status-approved { background: #d4edda; color: #155724; }
-.status-rejected { background: #f8d7da; color: #721c24; }
-.status-update-documents { background: #fff3cd; color: #856404; }
-.status-archived { background: #e2e3e5; color: #495057; }
 
+.status-approved { 
+    background: #d4edda; 
+    color: #155724; 
+}
 
+.status-rejected { 
+    background: #f8d7da; 
+    color: #721c24; 
+}
+
+.status-update-documents { 
+    background: #fff3cd; 
+    color: #856404; 
+}
+
+.status-archived { 
+    background: #e2e3e5; 
+    color: #495057; 
+}

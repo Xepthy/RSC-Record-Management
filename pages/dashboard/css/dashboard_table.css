@@ -103,6 +103,92 @@ td {
   font-weight: bold;
 }
 
+.status-badge[data-status="Update Documents"] {
+    color: #8E44AD;
+    font-weight: bold;
+}
+
+.status-badge[data-status="completed"] {
+    color: #3fdc13;
+    font-weight: bold;
+}
+
+.view-project-file-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 2px 0;
+    font-size: 14px;
+}
+
+.view-project-file-btn:hover {
+    background: #0056b3;
+}
+
+
+
+/* View button styling */
+.view-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.view-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Inquiry details modal */
+.inquiry-details h3 {
+    color: #333;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.inquiry-details h3:first-child {
+    margin-top: 0;
+}
+
+.inquiry-details p {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.inquiry-details strong {
+    color: #555;
+}
+
+/* Loading animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Status colors */
+.pending {
+    color: #f87c1f;
+    font-weight: bold;
+}
+
+.completed {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.processing {
+    color: #17a2b8;
+    font-weight: bold;
+}
+
 .cancelled {
   color: #dc3545;
   font-weight: bold;

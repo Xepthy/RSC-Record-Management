@@ -399,7 +399,7 @@ body {
 }
 
 .sent-date {
-  text-align: right;
+  text-align: left;
   color: var(--primary-gray);
   font-size: 13px;
   line-height: 1.4;

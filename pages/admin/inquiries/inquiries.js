@@ -7,7 +7,10 @@ import AuthManager from './auth-manager.js';
 import InquiryManager from './inquiry-manager.js';
 import UIRenderer from './ui-renderer.js';
 import InProgressManager from '../inProgress/in-progress-manager.js';
-
+import CompletedManager from '../completed/completed-manager.js';
+import AuditLogsManager from '../audit-logs/audit-logs-manager.js';
+import DashboardManager from '../dashboard/dashboard-manager.js';
+import AccountManager from '../account/account-management.js';
 class InquiriesPage {
     constructor() {
         this.inquiries = [];
@@ -19,12 +22,20 @@ class InquiriesPage {
         this.archivedInquiries = [];
         this.unsubscribeArchive = null;
         this.unsubscribeInProgress = null;
+        this.completedItems = [];
+        this.unsubscribeCompleted = null;
+        this.dashboardManager = new DashboardManager(this);
+
+        this.auditLogs = [];
+        this.unsubscribeAuditLogs = null;
+        this.auditLogsManager = new AuditLogsManager(this);
 
         // Initialize sub-modules
         this.authManager = new AuthManager(this);
         this.inquiryManager = new InquiryManager(this);
         this.uiRenderer = new UIRenderer(this);
         this.inProgressManager = new InProgressManager(this);
+        this.completedManager = new CompletedManager(this);
 
         this.init();
     }
@@ -58,17 +69,37 @@ class InquiriesPage {
     async initializeAdminPanel() {
         try {
             this.updateUserInfo();
-            this.setupEventListeners();
 
-            // Setup both listeners to show notification counts
+            // Get user role and set permissions
+            this.userRole = await this.authManager.getUserRole(this.currentUser.uid);
+            this.isSuperAdmin = this.userRole === 'super_admin';
+            this.isAdmin = this.userRole === 'admin';
+            this.isStaff = this.userRole === 'staff';
+
+            // ✅ Account Management setup (only for super admin)
+            if (this.isSuperAdmin) {
+                this.accountManager = new AccountManager(this);
+                $('#accountManagementNav').show(); // Show the nav button
+            }
+
+            this.setupEventListeners();
             await this.inquiryManager.setupInquiryListener();
             await this.inProgressManager.setupInProgressListener();
+            await this.completedManager.setupCompletedListener();
+            this.updateInProgressNotificationCount();
+
+            if (this.isSuperAdmin) {
+                await this.auditLogsManager.setupAuditLogsListener();
+            }
+
+            await this.showDashboardSection();
 
         } catch (error) {
             console.error('Error initializing admin panel:', error);
             this.uiRenderer.showError('Failed to initialize admin panel');
         }
     }
+
 
     updateUserInfo() {
         if (this.currentUser) {
@@ -93,6 +124,63 @@ class InquiriesPage {
             this.uiRenderer.showInProgressItems();
         }
     }
+
+    updateScheduleNotificationCount() {
+        if (!this.inProgressItems) return;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let urgentCount = 0;
+
+        this.inProgressItems.forEach(item => {
+            if (item.isScheduleDone || !item.schedule) return;
+
+            const scheduleParts = item.schedule.split('/');
+            if (scheduleParts.length !== 3) return;
+
+            const [month, day, year] = scheduleParts;
+            const scheduleDate = new Date(year, month - 1, day);
+            scheduleDate.setHours(0, 0, 0, 0);
+
+            if (scheduleDate <= today) {
+                urgentCount++;
+            }
+        });
+
+        // Only show schedule badge if there are urgent items AND user is viewing in-progress
+        if (urgentCount > 0 && $('#inProgressNav').hasClass('active')) {
+            // You could show a small indicator in the UI or just rely on the color coding
+            console.log(`${urgentCount} urgent schedule items`);
+        }
+    }
+
+    updateCompletedNotificationCount() {
+        const unreadCount = this.completedItems.filter(item => !item.read).length;
+        const $countElement = $('#completedCount');
+
+        if (unreadCount > 0) {
+            $countElement.text(unreadCount).show();
+        } else {
+            $countElement.hide();
+        }
+    }
+
+    showCompletedSection() {
+        $('.nav-item').removeClass('active');
+        $('#completedNav').addClass('active');
+
+        $('.content-header h1').text('Completed Projects');
+        $('.content-header p').text('View all completed projects and their reference codes.');
+
+        if (!this.unsubscribeCompleted) {
+            this.completedManager.setupCompletedListener();
+        } else {
+            this.uiRenderer.showCompletedItems();
+        }
+    }
+
+
 
     updateInProgressNotificationCount() {
         const unreadCount = this.inProgressItems.filter(item => !item.read).length;
@@ -121,25 +209,106 @@ class InquiriesPage {
         }
     }
 
+    async showAccountManagementSection() {
+        $('.nav-item').removeClass('active');
+        $('#accountManagementNav').addClass('active');
+
+        $('.content-header h1').text('Account Management');
+        $('.content-header p').text('Manage admin and staff accounts. Create new accounts and reset passwords.');
+
+        // Make sure the content section is visible
+        $('.content-section').show();
+
+        // Load accounts and display
+        if (this.accountManager) {
+            await this.accountManager.loadAccounts();
+            this.uiRenderer.showAccountManagement(this.accountManager.accounts);
+        }
+    }
+    async showDashboardSection() {
+        $('.nav-item').removeClass('active');
+        $('#dashboardNav').addClass('active');
+
+        $('.content-header h1').text('Dashboard');
+        $('.content-header p').text('Overview of system statistics and service trends.');
+
+        this.uiRenderer.showLoading();
+        const data = await this.dashboardManager.loadDashboardData();
+        if (data) {
+            this.uiRenderer.showDashboard(data);
+        }
+    }
+
+
     setupEventListeners() {
+
+        if (this.isStaff || this.isAdmin) {
+            $('#archiveNav').hide();
+        }
+
+        $('#dashboardNav').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
+            this.showDashboardSection();
+        });
+
         // Inquiries navigation click
-        $('#inquiriesNav').on('click', () => {
+        $('#inquiriesNav').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
             this.showInquiriesSection();
         });
 
-        $('#archiveNav').on('click', () => {
+        $('#archiveNav').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
             this.showArchiveSection();
         });
 
-        $('#inProgressNav').on('click', () => {
+        $('#inProgressNav').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
             this.showInProgressSection();
         });
 
+        $('#completedNav').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
+            this.showCompletedSection();
+        });
+
+        if (this.isSuperAdmin) {
+            $('#auditLogsNav').on('click', async () => {
+                await this.inquiryManager.closeInquiryAndReleaseLock();
+                this.showAuditLogsSection();
+            });
+        } else {
+            $('#auditLogsNav').hide(); // Hide for non-super admins
+        }
+
+        if (this.isSuperAdmin) {
+            $('#accountManagementNav').on('click', async () => {
+                await this.inquiryManager.closeInquiryAndReleaseLock();
+                this.showAccountManagementSection();
+            });
+        }
+
         // Logout button click
         $('#logoutBtn').on('click', async () => {
+            await this.inquiryManager.closeInquiryAndReleaseLock();
             await this.authManager.handleLogout();
         });
     }
+
+    showAuditLogsSection() {
+        $('.nav-item').removeClass('active');
+        $('#auditLogsNav').addClass('active');
+
+        $('.content-header h1').text('Audit Logs');
+        $('.content-header p').text('Track all modifications.');
+
+        if (!this.unsubscribeAuditLogs) {
+            this.auditLogsManager.setupAuditLogsListener();
+        } else {
+            this.uiRenderer.showAuditLogs();
+        }
+    }
+
 
     updateNotificationCount() {
         const unreadCount = this.inquiries.filter(inquiry => inquiry.read === false || inquiry.read === undefined).length;
@@ -172,18 +341,32 @@ class InquiriesPage {
     }
 
     destroy() {
+        if (this.inquiryManager) {
+            this.inquiryManager.closeInquiryAndReleaseLock();
+        }
+
+        if (this.unsubscribeAuditLogs) {
+            this.unsubscribeAuditLogs();
+            this.unsubscribeAuditLogs = null;
+        }
+
         if (this.unsubscribe) {
             this.unsubscribe();
             this.unsubscribe = null;
         }
-        if (this.unsubscribeArchive) {  // ADD THIS
+        if (this.unsubscribeArchive) {
             this.unsubscribeArchive();
             this.unsubscribeArchive = null;
         }
 
-        if (this.unsubscribeInProgress) {  // ADD THIS
+        if (this.unsubscribeInProgress) {
             this.unsubscribeInProgress();
             this.unsubscribeInProgress = null;
+        }
+
+        if (this.unsubscribeCompleted) {
+            this.unsubscribeCompleted();
+            this.unsubscribeCompleted = null;
         }
 
     }

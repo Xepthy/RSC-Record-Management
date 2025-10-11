@@ -1,0 +1,27 @@
+.payment-status {
+    padding: 12px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.payment-status.fully-paid {
+    background-color: #f57c00; /* Orange */
+    color: white;
+}
+
+.payment-status.partially-paid {
+    background-color: #007bff; /* Blue */
+    color: white;
+}
+
+.payment-status.unpaid {
+    background-color: #6c757d; /* Gray */
+    color: white;
+}
+
+.payment-status-column {
+    text-align: center;
+    width: 120px;
+}

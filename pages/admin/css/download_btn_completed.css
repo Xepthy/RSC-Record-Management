@@ -1,0 +1,47 @@
+/* File actions container */
+.file-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Download button styling */
+.download-btn {
+    background-color: #10b981;
+    color: white;
+    border: 1px solid #10b981;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.download-btn:hover {
+    background-color: #059669;
+    border-color: #059669;
+}
+
+.download-btn:active {
+    background-color: #047857;
+}
+
+/* Adjust project file item layout */
+.project-file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.project-file-item span {
+    flex: 1;
+    font-size: 14px;
+    color: #374151;
+}

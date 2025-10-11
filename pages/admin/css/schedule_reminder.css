@@ -1,0 +1,27 @@
+.team-column .team-done {
+    background-color: #28a745 !important;
+    color: white !important;
+    padding: 8px !important;
+    border-radius: 4px !important;
+}
+
+.team-column .team-today {
+    background-color: #dc3545 !important;
+    color: white !important;
+    padding: 8px !important;
+    border-radius: 4px !important;
+}
+
+.team-column .team-pending {
+    background-color: #ffc107 !important;
+    color: black !important;
+    padding: 8px !important;
+    border-radius: 4px !important;
+}
+
+.team-column .team-overdue {
+    background-color: #6c757d !important;
+    color: white !important;
+    padding: 8px !important;
+    border-radius: 4px !important;
+}

@@ -17,6 +17,8 @@ import {
     reauthenticateWithCredential,
     arrayUnion
 } from '../../../firebase-config.js';
+import auditLogger from '../audit-logs/audit-logger.js';
+
 
 // Note: ung recent service sa client side wala pa yun pero dagdagin yun sa HULI fucntions dito
 
@@ -101,8 +103,7 @@ class InquiryManager {
             `${inquiry.accountInfo.firstName || ''} ${inquiry.accountInfo.lastName || ''}`.trim() || inquiry.clientName :
             inquiry.clientName || 'Unknown Client';
 
-        const services = inquiry.selectedServices ?
-            inquiry.selectedServices.join(', ') : 'None specified';
+        const servicesHTML = this.buildServicesCheckboxes(inquiry.selectedServices || [], false);
 
         const dateStr = this.formatDate(inquiry.dateSubmitted);
         const archivedStr = this.formatDate(inquiry.archivedAt);
@@ -179,7 +180,9 @@ class InquiryManager {
                             </div>
                             <div class="info-row">
                                 <span class="label">Services:</span>
-                                <span class="value">${services}</span>
+                                <div class="value services-checkboxes">
+                                    ${servicesHTML}
+                                </div>
                             </div>
                             <div class="info-row">
                                 <span class="label">Submitted:</span>
@@ -207,6 +210,7 @@ class InquiryManager {
                         </div>
                     </div>
                     
+                    ${this.parent.isSuperAdmin ? `
                     <div class="detail-card documents-card">
                         <div class="card-header">
                             <h4>Documents (${inquiry.documentCount || 0})</h4>
@@ -216,7 +220,7 @@ class InquiryManager {
                                 ${documentsHTML}
                             </div>
                         </div>
-                    </div>
+                    </div>` : ''}
                 </div>
             </div>
 
@@ -297,7 +301,9 @@ class InquiryManager {
 
     toggleApprovedSections() {
         const status = $('#statusDropdown').val();
-        if (status === 'Approved') {
+        const isEditing = !$('#statusDropdown').prop('disabled');
+
+        if (status === 'Approved' && isEditing) {
             $('#planNameSection').show();
             $('#pricingSection').show();
             $('#scheduleTeamSection').show();
@@ -473,6 +479,20 @@ class InquiryManager {
         // Check remarks changes
         const remarksChanged = currentRemarks !== this.originalValues.remarks;
 
+        // Check status changes
+        const originalStatus = this.originalValues.status || '';
+        const statusChanged = currentStatus && currentStatus !== originalStatus;
+
+        // Update Status label
+        const statusLabel = $('label:contains("Status:")');
+        if (statusChanged) {
+            if (!statusLabel.html().includes('*')) {
+                statusLabel.html('Status: <span style="color: red;">*</span>');
+            }
+        } else {
+            statusLabel.html('Status:');
+        }
+
         // Update remarks header
         const remarksHeader = $('.remarks-section .card-header h4');
         if (remarksChanged) {
@@ -528,7 +548,7 @@ class InquiryManager {
 
         // dateString comes as "2025-01-15" (yyyy-mm-dd)
         const [year, month, day] = dateString.split('-');
-        return `${month}/${day}/${year}`; // Convert to mm/dd/yyyy
+        return `${day}/${month}/${year}`;
     }
 
     showPasswordModal(onConfirm) {
@@ -746,7 +766,7 @@ class InquiryManager {
         return selectedServices;
     }
 
-    buildServicesCheckboxes(selectedServices) {
+    buildServicesCheckboxes(selectedServices, editable = true) {
         const allServices = [
             'Relocation Survey',
             'Boundary Survey',
@@ -760,11 +780,15 @@ class InquiryManager {
             'All'
         ];
 
+        const canEdit = editable && this.parent.isSuperAdmin;
+
         return allServices.map(service => {
             const isChecked = selectedServices.includes(service) ? 'checked' : '';
+            const disabled = canEdit ? '' : 'disabled';
+            const readOnlyClass = canEdit ? '' : 'readonly-checkbox';
             return `
-            <label class="service-checkbox">
-                <input type="checkbox" value="${service}" ${isChecked}>
+            <label class="service-checkbox ${readOnlyClass}">
+                <input type="checkbox" value="${service}" ${isChecked} ${disabled}>
                 <span>${service}</span>
             </label>
         `;
@@ -844,7 +868,44 @@ class InquiryManager {
                 const status = $('#statusDropdown').val();
                 const selectedServices = this.getSelectedServices();
 
-                // Update inquiry + pending
+                const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
+                const clientName = inquiry.clientInfo?.clientName || inquiry.clientName || 'Unknown';
+
+                auditLogger.startBatch(this.parent.currentInquiryId, 'Inquiries', clientName);
+
+                // Check what changed
+                if (status !== inquiry.status) {
+                    auditLogger.addChange(
+                        status, // Action type is the new status
+                        inquiry.status || 'Not set',
+                        status
+                    );
+                }
+
+                if (remarks !== (inquiry.remarks || '')) {
+                    auditLogger.addChange(
+                        'Updated Remarks',
+                        inquiry.remarks || 'None',
+                        remarks
+                    );
+                }
+
+                // Check services changes
+                const oldServices = inquiry.selectedServices || [];
+                const addedServices = selectedServices.filter(s => !oldServices.includes(s));
+                const removedServices = oldServices.filter(s => !selectedServices.includes(s));
+
+                if (addedServices.length > 0 || removedServices.length > 0) {
+                    auditLogger.addChange(
+                        'Changed Services',
+                        auditLogger.formatServices(oldServices),
+                        auditLogger.formatServices(selectedServices)
+                    );
+                }
+
+                // Commit all changes as one entry
+                await auditLogger.commitBatch();
+
                 await this.batchUpdateInquiryAndPending({
                     remarks: remarks,
                     status: status,
@@ -853,8 +914,7 @@ class InquiryManager {
                     processed: true,
                 });
 
-                // 🔔 Send notification to client
-                await this.sendNotifClient(inquiry, status);
+                await this.sendNotifClient(inquiry, status, remarks);
 
                 // If Approved
                 if (status === 'Approved') {
@@ -862,7 +922,11 @@ class InquiryManager {
                         totalAmount: parseFloat($('#totalAmountInput').val().replace(/[^\d.]/g, '')),
                         is40: $('#downPaymentCheck').is(':checked'),
                         is60: $('#remainingCheck').is(':checked'),
-                        isSchedDone: false,
+                        isDoneLayout: false,
+                        isEncroachment: false,
+                        isLock: false,
+                        isNeedResearch: false,
+                        isScheduleDone: false,
                         schedule: this.formatDateForStorage($('#scheduleInput').val()),
                         selectedTeam: $('#teamSelect').val(),
                         pendingDocId: inquiry.pendingDocId,
@@ -946,6 +1010,11 @@ class InquiryManager {
                 this.checkForChanges();
                 this.clearSavedProgress();
 
+                if (this.lockHeartbeat) {
+                    clearInterval(this.lockHeartbeat);
+                    this.lockHeartbeat = null;
+                }
+
                 console.log('Updates completed successfully');
                 this.showToast('Applied successfully!', 'success');
 
@@ -962,38 +1031,56 @@ class InquiryManager {
         });
     }
 
-    async sendNotifClient(inquiry, status) {
+    async sendNotifClient(inquiry, status, remarks) {
         try {
-            if (!inquiry.accountInfo?.uid || !inquiry.pendingDocId) {
-                console.warn('Missing uid or pendingDocId for notification');
+            if (!inquiry || !inquiry.accountInfo?.uid) {
+                console.warn('⚠️ Missing accountInfo or uid in inquiry.');
                 return;
             }
 
-            const notifRef = doc(
-                db,
-                'client',
-                inquiry.accountInfo.uid,
-                'pending',
-                inquiry.pendingDocId
-            );
-
-            const notification = {
-                inquiryId: inquiry.id,   // Firestore docId of the inquiry
-                requestTitle: inquiry.requestDescription || 'Inquiry', // fallback if missing
+            const notifData = {
+                inquiryId: inquiry.id,
+                requestTitle: inquiry.requestDescription || 'Inquiry Update',
+                message: '',
                 status: status,
-                message: `Your request "${inquiry.requestDescription}" is now ${status}`,
+                read: false,
                 timestamp: new Date(),
-                read: false
             };
 
-            await updateDoc(notifRef, {
-                notifications: arrayUnion(notification)
-            });
+            switch (status) {
+                case 'Approved':
+                    notifData.message = `Your inquiry "${inquiry.requestDescription}" has been approved. Wait for further updates.`;
+                    break;
+                case 'Rejected':
+                    notifData.message = `Your inquiry "${inquiry.requestDescription}" was rejected. Remarks: ${remarks || 'Please contact Rafallo office for details.'}`;
+                    break;
+                case 'Update Documents':
+                    notifData.message = `Additional documents are required for your inquiry "${inquiry.requestDescription}". Remarks: ${remarks || 'Please check your account for details.'}`;
+                    break;
+                case 'Completed':
+                    notifData.message = `Your request "${inquiry.requestDescription}" is now completed. You can get the original document at Rafallo's office. Reference Code: ${inquiry.referenceCode || 'N/A'}`;
+                    break;
+                default:
+                    notifData.message = `Status update: "${status}"`;
+            }
 
-            console.log('Notification sent to client:', notification);
+            const clientPendingRef = doc(db, 'client', inquiry.accountInfo.uid, 'pending', inquiry.pendingDocId);
+            const pendingSnap = await getDoc(clientPendingRef);
 
+            if (!pendingSnap.exists()) {
+                console.warn(`⚠️ Pending document not found for uid: ${inquiry.accountInfo.uid}`);
+                return;
+            }
+
+            const existingData = pendingSnap.data();
+            const existingNotifications = existingData.notifications || [];
+            const updatedNotifications = [...existingNotifications, notifData];
+
+            await updateDoc(clientPendingRef, { notifications: updatedNotifications });
+
+            console.log(`✅ Notification sent to ${inquiry.accountInfo.uid}: ${status}`);
         } catch (error) {
-            console.error('Error sending notification:', error);
+            console.error('❌ Error sending notification:', error);
         }
     }
 
@@ -1005,6 +1092,7 @@ class InquiryManager {
 
             const inquiriesQuery = query(
                 collection(db, 'inquiries'),
+                orderBy('read', 'asc'),
                 orderBy('dateSubmitted', 'desc')
             );
 
@@ -1022,6 +1110,23 @@ class InquiryManager {
                 console.log('Processed inquiries:', this.parent.inquiries.length);
                 this.parent.updateNotificationCount();
 
+                const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+                snapshot.docs.forEach(async (docSnap) => {
+                    const data = docSnap.data();
+                    if (data.beingEditedBy && data.editingStartedAt) {
+                        const editingStarted = data.editingStartedAt.toDate();
+                        if (editingStarted < fifteenMinutesAgo) {
+                            await updateDoc(doc(db, 'inquiries', docSnap.id), {
+                                beingEditedBy: null,
+                                editingStartedAt: null
+                            });
+                            console.log(`Released stale lock for inquiry ${docSnap.id}`);
+                        }
+                    }
+                });
+
+
+
                 // ONLY update UI if we're currently viewing inquiries (not archive)
                 if (!currentId && $('#inquiriesNav').hasClass('active')) {
                     this.parent.uiRenderer.showInquiriesLoaded();
@@ -1034,6 +1139,22 @@ class InquiryManager {
                 console.error('Error listening to inquiries:', error);
                 this.parent.uiRenderer.showError('Failed to load inquiries: ' + error.message);
             });
+
+            setInterval(() => {
+                const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000);
+                this.parent.inquiries.forEach(async (inquiry) => {
+                    if (inquiry.beingEditedBy && inquiry.editingStartedAt) {
+                        const editingStarted = inquiry.editingStartedAt.toDate();
+                        if (editingStarted < twentyMinutesAgo) {
+                            await updateDoc(doc(db, 'inquiries', inquiry.id), {
+                                beingEditedBy: null,
+                                editingStartedAt: null
+                            });
+                            console.log(`Released stale lock for inquiry ${inquiry.id}`);
+                        }
+                    }
+                });
+            }, 2 * 60 * 1000);
 
         } catch (error) {
             console.error('Error setting up inquiry listener:', error);
@@ -1060,15 +1181,38 @@ class InquiryManager {
         }
     }
 
-    showInquiryDetails(inquiryId) {
+    async closeInquiryAndReleaseLock() {
+        if (this.parent.currentInquiryId) {
+            try {
+                await updateDoc(doc(db, 'inquiries', this.parent.currentInquiryId), {
+                    beingEditedBy: null,
+                    editingStartedAt: null
+                });
+
+                if (this.lockHeartbeat) {
+                    clearInterval(this.lockHeartbeat);
+                    this.lockHeartbeat = null;
+                }
+            } catch (error) {
+                console.error('Error releasing inquiry lock:', error);
+            }
+        }
+        this.parent.showInquiriesSection();
+    }
+
+
+
+    async showInquiryDetails(inquiryId) {
         const inquiry = this.parent.inquiries.find(inq => inq.id === inquiryId);
         if (!inquiry) return;
+
 
         this.parent.currentInquiryId = inquiryId;
 
         this.originalValues = {
             remarks: inquiry.remarks || '',
             selectedServices: [...(inquiry.selectedServices || [])],
+            status: inquiry.status || ''
         };
 
         const clientName = inquiry.accountInfo ?
@@ -1093,7 +1237,7 @@ class InquiryManager {
                         <h3>Inquiry Details</h3>
                         ${statusBadge}
                     </div>
-                    <button class="back-btn" onclick="window.inquiriesPage.showInquiriesSection()">← Back to List</button>
+                    <button class="back-btn" onclick="window.inquiriesPage.inquiryManager.closeInquiryAndReleaseLock()">← Back to List</button>
                 </div>
                 
                 <div class="details-content">
@@ -1163,7 +1307,7 @@ class InquiryManager {
                                 <div class="info-row">
                                     <span class="label">Services:</span>
                                     <div class="value services-checkboxes">
-                                        ${this.buildServicesCheckboxes(inquiry.selectedServices || [])}
+                                        ${this.buildServicesCheckboxes(inquiry.selectedServices || [], false)}
                                     </div>
                                 </div>
                                 
@@ -1185,16 +1329,17 @@ class InquiryManager {
                             </div>
                         </div>
                         
+                        ${this.parent.isSuperAdmin ? `
                         <div class="detail-card documents-card">
                             <div class="card-header">
-                                <h4>Documents (${inquiry.documentCount || 0})</h4>
+                                <h4>Transmittal of Documents (${inquiry.documentCount || 0})</h4>
                             </div>
                             <div class="card-body">
                                 <div class="documents-list">
                                     ${documentsHTML}
                                 </div>
                             </div>
-                        </div>
+                        </div>` : ''}
                     </div>
                 </div>
 
@@ -1203,10 +1348,12 @@ class InquiryManager {
                         <h4>Remarks</h4>
                     </div>
                     <div class="card-body">
-
-                        <textarea id="remarksInput" placeholder="Enter your remarks here..." rows="4">${inquiry.remarks || ''}</textarea>
-
-                        <select id="statusDropdown">
+    
+                    <textarea id="remarksInput" placeholder="Enter your remarks here..." rows="4" readonly>${inquiry.remarks || ''}</textarea>
+                            
+                        ${this.parent.isSuperAdmin ? `
+                        <label style="display: block; margin-top: 15px; margin-bottom: 5px;">Status:</label>
+                        <select id="statusDropdown" disabled>
                             <option value="">Select Status</option>
                             <option value="Approved" ${inquiry.status === 'Approved' ? 'selected' : ''} >Approved</option>
                             <option value="Rejected" ${inquiry.status === 'Rejected' ? 'selected' : ''} >Rejected</option>
@@ -1260,8 +1407,17 @@ class InquiryManager {
                             </div>
                         </div>
 
-                        <button id="applyRemarksBtn" class="apply-btn">Apply</button>
+                        <button id="cancelEditBtn" class="btn-secondary" style="display: none;">Cancel</button>
+                        <button id="applyRemarksBtn" class="apply-btn" style="display: none";>Apply</button>
+                        ` : `
+                        `}
                     </div>
+
+                    ${this.parent.isSuperAdmin ? `
+                        <div style="text-align: left;">
+                            <button id="editInquiryBtn" class="btn-secondary" style="margin: 0 16px 16px; padding: 10px 20px;">Edit</button>
+                        </div>
+                        ` : ''}
                 </div>
 
             </div>
@@ -1269,11 +1425,78 @@ class InquiryManager {
 
         // Load any saved progress
         $('#inquiryContent').html(detailsHTML);
+
+
+        // Edit button handler
+        $('#editInquiryBtn').on('click', async () => {
+            const currentInquiry = this.parent.inquiries.find(inq => inq.id === inquiryId);
+
+            if (currentInquiry.beingEditedBy && currentInquiry.beingEditedBy !== auth.currentUser.email) {
+                this.showToast(`Being processed by ${currentInquiry.beingEditedBy}`, 'warning');
+                return;
+            }
+
+            try {
+                // Get current user's name
+                const userDoc = await getDoc(doc(db, 'accounts', auth.currentUser.uid));
+                const userData = userDoc.data();
+                const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+
+                await updateDoc(doc(db, 'inquiries', inquiryId), {
+                    beingEditedBy: auth.currentUser.uid,
+                    beingEditedByName: fullName,
+                    editingStartedAt: serverTimestamp()
+                });
+
+                this.lockHeartbeat = setInterval(async () => {
+                    await updateDoc(doc(db, 'inquiries', inquiryId), {
+                        editingStartedAt: serverTimestamp()
+                    });
+                }, 7 * 60 * 1000);
+
+                // Show the entire editing section
+                $('#remarksEditSection').show();
+                $('#remarksInput').prop('readonly', false);
+                $('#statusDropdown').prop('disabled', false);
+                $('.service-checkbox input[type="checkbox"]').prop('disabled', false);
+                $('#applyRemarksBtn, #cancelEditBtn').show();
+                $('#editInquiryBtn').hide();
+                this.toggleApprovedSections();
+            } catch (error) {
+                this.showToast('Failed to lock inquiry', 'error');
+            }
+        });
+
+        // Cancel button handler
+        $('#cancelEditBtn').on('click', async () => {
+            await updateDoc(doc(db, 'inquiries', inquiryId), {
+                beingEditedBy: null,
+                editingStartedAt: null
+            });
+
+            if (this.lockHeartbeat) {
+                clearInterval(this.lockHeartbeat);
+                this.lockHeartbeat = null;
+            }
+
+            $('#remarksInput').prop('readonly', true);
+            $('#statusDropdown').prop('disabled', true);
+            $('.service-checkbox input[type="checkbox"]').prop('disabled', true);  // Add this line
+            $('#applyRemarksBtn, #cancelEditBtn').hide();
+            $('#editInquiryBtn').show();
+
+            $('#planNameSection').hide();
+            $('#pricingSection').hide();
+            $('#scheduleTeamSection').hide();
+        });
+
         this.loadSavedProgress(inquiryId);
 
         this.loadTeamOptions();
 
-        this.checkForChanges();
+        setTimeout(() => {
+            this.checkForChanges();
+        }, 100);
 
         $('#remarksInput').on('input', () => {
             this.autoSaveProgress();
@@ -1300,10 +1523,9 @@ class InquiryManager {
         this.handleTeamExpansion();
         this.toggleApprovedSections();
 
+
         $('#applyRemarksBtn').on('click', () => this.handleRemarksApply());
     }
-
-
 
 
     formatDate(dateSubmitted) {

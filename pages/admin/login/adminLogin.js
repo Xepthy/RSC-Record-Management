@@ -156,7 +156,7 @@ class AdminLogin {
             const accountDocRef = doc(db, 'accounts', uid);
             const accountDoc = await getDoc(accountDocRef);
 
-            return accountDoc.exists() && accountDoc.data().role === 'admin';
+            return accountDoc.exists() && ['super_admin', 'admin', 'staff'].includes(accountDoc.data().role);
         } catch (error) {
             console.error('Error checking admin status:', error);
             return false;
@@ -168,7 +168,7 @@ class AdminLogin {
         this.showSuccess('Login successful! Redirecting...');
 
         setTimeout(() => {
-            window.location.href = '../inquiries/dashboard_admin.html';
+            window.location.href = '../../admin/inquiries/dashboard_admin.html';
         }, 1000);
     }
 

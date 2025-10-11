@@ -1,0 +1,83 @@
+/* Move to Completed Button */
+#moveToCompletedBtn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+#moveToCompletedBtn:hover {
+    background: #218838;
+}
+
+#moveToCompletedBtn:active {
+    background: #1e7e34;
+}
+
+/* Completion Modal Styles */
+#completionModal .modal-content {
+    max-width: 500px;
+    width: 90%;
+}
+
+.completion-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.form-group input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.form-group input:required:invalid {
+    border-color: #dc3545;
+}
+
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #f5c6cb;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+/* Button states for completion */
+#confirmCompletionBtn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Modal footer spacing */
+#completionModal .modal-footer {
+    gap: 10px;
+    justify-content: flex-end;
+}

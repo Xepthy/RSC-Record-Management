@@ -1,0 +1,283 @@
+import {
+    db,
+    collection,
+    query,
+    orderBy,
+    onSnapshot,
+    doc,
+    updateDoc,
+    where,
+    auth
+} from '../../../firebase-config.js';
+
+class CompletedManager {
+    constructor(parentInstance) {
+        this.parent = parentInstance;
+    }
+
+    async setupCompletedListener() {
+        try {
+            console.log('Setting up completed listener...');
+            this.parent.uiRenderer.showLoading();
+
+            const completedQuery = query(
+                collection(db, 'completed'),
+                orderBy('completedDate', 'desc')
+            );
+
+            this.parent.unsubscribeCompleted = onSnapshot(completedQuery, (snapshot) => {
+                console.log('Completed snapshot received:', snapshot.size, 'documents');
+
+                // Filter out _init document
+                this.parent.completedItems = snapshot.docs
+                    .filter(doc => doc.id !== '_init')
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+
+                console.log('Processed completed items:', this.parent.completedItems.length);
+
+                // Update notification count
+                this.parent.updateCompletedNotificationCount();
+
+                // Only update UI if we're currently viewing completed
+                if ($('#completedNav').hasClass('active')) {
+                    this.parent.uiRenderer.showCompletedItems();
+                }
+
+            }, (error) => {
+                console.error('Error listening to completed:', error);
+                this.parent.uiRenderer.showError('Failed to load completed: ' + error.message);
+            });
+
+        } catch (error) {
+            console.error('Error setting up completed listener:', error);
+            this.parent.uiRenderer.showError('Failed to initialize completed: ' + error.message);
+        }
+    }
+
+    async markAsRead(itemId) {
+        try {
+            const item = this.parent.completedItems.find(item => item.id === itemId);
+            if (!item || item.read) {
+                return;
+            }
+
+            const itemDocRef = doc(db, 'completed', itemId);
+            await updateDoc(itemDocRef, {
+                read: true,
+            });
+
+            console.log('Completed item marked as read:', itemId);
+
+        } catch (error) {
+            console.error('Error marking completed item as read:', error);
+        }
+    }
+
+    formatServices(services) {
+        if (!services || services.length === 0) return 'None';
+
+        if (services.length > 3) {
+            return services.slice(0, 2).join(', ') + ` +${services.length - 2} more`;
+        }
+
+        return services.join(', ');
+    }
+
+    formatDateDisplay(dateString) {
+        if (!dateString) return 'Not specified';
+
+        // Assuming completedDate is stored as yyyy-mm-dd
+        const [year, month, day] = dateString.split('-');
+        return `${day}/${month}/${year}`;
+    }
+
+    showCompletedDetails(itemId) {
+        const item = this.parent.completedItems.find(item => item.id === itemId);
+        if (!item) return;
+
+        // Build details modal (read-only)
+        const clientName = item.clientInfo?.clientName || 'Unknown Client';
+        const contact = item.clientInfo?.contact || 'Not provided';
+        const location = item.clientInfo?.location || 'Not provided';
+        const planName = item.planName || 'Not specified';
+        const referenceCode = item.referenceCode || 'N/A';
+        const completedDate = this.formatDateDisplay(item.completedDate);
+        const services = item.selectedServices?.join(', ') || 'None';
+
+        // Build project files HTML
+        const projectFilesHTML = this.buildProjectFilesHTML(item.projectFiles);
+
+        const modalHTML = `
+        <div id="completedModal" class="modal-overlay">
+            <div class="modal-content large-modal">
+                <div class="modal-header">
+                    <h3>Completed Project Details</h3>
+                    <button class="modal-close" id="modalCloseBtn">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="details-grid">
+                        
+                        <div class="detail-card full-width">
+                            <div class="card-header">
+                                <h4>Reference Code</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-row">
+                                    <span class="value" style="font-weight: bold; font-size: 1.1em;">${referenceCode}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-card">
+                            <div class="card-header">
+                                <h4>Client Information</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-row">
+                                    <span class="label">Client Name:</span>
+                                    <span class="value">${clientName}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Contact:</span>
+                                    <span class="value">${contact}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Location:</span>
+                                    <span class="value">${location}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-card">
+                            <div class="card-header">
+                                <h4>Project Information</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-row">
+                                    <span class="label">Plan Name:</span>
+                                    <span class="value">${planName}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Completed Date:</span>
+                                    <span class="value">${completedDate}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        
+
+                        <div class="detail-card full-width">
+                            <div class="card-header">
+                                <h4>Project Files</h4>
+                            </div>
+                            <div class="card-body">
+                                ${projectFilesHTML}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" id="closeBtn">Close</button>
+                </div>
+            </div>
+        </div>
+        `;
+
+        $('body').append(modalHTML);
+        this.setupCompletedModalEventListeners();
+    }
+
+    buildProjectFilesHTML(projectFiles) {
+        if (!projectFiles || (Array.isArray(projectFiles) && projectFiles.length === 0)) {
+            return '<p>No project files available</p>';
+        }
+
+        if (!Array.isArray(projectFiles)) {
+            projectFiles = [projectFiles];
+        }
+
+        const isSuperAdmin = this.parent.isSuperAdmin;
+
+        return projectFiles.map((file, index) => `
+        <div class="project-file-item">
+            <span>📄 ${file.name}</span>
+            <div class="file-actions">
+                <button class="view-link" onclick="window.completedManager.handleViewFile('${file.storagePath || ''}', '${file.url || ''}')">View File</button>
+                ${isSuperAdmin ? `<button class="download-btn" onclick="window.completedManager.handleDownloadFile('${file.storagePath || ''}', '${file.url || ''}', '${file.name}')">Download</button>` : ''}
+            </div>
+        </div>
+    `).join('');
+    }
+
+    setupCompletedModalEventListeners() {
+        // Expose manager for onclick handlers
+        window.completedManager = this;
+
+        $('#modalCloseBtn, #closeBtn').on('click', () => {
+            $('#completedModal').remove();
+            delete window.completedManager; // Clean up
+        });
+    }
+
+    async handleViewFile(storagePath, legacyUrl) {
+        try {
+            let downloadURL;
+
+            if (legacyUrl) {
+                downloadURL = legacyUrl;
+            } else if (storagePath) {
+                const { ref, getDownloadURL } = await import('../../../firebase-config.js');
+                const { storage } = await import('../../../firebase-config.js');
+                const fileRef = ref(storage, storagePath);
+                downloadURL = await getDownloadURL(fileRef);
+            } else {
+                throw new Error('No file path or URL available');
+            }
+
+            window.open(downloadURL, '_blank');
+        } catch (error) {
+            console.error('Error opening file:', error);
+            alert('Unable to open file');
+        }
+    }
+
+    async handleDownloadFile(storagePath, legacyUrl, fileName) {
+        try {
+            let downloadURL;
+
+            if (legacyUrl) {
+                downloadURL = legacyUrl;
+            } else if (storagePath) {
+                const { ref, getDownloadURL } = await import('../../../firebase-config.js');
+                const { storage } = await import('../../../firebase-config.js');
+                const fileRef = ref(storage, storagePath);
+                downloadURL = await getDownloadURL(fileRef);
+            } else {
+                throw new Error('No file path or URL available');
+            }
+
+            // Create temporary link and trigger download
+            const link = document.createElement('a');
+            link.href = downloadURL;
+            link.download = fileName;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            console.log('File downloaded:', fileName);
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            alert('Failed to download file. Please try again.');
+        }
+    }
+
+}
+
+
+
+export default CompletedManager;
