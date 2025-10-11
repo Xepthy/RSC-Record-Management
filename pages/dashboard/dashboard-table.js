@@ -435,10 +435,10 @@ function initEditHandlers(inquiry, isAdmin = false) {
     // Handle newly selected files
     $('#editDocUpload').change((e) => {
         const files = Array.from(e.target.files);
-        
+
         // FIXED: For edit mode, only check new files count (reset to 3 max for new uploads)
         const newFilesCount = newFiles.length + files.length;
-        
+
         if (newFilesCount > 3) {
             alert('Maximum 3 new documents allowed for update');
             return;
@@ -460,11 +460,11 @@ function initEditHandlers(inquiry, isAdmin = false) {
                 return;
             }
 
-            newFiles.push({ 
-                id: Date.now() + Math.random(), 
-                file, 
-                name: file.name, 
-                size: file.size 
+            newFiles.push({
+                id: Date.now() + Math.random(),
+                file,
+                name: file.name,
+                size: file.size
             });
         });
 
@@ -490,7 +490,7 @@ function initEditHandlers(inquiry, isAdmin = false) {
     });
 
     function updateNewDocsList() {
-        const listHtml = newFiles.length === 0 
+        const listHtml = newFiles.length === 0
             ? ''
             : newFiles.map(f =>
                 `<div class="new-document">
@@ -499,7 +499,7 @@ function initEditHandlers(inquiry, isAdmin = false) {
                     <button type="button" class="remove-new-doc" data-file-id="${f.id}">×</button>
                 </div>`
             ).join('');
-        
+
         $('#newDocsList').html(listHtml);
     }
 
@@ -580,11 +580,11 @@ async function saveChanges(inquiry, newFiles, removedIndices) {
             await uploadBytes(fileRef, file.file);
             const url = await getDownloadURL(fileRef);
 
-            docs.push({ 
-                name: file.name, 
-                size: file.size, 
-                url, 
-                uploadDate: new Date().toISOString() 
+            docs.push({
+                name: file.name,
+                size: file.size,
+                url,
+                uploadDate: new Date().toISOString()
             });
         }
 
@@ -859,4 +859,4 @@ window.dashboardTable = {
     destroy: destroyDashboardTable
 };
 window.viewInquiry = viewInquiry;
-export { refreshTable,  };
+export { refreshTable, };

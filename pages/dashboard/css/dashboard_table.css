@@ -88,8 +88,14 @@ td {
 }
 
 /* ===== STATUS COLORS ===== */
+/* ===== STATUS COLORS ===== */
 .completed {
   color: #28a745;
+  font-weight: bold;
+}
+
+.approved {
+  color: #4cd169;
   font-weight: bold;
 }
 
@@ -103,8 +109,35 @@ td {
   font-weight: bold;
 }
 
+.rejected {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.cancelled {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.on-hold {
+  color: #6c757d;
+  font-weight: bold;
+}
+
+/* Add this for "Update Documents" status */
+.update.documents {
+  color: #8E44AD;
+  font-weight: bold;
+}
+
+/* If you're using data-status attributes, keep these as backup */
 .status-badge[data-status="Update Documents"] {
     color: #8E44AD;
+    font-weight: bold;
+}
+
+.status-badge[data-status="Rejected"] {
+    color: #dc3545;
     font-weight: bold;
 }
 
