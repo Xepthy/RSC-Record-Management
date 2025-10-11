@@ -856,6 +856,20 @@ class InquiryManager {
         if ($('#applyRemarksBtn').prop('disabled')) return;
 
         const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
+        const currentStatus = $('#statusDropdown').val();
+        const currentRemarks = $('#remarksInput').val().trim();
+        const currentServices = this.getSelectedServices();
+
+        const statusUnchanged = currentStatus === inquiry.status;
+        const remarksUnchanged = currentRemarks === (inquiry.remarks || '');
+        const servicesUnchanged = JSON.stringify(currentServices.sort()) === JSON.stringify((inquiry.selectedServices || []).sort());
+
+        if (statusUnchanged && remarksUnchanged && servicesUnchanged) {
+            this.showToast('No changes detected. Please modify status, remarks, or services before applying.', 'warning');
+            return;
+        }
+
+
 
         $('#applyRemarksBtn').prop('disabled', true).text('Confirming...');
 

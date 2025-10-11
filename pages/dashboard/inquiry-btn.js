@@ -17,6 +17,7 @@ $(document).ready(function () {
     });
 
     // Handle representative checkbox
+    // Handle representative checkbox
     $('#enableRepresentative').on('change', function () {
         const isEnabled = this.checked;
         $('#representative').prop('disabled', !isEnabled);
@@ -30,6 +31,10 @@ $(document).ready(function () {
             $('#repClassificationCustom').hide().val('');
         }
     });
+
+    // Make sure rep classification is disabled on page load
+    $('#repClassification').prop('disabled', true);
+    $('#repClassificationCustom').prop('disabled', true);
 
     // Handle contractor checkbox
     $('#enableContractor').on('change', function () {
