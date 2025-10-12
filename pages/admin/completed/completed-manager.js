@@ -206,7 +206,6 @@ class CompletedManager {
         <div class="project-file-item">
             <span>📄 ${file.name}</span>
             <div class="file-actions">
-                <button class="view-link" onclick="window.completedManager.handleViewFile('${file.storagePath || ''}', '${file.url || ''}')">View File</button>
                 ${isSuperAdmin ? `<button class="download-btn" onclick="window.completedManager.handleDownloadFile('${file.storagePath || ''}', '${file.url || ''}', '${file.name}')">Download</button>` : ''}
             </div>
         </div>

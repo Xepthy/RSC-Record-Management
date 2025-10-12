@@ -1,0 +1,124 @@
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 60, 120, 0.3);
+    backdrop-filter: blur(6px);
+}
+
+.modal-content {
+    background-color: #ffffff;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #d0e6ff;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 6px 24px rgba(0, 80, 160, 0.25);
+}
+
+.modal-header {
+    padding: 20px 30px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: inset 0 -2px 6px rgba(255, 255, 255, 0.25);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+}
+
+.modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+    line-height: 1.7;
+    background-color: #f9fcff;
+}
+
+.modal-body h3 {
+    color: #0a75c2;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.modal-body h3:first-child {
+    margin-top: 0;
+}
+
+.modal-body p {
+    margin-bottom: 15px;
+    color: #333;
+    text-align: justify;
+}
+
+.modal-body ul {
+    margin-left: 20px;
+    margin-bottom: 15px;
+}
+
+.modal-body ul li {
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.modal-footer {
+    padding: 20px 30px;
+    background-color: #e8f5ff;
+    border-radius: 0 0 12px 12px;
+    text-align: center;
+    box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.4);
+}
+
+.close-btn {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.close-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(79, 172, 254, 0.5);
+    filter: brightness(1.05);
+}
+
+.close {
+    color: white;
+    font-size: 26px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, color 0.2s;
+}
+
+.close:hover,
+.close:focus {
+    color: #f0faff;
+    transform: scale(1.1);
+}
+
+.effective-date {
+    font-style: italic;
+    color: #777;
+    margin-bottom: 20px;
+    font-size: 14px;
+}

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
 
+    <!-- CSS -->
     <link rel="stylesheet" href="/pages/register/css/base.css">
     <link rel="stylesheet" href="/pages/register/css/containers.css">
     <link rel="stylesheet" href="/pages/register/css/forms.css">
@@ -15,16 +16,18 @@
     <link rel="stylesheet" href="/pages/register/css/signupBtn.css">
     <link rel="stylesheet" href="/pages/register/css/checkbox.css">
     <link rel="stylesheet" href="/pages/register/css/policy.css">
+    <link rel="stylesheet" href="/pages/register/css/modal.css">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <!-- jQuery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script type="module" src="/pages/register/register.js"></script>
 
+    <!-- JS -->
+    <script type="module" src="/pages/register/register.js"></script>
 </head>
 
 <body>
-
     <div class="container-glass">
         <h2>Sign Up</h2>
         <div id="registerSection">
@@ -63,22 +66,22 @@
             </div>
 
             <div class="checkbox-group">
-                <label>
+                <label class="checkbox-label">
                     <input type="checkbox" class="policy-required" id="privacyCheckbox" required>
                     <span class="policy-inline">
                         I agree to
-                        <a href="#" id="showPrivacy">Data Policy</a>
+                        <a href="#" id="showPrivacy" class="policy-link">Data Policy</a>
                         <span class="info-icon" tabindex="0">i
                             <span class="tooltip">Your data will be used responsibly.</span>
                         </span>
                     </span>
                 </label>
 
-                <label>
+                <label class="checkbox-label">
                     <input type="checkbox" class="policy-required" id="termsCheckbox" required>
                     <span class="policy-inline">
                         I agree to
-                        <a href="#" id="showTerms">Terms and Conditions</a>
+                        <a href="#" id="showTerms" class="policy-link">Terms and Conditions</a>
                         <span class="info-icon" tabindex="0">i
                             <span class="tooltip">You must agree to the terms before continuing.</span>
                         </span>
@@ -89,7 +92,6 @@
                     Please agree to both the Data Policy and Terms & Conditions.
                 </p>
             </div>
-
 
             <div id="verifySection" style="display: none;">
                 <p>✅ Verification email sent! Check your inbox.</p>
@@ -103,37 +105,233 @@
             </div>
 
             <br>
-
             <button id="registerBtn">Sign Up</button>
-
             <div class="link"><a href="/pages/login/login.html">Back to Login</a></div>
         </div>
     </div>
 
-    <script>
-        $(document).ready(function () {
-            // Generic function to handle toggle
-            function setupPasswordToggle(toggleSelector, inputSelector) {
-                $(toggleSelector).on("click", function () {
-                    const $password = $(inputSelector);
-                    const isHidden = $password.attr("type") === "password";
+    <div id="privacyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Data Privacy Policy</h2>
+                <span class="close" data-modal="privacyModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <h3>1. Introduction</h3>
+                <p>Rafallo Surveying & Real Estate Consultancy Corporation ("we," "us," or "our") is committed to
+                    protecting your privacy and ensuring the security of your personal information. This Data Privacy
+                    Policy explains how we collect, use, store, and protect your data in compliance with the Data
+                    Privacy Act of 2012 (Republic Act No. 10173) and other applicable laws.</p>
 
-                    // Toggle input type
-                    $password.attr("type", isHidden ? "text" : "password");
+                <h3>2. Information We Collect</h3>
+                <p>We collect the following types of information when you register and use our services:</p>
+                <ul>
+                    <li><strong>Personal Information:</strong> Name, contact details (email address, mobile number),
+                        classification (e.g., owner, buyer, agent)</li>
+                    <li><strong>Transaction Information:</strong> Service requests, project details, payment
+                        information, and project status</li>
+                    <li><strong>Documents:</strong> Property documents, legal papers, survey requirements, and other
+                        files you upload</li>
+                </ul>
 
-                    // Switch icons
-                    $(this)
-                        .toggleClass("fa-eye", isHidden)
-                        .toggleClass("fa-eye-slash", !isHidden);
-                });
-            }
+                <h3>3. How We Use Your Information</h3>
+                <p>Your information is used for the following purposes:</p>
+                <ul>
+                    <li>To process and fulfill your service requests</li>
+                    <li>To communicate with you regarding your projects and inquiries</li>
+                    <li>To maintain accurate records of transactions and services</li>
+                    <li>To improve our services and customer experience</li>
+                    <li>To comply with legal and regulatory requirements</li>
+                    <li>To send important updates about your projects or our services</li>
+                </ul>
 
-            // Setup both password fields
-            setupPasswordToggle("#togglePassword", "#password");
-            setupPasswordToggle("#toggleVerifyPassword", "#verifyPassword");
-        });
-    </script>
+                <h3>4. Data Storage and Security</h3>
+                <p>We implement appropriate technical and organizational measures to protect your personal data:</p>
+                <ul>
+                    <li>Data is stored securely on cloud-based servers with encryption</li>
+                    <li>Access to your information is restricted to authorized personnel only</li>
+                    <li>We use role-based access controls to ensure data confidentiality</li>
+                    <li>Regular backups are performed to prevent data loss</li>
+                    <li>We maintain audit logs to track system access and activities</li>
+                </ul>
 
+                <h3>5. Data Sharing and Disclosure</h3>
+                <p>We do not sell, rent, or trade your personal information. We may share your data only in the
+                    following circumstances:</p>
+                <ul>
+                    <li>With service providers who assist us in delivering our services (e.g., cloud hosting providers)
+                    </li>
+                    <li>When required by law or to comply with legal processes</li>
+                    <li>To protect our rights, property, or safety, or that of our clients</li>
+                    <li>With your explicit consent</li>
+                </ul>
+
+                <h3>6. Your Rights</h3>
+                <p>Under the Data Privacy Act of 2012, you have the following rights:</p>
+                <ul>
+                    <li><strong>Right to Access:</strong> You may request access to your personal data</li>
+                    <li><strong>Right to Correction:</strong> You may request correction of inaccurate or incomplete
+                        data</li>
+                    <li><strong>Right to Erasure:</strong> You may request deletion of your data, subject to legal
+                        retention requirements</li>
+                    <li><strong>Right to Object:</strong> You may object to certain processing of your data</li>
+                    <li><strong>Right to Data Portability:</strong> You may request a copy of your data in a structured
+                        format</li>
+                </ul>
+
+                <h3>7. Data Retention</h3>
+                <p>We retain your personal information for as long as necessary to fulfill the purposes outlined in this
+                    policy, or as required by law. Project records may be retained for archival purposes to maintain
+                    business continuity and client history.</p>
+
+                <h3>8. Contact Us</h3>
+                <p>If you have questions about this Privacy Policy or wish to exercise your data rights, please contact
+                    us at:</p>
+                <p><strong>Rafallo Surveying & Real Estate Consultancy Corporation</strong><br>
+                    RSC Building, 8 Marigman Road, San Roque, Antipolo City<br>
+                    Email: rafallosurveying@gmail.com<br>
+                    Phone: 0917-5047844 | 0922-8596601</p>
+
+                <h3>9. Changes to This Policy</h3>
+                <p>We may update this Privacy Policy from time to time. We will notify you of significant changes by
+                    posting the updated policy on our website or through direct communication.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="close-btn" data-modal="privacyModal">I Understand</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="termsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Terms and Conditions</h2>
+                <span class="close" data-modal="termsModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <h3>1. Acceptance of Terms</h3>
+                <p>By creating an account and using the Rafallo Surveying & Real Estate Consultancy Corporation
+                    web-based management system, you agree to be bound by these Terms and Conditions. If you do not
+                    agree to these terms, please do not use our services.</p>
+
+                <h3>2. Account Registration</h3>
+                <p>To use our services, you must:</p>
+                <ul>
+                    <li>Provide accurate, current, and complete information during registration</li>
+                    <li>Maintain the confidentiality of your account credentials</li>
+                    <li>Be at least 18 years of age or have parental/guardian consent</li>
+                    <li>Notify us immediately of any unauthorized use of your account</li>
+                    <li>Accept responsibility for all activities that occur under your account</li>
+                </ul>
+
+                <h3>3. Services Provided</h3>
+                <p>Rafallo Surveying & Real Estate Consultancy Corporation provides land surveying, real estate
+                    consultancy, and architectural design services. Services include but are not limited to:</p>
+                <ul>
+                    <li>Relocation surveys</li>
+                    <li>Subdivision surveys</li>
+                    <li>Location plans and topographic surveys</li>
+                    <li>Consolidation and parcellary surveys</li>
+                    <li>As-built surveys</li>
+                    <li>Real estate consultation and documentation assistance</li>
+                </ul>
+
+                <h3>4. Client Responsibilities</h3>
+                <p>As a client, you agree to:</p>
+                <ul>
+                    <li>Provide all necessary documents and information required for your project</li>
+                    <li>Ensure accuracy of information submitted through the system</li>
+                    <li>Grant site access for survey teams as scheduled</li>
+                    <li>Make timely payments according to agreed payment terms</li>
+                    <li>Respond to inquiries and requests for additional information promptly</li>
+                    <li>Use the system only for lawful purposes</li>
+                </ul>
+
+                <h3>5. Payment Terms</h3>
+                <ul>
+                    <li>Payment terms will be specified in your quotation (typically 60% down payment, 40% upon
+                        completion)</li>
+                    <li>Services will commence upon receipt of the required down payment</li>
+                    <li>Final documents will be released only upon full payment</li>
+                    <li>Discounts, if applicable, will be specified in your quotation</li>
+                    <li>All fees are quoted in Philippine Pesos (PHP)</li>
+                </ul>
+
+                <h3>6. Project Timelines</h3>
+                <ul>
+                    <li>Project timelines are estimates and may vary based on site conditions, weather, and document
+                        availability</li>
+                    <li>We will make reasonable efforts to meet agreed timelines</li>
+                    <li>Delays caused by client-side factors (missing documents, site access issues) may extend
+                        completion dates</li>
+                    <li>You will be notified of any significant changes to project schedules</li>
+                </ul>
+
+                <h3>7. Document Handling</h3>
+                <ul>
+                    <li>Documents uploaded to the system must be in PDF format</li>
+                    <li>You are responsible for ensuring documents are legible and complete</li>
+                    <li>We will store your documents securely on cloud-based servers</li>
+                    <li>You may download your completed project documents through the client portal</li>
+                    <li>Physical copies of documents, if required, will be provided as specified in your service
+                        agreement</li>
+                </ul>
+
+                <h3>8. Intellectual Property</h3>
+                <ul>
+                    <li>All survey plans, designs, and deliverables remain the property of Rafallo Surveying & Real
+                        Estate Consultancy Corporation until full payment is received</li>
+                    <li>Upon full payment, you receive the right to use the deliverables for their intended purpose</li>
+                    <li>You may not reproduce, distribute, or modify our deliverables without written permission</li>
+                </ul>
+
+                <h3>9. System Usage</h3>
+                <p>You agree not to:</p>
+                <ul>
+                    <li>Use the system for any illegal or unauthorized purpose</li>
+                    <li>Attempt to gain unauthorized access to any part of the system</li>
+                    <li>Upload malicious code, viruses, or harmful content</li>
+                    <li>Interfere with or disrupt the system's operation</li>
+                    <li>Share your account credentials with unauthorized persons</li>
+                </ul>
+
+                <h3>10. Limitation of Liability</h3>
+                <ul>
+                    <li>We strive to provide accurate and professional services, but we are not liable for delays or
+                        issues caused by factors beyond our control</li>
+                    <li>Our liability is limited to the amount paid for the specific service</li>
+                    <li>We are not responsible for decisions you make based on our consultancy services</li>
+                    <li>We maintain professional indemnity insurance as required by law</li>
+                </ul>
+
+                <h3>11. Cancellation and Refunds</h3>
+                <ul>
+                    <li>Cancellation policies will be specified in your service agreement</li>
+                    <li>Down payments are generally non-refundable once work has commenced</li>
+                    <li>Refund requests will be evaluated on a case-by-case basis</li>
+                </ul>
+
+                <h3>12. Modifications to Terms</h3>
+                <p>We reserve the right to modify these Terms and Conditions at any time. Changes will be effective upon
+                    posting to the system. Continued use of the system after changes constitutes acceptance of the
+                    modified terms.</p>
+
+                <h3>13. Governing Law</h3>
+                <p>These Terms and Conditions are governed by the laws of the Republic of the Philippines. Any disputes
+                    shall be resolved in the appropriate courts of Antipolo City.</p>
+
+                <h3>14. Contact Information</h3>
+                <p>For questions about these Terms and Conditions, please contact us at:</p>
+                <p><strong>Rafallo Surveying & Real Estate Consultancy Corporation</strong><br>
+                    RSC Building, 8 Marigman Road, San Roque, Antipolo City<br>
+                    Email: [Contact Email]<br>
+                    Phone: [Contact Number]</p>
+            </div>
+            <div class="modal-footer">
+                <button class="close-btn" data-modal="termsModal">I Agree</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

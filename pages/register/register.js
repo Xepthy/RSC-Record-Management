@@ -206,3 +206,66 @@ async function setupFirstTimeUser(user) {
         alert('Account created successfully, but there was an issue setting up your profile. Please contact support if you experience any problems.');
     }
 }
+
+// UI Interactions
+$(document).ready(function () {
+    // --- Password toggle setup ---
+    function setupPasswordToggle(toggleSelector, inputSelector) {
+        $(toggleSelector).on("click", function () {
+            const $password = $(inputSelector);
+            const isHidden = $password.attr("type") === "password";
+            $password.attr("type", isHidden ? "text" : "password");
+            $(this)
+                .toggleClass("fa-eye", isHidden)
+                .toggleClass("fa-eye-slash", !isHidden);
+        });
+    }
+
+    setupPasswordToggle("#togglePassword", "#password");
+    setupPasswordToggle("#toggleVerifyPassword", "#verifyPassword");
+
+    // --- Modal open/close handling ---
+    $("#showPrivacy").on("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $("#privacyModal").fadeIn(300);
+    });
+
+    $("#showTerms").on("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $("#termsModal").fadeIn(300);
+    });
+
+    $(".close, .close-btn").on("click", function () {
+        const modalId = $(this).data("modal");
+        $("#" + modalId).fadeOut(300);
+
+        // Auto-check corresponding box
+        if (modalId === "termsModal") {
+            $("#termsCheckbox").prop("checked", true);
+        } else if (modalId === "privacyModal") {
+            $("#privacyCheckbox").prop("checked", true);
+        }
+    });
+
+    $(".modal").on("click", function (e) {
+        if ($(e.target).hasClass("modal")) $(this).fadeOut(300);
+    });
+
+    $(document).on("keydown", function (e) {
+        if (e.key === "Escape") $(".modal").fadeOut(300);
+    });
+
+    // --- Checkbox click fix ---
+    $(".checkbox-label").on("click", function (e) {
+        if (!$(e.target).is('a, .info-icon, .tooltip')) {
+            const checkbox = $(this).find('input[type="checkbox"]');
+            checkbox.prop('checked', !checkbox.prop('checked'));
+        }
+    });
+
+    $('input[type="checkbox"]').on("click", function (e) {
+        e.stopPropagation();
+    });
+});
