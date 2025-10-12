@@ -10,7 +10,9 @@
 const { setGlobalOptions } = require("firebase-functions");
 const { onRequest } = require("firebase-functions/https");
 const logger = require("firebase-functions/logger");
-
+const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { Storage } = require('@google-cloud/storage');
+const storage = new Storage();
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
 // traffic spikes by instead downgrading performance. This limit is a
@@ -36,7 +38,9 @@ const { onCall } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 
 // Initialize Admin SDK (do this ONCE at the top)
-admin.initializeApp();
+admin.initializeApp({
+    storageBucket: 'rsc-2025.firebasestorage.app'
+});
 
 // Function 1: Toggle Disable Account
 exports.toggleDisableAccount = onCall(
@@ -112,3 +116,126 @@ exports.deleteUserAccount = onCall(
         }
     }
 );
+
+
+
+// ========== BACKUP FUNCTIONS ==========
+
+// Backup Firestore Database using official export
+exports.backupDatabase = onSchedule({
+    schedule: '*/5 * * * *', // Every 5 minutes for testing
+    // schedule: '0 0 1 * *', // Uncomment for monthly
+    timeZone: 'Asia/Manila',
+    region: 'asia-southeast1',
+    memory: '512MiB',
+    timeoutSeconds: 300
+}, async (event) => {
+    const projectId = 'rsc-2025';
+    const bucketName = 'rsc-2025-backups';
+    const timestamp = new Date().toISOString().replace(/:/g, '-');
+
+    try {
+        const { google } = require('googleapis');
+        const auth = new google.auth.GoogleAuth({
+            scopes: ['https://www.googleapis.com/auth/datastore']
+        });
+
+        const client = await auth.getClient();
+        const firestore = google.firestore('v1');
+
+        const databasePath = `projects/${projectId}/databases/(default)`;
+        const outputUriPrefix = `gs://${bucketName}/firestore-exports/${timestamp}`;
+
+        const response = await firestore.projects.databases.exportDocuments({
+            name: databasePath,
+            auth: client,
+            requestBody: {
+                outputUriPrefix: outputUriPrefix,
+                collectionIds: []
+            }
+        });
+
+        console.log(`Firestore export started: ${outputUriPrefix}`);
+        console.log(`Operation: ${response.data.name}`);
+
+        return null;
+    } catch (error) {
+        console.error('Firestore export failed:', error);
+        throw error;
+    }
+});
+
+
+// Backup Cloud Storage (Files)
+exports.backupStorage = onSchedule({
+    schedule: '*/5 * * * *', // Every 5 minutes for testing
+    // schedule: '0 0 1 * *', // Uncomment for monthly
+    timeZone: 'Asia/Manila',
+    region: 'asia-southeast1'
+}, async (event) => {
+    const sourceBucket = 'rsc-2025.firebasestorage.app';
+    const backupBucket = 'rsc-2025-backups';
+    const timestamp = new Date().toISOString().replace(/:/g, '-');
+    const backupFolder = `storage-backups/backup-${timestamp}/`;
+
+    try {
+        const source = storage.bucket(sourceBucket);
+        const destination = storage.bucket(backupBucket);
+
+        const [files] = await source.getFiles();
+
+        const copyPromises = files.map(async (file) => {
+            const destFileName = `${backupFolder}${file.name}`;
+            await file.copy(destination.file(destFileName));
+            console.log(`Copied: ${file.name} to ${destFileName}`);
+        });
+
+        await Promise.all(copyPromises);
+        console.log(`Storage backup successful: ${files.length} files backed up`);
+        return null;
+    } catch (error) {
+        console.error('Storage backup failed:', error);
+        throw error;
+    }
+});
+
+// Cleanup old backups (keep only last 10 backups)
+exports.cleanupOldBackups = onSchedule({
+    schedule: '0 2 * * *', // Daily at 2 AM
+    timeZone: 'Asia/Manila',
+    region: 'asia-southeast1'
+}, async (event) => {
+    const bucketName = 'rsc-2025-backups';
+    const bucket = storage.bucket(bucketName);
+
+    try {
+        const [dbFiles] = await bucket.getFiles({ prefix: 'firestore-exports/' });
+        if (dbFiles.length > 10) {
+            const filesToDelete = dbFiles
+                .sort((a, b) => new Date(b.metadata.timeCreated) - new Date(a.metadata.timeCreated))
+                .slice(10);
+
+            await Promise.all(filesToDelete.map(file => file.delete()));
+            console.log(`Deleted ${filesToDelete.length} old database backups`);
+        }
+
+        const [storageFolders] = await bucket.getFiles({ prefix: 'storage-backups/' });
+        const folders = [...new Set(storageFolders.map(f =>
+            f.name.split('/').slice(0, 2).join('/')
+        ))];
+
+        if (folders.length > 10) {
+            const foldersToDelete = folders.slice(10);
+            for (const folder of foldersToDelete) {
+                const [files] = await bucket.getFiles({ prefix: folder });
+                await Promise.all(files.map(file => file.delete()));
+            }
+            console.log(`Deleted ${foldersToDelete.length} old storage backup folders`);
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Cleanup failed:', error);
+        throw error;
+    }
+});
