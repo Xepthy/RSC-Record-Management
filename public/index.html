@@ -18,6 +18,9 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+
+    <!-- Add this script -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script type="module" src="/pages/login/login.js" defer></script>
     <script type="module" src="/pages/login/authForgot.js" defer></script>
@@ -44,6 +47,7 @@
                 <a href="#" id="reset" class="link-blue">Forgot Password?</a>
             </div>
 
+            <div class="g-recaptcha" data-sitekey="YOUR_SITE_KEY_HERE"></div>
             <!-- Login button -->
             <button id="loginBtn">Login</button>
 
