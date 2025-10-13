@@ -11,12 +11,20 @@ const SecurityUtils = {
     },
 
     validatePassword: function (password) {
-        return password.length >= 8 && password.length <= 128 &&
-            /[a-zA-Z]/.test(password) && /[0-9]/.test(password);
+        return password.length >= 10 && 
+               password.length <= 15 &&
+               /[A-Z]/.test(password) && 
+               /[a-z]/.test(password) && 
+               /[0-9]/.test(password) && 
+               /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
     },
 
     getPasswordRequirements: function () {
-        return "Password must be 8-12 characters and contain at least one letter and one number.";
+        return "Password must be 10-15 characters and include:\n" +
+               "• One uppercase letter (A-Z)\n" +
+               "• One lowercase letter (a-z)\n" +
+               "• One number (0-9)\n" +
+               "• One special character (!@#$%^&* etc.)";
     },
 
     validateName: function (name) {
