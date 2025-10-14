@@ -12,7 +12,7 @@ const SecurityUtils = {
 
     validatePassword: function (password) {
         return password.length >= 10 && 
-               password.length <= 15 &&
+               password.length <= 40 &&
                /[A-Z]/.test(password) && 
                /[a-z]/.test(password) && 
                /[0-9]/.test(password) && 
