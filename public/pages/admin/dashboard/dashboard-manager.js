@@ -21,8 +21,8 @@ class DashboardManager {
                 'Engineering Services',
                 'Topographic Survey',
                 'As-Built Survey',
-                'Tilting Assistance Survey',
-                'Consilidation Survey',
+                'Titling Assistance Survey',
+                'Consolidation Survey',
                 'Parcellary Survey'
             ];
 
