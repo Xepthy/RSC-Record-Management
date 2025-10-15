@@ -31,7 +31,7 @@ onAuthStateChanged(auth, async (user) => {
 
         if (isClient) {
             // Silently redirect to dashboard for verified clients
-            window.location.href = '../dashboard/dashboard.html';
+            window.location.href = '/pages/dashboard/dashboard.html';
         }
         // If not a client (admin/staff), do nothing - let them stay on login page
     }
@@ -108,7 +108,7 @@ $(document).ready(() => {
             InputUtils.clearSensitiveFields();
 
             // Redirect to dashboard
-            window.location.href = '../dashboard/dashboard.html';
+            window.location.href = '/pages/dashboard/dashboard.html';
 
         } catch (error) {
             // Record failed attempt

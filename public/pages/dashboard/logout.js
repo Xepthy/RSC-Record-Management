@@ -3,23 +3,23 @@ import {
     signOut
 } from '../../firebase-config.js';
 
-$(document).ready(function() {
+$(document).ready(function () {
 
     // Toggle dropdown on profile click
-    $('.profile-dropdown .profile').on('click', function(e) {
+    $('.profile-dropdown .profile').on('click', function (e) {
         e.stopPropagation();
         $('#profileDropdown').toggleClass('show');
     });
 
     // Close dropdown when clicking outside
-    $(document).on('click', function(e) {
+    $(document).on('click', function (e) {
         if (!$(e.target).closest('.profile-dropdown').length) {
             $('#profileDropdown').removeClass('show');
         }
     });
 
     // Logout handler
-    $('#logoutBtn').on('click', async function() {
+    $('#logoutBtn').on('click', async function () {
         // Show confirmation modal
         const confirmModal = `
             <div id="logoutConfirmModal" class="modal-overlay">
@@ -46,7 +46,7 @@ $(document).ready(function() {
                 await signOut(auth);
 
                 $('#logoutConfirmModal').remove();
-                window.location.href = "../login/login.html";
+                window.location.href = "/index.html";
             } catch (error) {
                 console.error('Logout error:', error);
                 alert('Failed to sign out. Please try again.');
