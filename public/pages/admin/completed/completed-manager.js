@@ -106,6 +106,10 @@ class CompletedManager {
         const referenceCode = item.referenceCode || 'N/A';
         const completedDate = this.formatDateDisplay(item.completedDate);
         const services = item.selectedServices?.join(', ') || 'None';
+        const contractorName = item.clientInfo?.contractorName || 'None';
+        const companyName = item.clientInfo?.companyName || 'None';
+        const representative = item.clientInfo?.representative || 'None';
+        const repClassification = item.clientInfo?.repClassification || 'None';
 
         // Build project files HTML
         const projectFilesHTML = this.buildProjectFilesHTML(item.projectFiles);
@@ -145,8 +149,20 @@ class CompletedManager {
                                     <span class="value">${contact}</span>
                                 </div>
                                 <div class="info-row">
-                                    <span class="label">Location:</span>
-                                    <span class="value">${location}</span>
+                                    <span class="label">Contractor Name:</span>
+                                    <span class="value">${contractorName}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Company Name:</span>
+                                    <span class="value">${companyName}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Rep Classification:</span>
+                                    <span class="value">${repClassification}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Representative:</span>
+                                    <span class="value">${representative}</span>
                                 </div>
                             </div>
                         </div>
@@ -164,11 +180,16 @@ class CompletedManager {
                                     <span class="label">Completed Date:</span>
                                     <span class="value">${completedDate}</span>
                                 </div>
+                                <div class="info-row">
+                                    <span class="label">Services:</span>
+                                    <span class="value">${services}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Location:</span>
+                                    <span class="value">${location}</span>
+                                </div>
                             </div>
                         </div>
-
-                        
-
                         <div class="detail-card full-width">
                             <div class="card-header">
                                 <h4>Project Files</h4>

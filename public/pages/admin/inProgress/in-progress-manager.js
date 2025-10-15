@@ -112,6 +112,8 @@ class InProgressManager {
         const location = item.clientInfo?.location || 'Not provided';
         const repClassification = item.clientInfo?.repClassification || 'None';
         const representative = item.clientInfo?.representative || 'None';
+        const contractorName = item.clientInfo?.contractorName || 'None';
+        const companyName = item.clientInfo?.companyName || 'None';
 
         const planName = item?.planName || 'None';
         // Services checkboxes (read-only)
@@ -204,6 +206,14 @@ class InProgressManager {
                                 <div class="info-row">
                                     <span class="label">Representative:</span>
                                     <span class="value">${representative}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Contractor Name:</span>
+                                    <span class="value">${contractorName}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Company Name:</span>
+                                    <span class="value">${companyName}</span>
                                 </div>
                             </div>
                         </div>
@@ -552,6 +562,10 @@ class InProgressManager {
                 planName: item.planName,
                 selectedServices: item.selectedServices,
                 projectFiles: item.projectFiles,
+                contractorName:item.clientInfo.contractorName || 'None',
+                companyName:item.clientInfo.companyName || 'None',
+                representative:item.clientInfo.representative || 'None',
+                repClassification:item.clientInfo.repClassification || 'None',
                 isReceive: false,
                 read: false,
                 originalInProgressId: item.id,

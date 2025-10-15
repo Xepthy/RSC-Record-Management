@@ -951,7 +951,9 @@ class InquiryManager {
                             representative: inquiry.representative,
                             repClassification: inquiry.repClassification,
                             contact: inquiry.contact,
-                            location: inquiry.location
+                            location: inquiry.location,
+                            contractorName: inquiry.contractorName || 'None',
+                            companyName: inquiry.companyName || 'None'
                         },
                         createdAt: serverTimestamp(),
                         remarks: null,
