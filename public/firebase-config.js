@@ -43,7 +43,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/11.9.1/firebase-storage.js';
 
 import { getFunctions } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-functions.js";
-
+import { initializeAppCheck, ReCaptchaV3Provider } from 'https://www.gstatic.com/firebasejs/11.9.1/firebase-app-check.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyDAAqEWKTCqfIPZOByAFWl5CHFrto2ngAo",
@@ -58,7 +58,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
-
+initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6LeB0OorAAAAAEAvDSCvJapqeqnCFRTgkFWLFiVg'),
+    isTokenAutoRefreshEnabled: true
+});
 
 
 export const functions = getFunctions(app, 'asia-southeast1');
