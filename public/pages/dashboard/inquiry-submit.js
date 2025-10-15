@@ -3,6 +3,7 @@ import {
     auth,
     collection,
     setDoc,
+    getDoc,
     doc,
     ref,
     uploadBytes,
@@ -176,6 +177,8 @@ async function submitFormData() {
         // ✅ Dual-write to Firestore
         const userDocRef = doc(db, 'client', currentUser.uid);
         const pendingCollectionRef = collection(userDocRef, 'pending');
+        const userDoc = await getDoc(userDocRef);
+        const userData = userDoc.exists() ? userDoc.data() : {};
 
         // generate consistent ID
         const pendingDocRef = doc(pendingCollectionRef);
@@ -185,12 +188,12 @@ async function submitFormData() {
         formData.accountInfo = {
             uid: currentUser.uid,
             email: currentUser.email || "",
-            firstName: formData.clientName || "",
-            lastName: "", // optional if you split names
-            mobileNumber: formData.contact || "",
-            classification: formData.classification || "",
-            contractorName: formData.contractorName || "None",
-            companyName: formData.companyName || "None"
+            firstName: userData.firstName || "",
+            middleName: userData.middleName || "",
+            lastName: userData.lastName || "",
+            suffix: userData.suffix || "",
+            mobileNumber: userData.mobileNumber || "",
+            classification: userData.classification || ""
         };
         formData.dateSubmitted = new Date().toISOString();
         formData.lastUpdated = new Date().toISOString();
