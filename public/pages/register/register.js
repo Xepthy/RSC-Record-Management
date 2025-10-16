@@ -222,7 +222,6 @@ $(document).ready(function () {
     }
 
     setupPasswordToggle("#togglePassword", "#password");
-    setupPasswordToggle("#toggleVerifyPassword", "#verifyPassword");
 
     // --- Modal open/close handling ---
     $("#showPrivacy").on("click", function (e) {
