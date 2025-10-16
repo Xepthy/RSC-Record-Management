@@ -1,4 +1,5 @@
 // Input sanitization and validation
+// Input sanitization and validation
 const SecurityUtils = {
     sanitizeInput: function (input) {
         return input.trim().replace(/[<>]/g, '');
@@ -11,20 +12,12 @@ const SecurityUtils = {
     },
 
     validatePassword: function (password) {
-        return password.length >= 10 && 
-               password.length <= 40 &&
-               /[A-Z]/.test(password) && 
-               /[a-z]/.test(password) && 
-               /[0-9]/.test(password) && 
-               /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+        return password.length >= 8 && password.length <= 128 &&
+            /[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[_!@#$%^&*(),.?":{}|<>]/.test(password);
     },
 
     getPasswordRequirements: function () {
-        return "Password must be 10-15 characters and include:\n" +
-               "• One uppercase letter (A-Z)\n" +
-               "• One lowercase letter (a-z)\n" +
-               "• One number (0-9)\n" +
-               "• One special character (!@#$%^&* etc.)";
+        return "Password must be 8-15 characters and contain at least one lowercase letter, one uppercase letter, one number, and one special character.";
     },
 
     validateName: function (name) {
@@ -33,6 +26,11 @@ const SecurityUtils = {
 
     validateMobileNumber: function (mobile) {
         return /^09[0-9]{9}$/.test(mobile);
+    },
+
+    // Add classification validation
+    validateClassification: function (classification) {
+        return classification && classification !== "" && classification !== null;
     }
 };
 
@@ -62,7 +60,7 @@ const ErrorHandler = {
             'auth/invalid-email': 'Please enter a valid email address.',
             'auth/user-not-found': 'Invalid email or password.',
             'auth/wrong-password': 'Invalid email or password.',
-            'auth/invalid-credential': 'Invalid email or password.',
+            'auth/invalid-credential': 'Password does not match.',
             'auth/too-many-requests': 'Too many failed attempts. Please try again in a few minutes.',
             'auth/network-request-failed': 'Network error. Please check your connection and try again.'
         };
