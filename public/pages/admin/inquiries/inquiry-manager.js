@@ -170,6 +170,14 @@ class InquiryManager {
                                 <span class="value">${inquiry.repClassification || 'None'}</span>
                             </div>
                             <div class="info-row">
+                                <span class="label">Contractor Name:</span>
+                                <span class="value">${inquiry.contractorName || 'None'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Company Name:</span>
+                                <span class="value">${inquiry.companyName || 'None'}</span>
+                            </div>
+                            <div class="info-row">
                                 <span class="label">Contact:</span>
                                 <span class="value">${inquiry.contact || 'Not provided'}</span>
                             </div>
