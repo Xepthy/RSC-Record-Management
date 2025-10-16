@@ -28,10 +28,14 @@ export function validateFormData(formData) {
     });
 
     // Classification validation - must not be empty or "noValue"
-    if (!formData.classification ||
-        formData.classification.trim() === '' ||
-        formData.classification === 'noValue') {
-        errors.push('Classification is required');
+    const isClassificationDisabled = $('#classification').prop('disabled');
+    if (!isClassificationDisabled) {
+        // Only validate if NOT using "Same Info" checkbox
+        if (!formData.classification ||
+            formData.classification.trim() === '' ||
+            formData.classification === 'noValue') {
+            errors.push('Classification is required');
+        }
     }
 
     // If classification is "Others", check if custom value is provided
@@ -69,7 +73,7 @@ export function validateFormData(formData) {
             }
         }
     }
-    
+
     // Contractor validation logic
     const isContractorEnabled = !$('#contractorName').prop('disabled');
     const hasContractorName = formData.contractorName &&
@@ -215,7 +219,6 @@ class RateLimiter {
 export const rateLimiter = new RateLimiter();
 
 export function handleError(error) {
-    console.error('Error:', error);
 
     if (error.code) {
         switch (error.code) {
