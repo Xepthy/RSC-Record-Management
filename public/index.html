@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="/pages/login/css/logo.css">
     <link rel="stylesheet" href="/pages/login/css/sign-up.css">
     <link rel="stylesheet" href="/pages/login/css/typography.css">
-    <link rel="stylesheet" href="/pages/login/css/adminBtn.css">
+    <link rel="stylesheet" href="/pages/login/css/user-guide.css">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -32,7 +32,6 @@
         <h2>User Login</h2>
 
         <form id="loginForm">
-            <!-- Email -->
             <input type="email" id="loginEmail" placeholder="Email" required />
 
             <div class="password-container">
@@ -40,22 +39,18 @@
                 <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
             </div>
 
-
-            <!-- Forgot password -->
             <div class="forgot-password">
                 <a href="#" id="reset" class="link-blue">Forgot Password?</a>
             </div>
 
-  
-            <!-- Login button -->
             <button id="loginBtn">Login</button>
 
-            <!-- Sign up link -->
             <div class="signup-message">
                 Don't have an account?
                 <a href="/pages/register/register.html" class="link-blue">Sign Up</a>
             </div>
         </form>
+
         <div class="divider"></div>
         <p style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 0.75rem;">
             For admin users only
@@ -63,21 +58,53 @@
         <a href="/pages/admin/login/adminLogin.html" class="admin-login-btn">
             Admin Log-In
         </a>
+
     </div>
+
+    <!-- Floating User Guide Button -->
+    <div class="guide-container" id="openGuide">
+        <span>User Guide</span>
+        <i class="fa-solid fa-circle-question guide-icon"></i>  
+    </div>
+
+    <!-- Video Modal -->
+    <div class="guide-modal" id="guideModal">
+        <div class="guide-content">
+            <video controls>
+                <source src="/pages/login/css/user-guide.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
 
     <script>
         $(document).ready(function () {
+            const $guideModal = $("#guideModal");
+            const $guideVideo = $guideModal.find("video")[0]; // get the <video> element
+
+            // --- Toggle password visibility ---
             $("#togglePassword").on("click", function () {
                 const $password = $("#loginPassword");
                 const isHidden = $password.attr("type") === "password";
-
-                // Toggle type
                 $password.attr("type", isHidden ? "text" : "password");
+                $(this).toggleClass("fa-eye", isHidden).toggleClass("fa-eye-slash", !isHidden);
+            });
 
-                // Switch icon
-                $(this)
-                    .toggleClass("fa-eye", isHidden)
-                    .toggleClass("fa-eye-slash", !isHidden);
+            // --- Open guide modal ---
+            $("#openGuide, #openGuideText").on("click", function () {
+                $guideModal.addClass("active");
+                $guideVideo.play(); // auto-play when modal opens
+            });
+
+            // --- Close modal ---
+            $guideModal.on("click", function (e) {
+                // Close only if clicked on overlay or close button
+                if (e.target.id === "guideModal" || e.target.id === "closeGuide") {
+                    $guideModal.removeClass("active");
+                    $guideVideo.pause();        // stop video
+                    $guideVideo.currentTime = 0; // reset video to start
+                }
             });
         });
     </script>

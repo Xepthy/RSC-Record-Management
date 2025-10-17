@@ -1,0 +1,143 @@
+/* --- Floating Guide Button --- */
+.guide-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 40px;
+  padding: 0.5rem 1.2rem;
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  z-index: 1100;
+  transition: all 0.3s ease;
+}
+
+.guide-container:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.guide-icon {
+  font-size: 1.4rem;
+}
+
+/* --- Video Modal --- */
+.guide-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  padding: 1rem;
+}
+
+.guide-modal.active {
+  display: flex;
+}
+
+.guide-content {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(25px);
+  border-radius: 20px;
+  padding: 1.2rem;
+  width: 95%;
+  max-width: 800px;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.45);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeInScale 0.3s ease;
+}
+
+.guide-content video {
+  width: 100%;
+  height: auto;
+  max-height: 450px;
+  border-radius: 15px;
+}
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.3);
+  margin: 1rem 0;
+}
+
+/* --- Animation --- */
+@keyframes fadeInScale {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+
+@media (max-width: 600px) and (orientation: portrait) {
+  .guide-container {
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .guide-container span {
+    display: none; /* only ? icon shows */
+  }
+
+  .guide-icon {
+    font-size: 1.6rem;
+  }
+
+  .guide-content {
+    max-width: 90%;
+    padding: 1rem;
+  }
+
+  .guide-content video {
+    max-height: 250px;
+  }
+}
+
+
+@media (max-width: 600px) and (orientation: landscape) {
+  .guide-container {
+    width: 60px;
+    height: 60px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .guide-container span {
+    display: none; /* only ? icon shows */
+  }
+
+  .guide-icon {
+    font-size: 1.5rem;
+  }
+
+  .guide-content {
+    max-width: 95%;
+    padding: 0.8rem;
+  }
+
+  .guide-content video {
+    max-height: 180px; /* fit landscape screens better */
+  }
+}

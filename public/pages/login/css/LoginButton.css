@@ -24,3 +24,31 @@ button:active {
   box-shadow: none;
   transform: scale(0.98);
 }
+
+.admin-login-btn {
+  display: inline-block;        /* make <a> behave like button */
+  text-decoration: none;        /* remove underline */
+  padding: 7px 70px;
+  border: 0;
+  border-radius: 100px;
+  background-color: #2ba8fb;
+  color: #ffffff;
+  font-weight: bold;
+  transition: all 0.5s;
+  margin-bottom: 1rem;
+  text-align: center;           /* center text inside <a> */
+  cursor: pointer;
+}
+
+.admin-login-btn:hover {
+  background-color: #6fc5ff;
+  box-shadow: 0 0 20px #6fc5ff50;
+  transform: scale(1.1);
+}
+
+.admin-login-btn:active {
+  background-color: #3d94cf;
+  box-shadow: none;
+  transform: scale(0.98);
+  transition: all 0.25s;
+}
