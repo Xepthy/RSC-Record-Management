@@ -83,9 +83,10 @@ $(document).ready(function () {
             sessionStorage.setItem("tempUserData", JSON.stringify(tempUserData));
 
             $('#verifySection').slideDown();
-            $('#password').val('');
-            $('password-container').hide();
+            $('#password').val('').hide();
+            $('.password-container').show();
             $('#registerBtn').hide();
+            $('#togglePassword').hide();
 
 
         } catch (error) {
