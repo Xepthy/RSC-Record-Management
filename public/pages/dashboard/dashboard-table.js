@@ -19,7 +19,7 @@ import {
 let currentUser = null;
 let unsubscribe = null;
 let userAccountData = null; // Cache user account data
-
+window.userAccountData = null; // Make it globally accessible
 // Initialize dashboard table
 async function initDashboardTable() {
     try {
@@ -52,13 +52,16 @@ async function loadUserAccountData() {
 
         if (userDocSnap.exists()) {
             userAccountData = userDocSnap.data();
+            window.userAccountData = userAccountData;
         } else {
             console.warn('User account data not found');
             userAccountData = null;
+            window.userAccountData = null;
         }
     } catch (error) {
         console.error('Error loading user account data:', error);
         userAccountData = null;
+        window.userAccountData = null;
     }
 }
 
@@ -242,8 +245,8 @@ function truncateText(text, maxLength) {
 async function viewInquiry(inquiryId) {
     try {
         // Debug: Check if userAccountData is available
-        console.log('userAccountData when viewing inquiry:', userAccountData);
-        console.log('userAccountData mobileNumber:', userAccountData?.mobileNumber);
+        // console.log('userAccountData when viewing inquiry:', userAccountData);
+        // console.log('userAccountData mobileNumber:', userAccountData?.mobileNumber);
 
         // Get inquiry details
         const userDocRef = doc(db, 'client', currentUser.uid);
@@ -282,13 +285,13 @@ function showInquiryModal(inquiry, accountData) {
         : 'No documents';
 
     const projectFiles = (inquiry.status === 'Completed' || inquiry.status === 'completed') && inquiry.projectFiles && inquiry.projectFiles.length > 0
-    ? inquiry.projectFiles.map(file => {
-        return `<button class="view-project-file-btn" 
+        ? inquiry.projectFiles.map(file => {
+            return `<button class="view-project-file-btn" 
                         data-storage-path="${file.storagePath || ''}" 
                         data-file-url="${file.url || ''}" 
                         data-file-name="${file.name}">${file.name}</button>`;
-    }).join('<br>')
-    : (inquiry.status === 'Completed' ? 'No Project Files Yet' : ''); // empty for non-completed
+        }).join('<br>')
+        : (inquiry.status === 'Completed' ? 'No Project Files Yet' : ''); // empty for non-completed
 
     // Format account data with fallbacks
     const firstName = accountData?.firstName || 'N/A';
@@ -593,7 +596,7 @@ async function saveChanges(inquiry, newFiles, removedIndices) {
                 try {
                     const oldPath = getStoragePathFromUrl(removedDoc.url);
                     await deleteObject(ref(storage, oldPath));
-                    console.log(`Deleted from storage: ${removedDoc.name}`);
+                    // console.log(`Deleted from storage: ${removedDoc.name}`);
                 } catch (err) {
                     console.warn(`Failed to delete ${removedDoc?.name} from storage:`, err);
                 }
@@ -612,7 +615,7 @@ async function saveChanges(inquiry, newFiles, removedIndices) {
                     try {
                         const oldPath = getStoragePathFromUrl(oldDoc.url);
                         await deleteObject(ref(storage, oldPath));
-                        console.log(`Replaced old file in storage: ${oldDoc.name}`);
+                        // console.log(`Replaced old file in storage: ${oldDoc.name}`);
                     } catch (err) {
                         console.warn(`Failed to delete old file ${oldDoc?.name}:`, err);
                     }
@@ -760,7 +763,7 @@ function showLoading() {
 }
 
 function showEmptyState(targetSelector, message = "No inquiries found.", subMessage = 'Click "Submit Inquiry" to create your first inquiry.') {
-    const subText = subMessage ? `<p>${subMessage}</p>` : ''; 
+    const subText = subMessage ? `<p>${subMessage}</p>` : '';
     $(targetSelector).html(`
         <tr>
             <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
