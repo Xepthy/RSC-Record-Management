@@ -124,10 +124,39 @@ class UIRenderer {
             paginationHTML += `<button class="page-btn" data-page="${currentPage - 1}" data-table="${tableType}">Previous</button>`;
         }
 
+        // Smart page number display
+        const maxVisible = 7; // Show max 7 page buttons
+        let startPage = Math.max(1, currentPage - 3);
+        let endPage = Math.min(totalPages, currentPage + 3);
+
+        // Adjust if near start/end
+        if (currentPage <= 4) {
+            endPage = Math.min(maxVisible, totalPages);
+        }
+        if (currentPage > totalPages - 4) {
+            startPage = Math.max(1, totalPages - maxVisible + 1);
+        }
+
+        // First page + ellipsis
+        if (startPage > 1) {
+            paginationHTML += `<button class="page-btn" data-page="1" data-table="${tableType}">1</button>`;
+            if (startPage > 2) {
+                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+            }
+        }
+
         // Page numbers
-        for (let i = 1; i <= totalPages; i++) {
+        for (let i = startPage; i <= endPage; i++) {
             const activeClass = i === currentPage ? 'active' : '';
             paginationHTML += `<button class="page-btn ${activeClass}" data-page="${i}" data-table="${tableType}">${i}</button>`;
+        }
+
+        // Ellipsis + last page
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+            }
+            paginationHTML += `<button class="page-btn" data-page="${totalPages}" data-table="${tableType}">${totalPages}</button>`;
         }
 
         // Next button

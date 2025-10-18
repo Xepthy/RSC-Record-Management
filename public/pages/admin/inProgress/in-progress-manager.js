@@ -484,7 +484,10 @@ class InProgressManager {
         return projectFiles.map((file, index) => `
             <div class="project-file-item">
                 <span>📄 ${file.name}</span>
-                <button class="view-link" onclick="window.inProgressManager.handleViewFile('${file.storagePath || ''}', '${file.url || ''}')">View File</button>
+                ${file.storagePath || file.url ?
+                `<button class="view-link" onclick="window.inProgressManager.handleViewFile('${file.storagePath || ''}', '${file.url || ''}')">View File</button>` :
+                ``
+            }
                 ${editable ? `<button class="btn-small btn-danger delete-project-btn" data-index="${index}" type="button"></button>` : ''}
             </div>
         `).join('');
@@ -562,10 +565,10 @@ class InProgressManager {
                 planName: item.planName,
                 selectedServices: item.selectedServices,
                 projectFiles: item.projectFiles,
-                contractorName:item.clientInfo.contractorName || 'None',
-                companyName:item.clientInfo.companyName || 'None',
-                representative:item.clientInfo.representative || 'None',
-                repClassification:item.clientInfo.repClassification || 'None',
+                contractorName: item.clientInfo.contractorName || 'None',
+                companyName: item.clientInfo.companyName || 'None',
+                representative: item.clientInfo.representative || 'None',
+                repClassification: item.clientInfo.repClassification || 'None',
                 isReceive: false,
                 read: false,
                 originalInProgressId: item.id,
