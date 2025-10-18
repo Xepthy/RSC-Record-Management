@@ -94,6 +94,11 @@ td {
   font-weight: bold;
 }
 
+.reviewing {
+  color: #1f77d2;  /* Blue color for "Reviewing" status */
+  font-weight: bold;
+}
+
 .approved {
   color: #4cd169;
   font-weight: bold;

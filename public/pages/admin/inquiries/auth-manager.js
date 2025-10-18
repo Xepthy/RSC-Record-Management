@@ -87,6 +87,7 @@ class AuthManager {
                 this.parent.isStaff = (userRole === 'staff');
                 
                 console.log('User role:', userRole);
+                window.currentUserRole = userRole;
                 await this.parent.initializeAdminPanel();
             } else {
                 console.log('Access denied - invalid role:', userRole);

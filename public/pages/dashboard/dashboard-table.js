@@ -130,7 +130,9 @@ function renderTable(inquiries) {
 
     // Separate inquiries by status
     const pendingInquiries = inquiries.filter(inq =>
-        inq.status === 'pending' || inq.status === 'Update Documents'
+        inq.status === 'pending' ||
+        inq.status === 'Reviewing'||
+        inq.status === 'Update Documents'
     );
     const completedInquiries = inquiries.filter(inq =>
         inq.status === 'Completed' || inq.status === 'completed'

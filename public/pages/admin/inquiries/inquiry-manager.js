@@ -927,12 +927,13 @@ class InquiryManager {
                 // Commit all changes as one entry
                 await auditLogger.commitBatch();
 
+                const isOngoingReview = status === 'Reviewing';
                 await this.batchUpdateInquiryAndPending({
                     remarks: remarks,
                     status: status,
                     selectedServices: selectedServices,
                     lastUpdated: serverTimestamp(),
-                    processed: true,
+                    processed: isOngoingReview ? false : inquiry.processed || false,
                 });
 
                 await this.sendNotifClient(inquiry, status, remarks);
@@ -1231,6 +1232,44 @@ class InquiryManager {
 
 
         this.parent.currentInquiryId = inquiryId;
+
+        console.log('showInquiryDetails called for:', inquiryId);
+        console.log('Status:', inquiry.status);
+        console.log('Being edited by:', inquiry.beingEditedBy);
+
+
+        if (inquiry.status.toLowerCase().trim() === 'pending' && !inquiry.beingEditedBy) {
+            if (window.currentUserRole === 'super_admin') {
+                try {
+                    await updateDoc(doc(db, 'inquiries', inquiryId), {
+                        status: 'Reviewing',
+                        reviewStartedAt: serverTimestamp(),
+                        reviewStartedBy: auth.currentUser.uid
+                    });
+                    console.log('Status updated to Reviewing for inquiry:', inquiryId);
+
+                    // Also update the client's pending document
+                    if (inquiry.pendingDocId && inquiry.accountInfo?.uid) {
+                        const clientPendingRef = doc(
+                            db,
+                            'client',
+                            inquiry.accountInfo.uid,
+                            'pending',
+                            inquiry.pendingDocId
+                        );
+                        await updateDoc(clientPendingRef, {
+                            status: 'Reviewing',
+                            reviewStartedAt: serverTimestamp()
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error updating status to Reviewing:', error);
+                }
+            } else {
+                
+                console.log('User is not Super Admin — viewing only, no status change.');
+            }
+        }
 
         this.originalValues = {
             remarks: inquiry.remarks || '',
