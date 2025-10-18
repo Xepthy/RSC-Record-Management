@@ -1464,6 +1464,7 @@ class InProgressManager {
 
             const inProgressQuery = query(
                 collection(db, 'inProgress'),
+                orderBy('read', 'asc'),
                 orderBy('createdAt', 'desc')
             );
 
@@ -1494,7 +1495,39 @@ class InProgressManager {
                     .map(doc => ({
                         id: doc.id,
                         ...doc.data()
-                    }));
+                    }))
+                    .sort((a, b) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+
+                        const getSchedulePriority = (item) => {
+                            if (item.isScheduleDone || !item.schedule) return 3; // No priority
+
+                            const scheduleParts = item.schedule.split('/');
+                            if (scheduleParts.length !== 3) return 3;
+
+                            const scheduleDate = new Date(scheduleParts[2], scheduleParts[1] - 1, scheduleParts[0]);
+                            scheduleDate.setHours(0, 0, 0, 0);
+
+                            if (scheduleDate < today) return 0; // Gray (overdue) - FIRST
+                            if (scheduleDate.getTime() === today.getTime()) return 1; // Red (today) - SECOND
+                            return 3; // No urgency
+                        };
+
+                        const priorityA = getSchedulePriority(a);
+                        const priorityB = getSchedulePriority(b);
+
+                        // Sort by schedule priority first
+                        if (priorityA !== priorityB) return priorityA - priorityB;
+
+                        // Then by read status
+                        if (a.read !== b.read) return a.read ? 1 : -1;
+
+                        // Finally by createdAt
+                        const dateA = a.createdAt?.toDate?.() || new Date(0);
+                        const dateB = b.createdAt?.toDate?.() || new Date(0);
+                        return dateB - dateA;
+                    });
 
                 console.log('Processed in-progress items:', this.parent.inProgressItems.length);
 

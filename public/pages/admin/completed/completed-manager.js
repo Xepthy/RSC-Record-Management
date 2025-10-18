@@ -22,8 +22,10 @@ class CompletedManager {
 
             const completedQuery = query(
                 collection(db, 'completed'),
-                orderBy('completedDate', 'desc')
+                orderBy('read', 'asc'),
+                orderBy('createdAt', 'desc')
             );
+
 
             this.parent.unsubscribeCompleted = onSnapshot(completedQuery, (snapshot) => {
                 console.log('Completed snapshot received:', snapshot.size, 'documents');
