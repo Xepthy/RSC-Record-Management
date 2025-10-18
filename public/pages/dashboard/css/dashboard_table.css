@@ -99,6 +99,11 @@ td {
   font-weight: bold;
 }
 
+.status-in-progress {
+    color: #00bcd4; /* cyan */
+    font-weight: bold;
+}
+
 .approved {
   color: #4cd169;
   font-weight: bold;

@@ -1296,91 +1296,81 @@ class UIRenderer {
             let newValueTooltip = '';
 
             try {
-                if (log.oldValue && log.oldValue !== '--') {
-                    const oldObj = JSON.parse(log.oldValue);
-                    const entries = Object.entries(oldObj);
+                // Parse old and new values
+                const oldObj = log.oldValue && log.oldValue !== '--' ? JSON.parse(log.oldValue) : {};
+                const newObj = log.newValue && log.newValue !== '--' ? JSON.parse(log.newValue) : {};
 
-                    if (entries.length > 0) {
-                        // Create display text (show all values separated by " | ")
-                        const fullText = entries.map(([key, val]) => val).join(' | ');
+                // Replace 'Reviewing' with 'Pending'
+                if (oldObj.status === 'Reviewing') oldObj.status = 'Pending';
+                if (newObj.status === 'Reviewing') newObj.status = 'Pending';
 
-                        // Format tooltip - special handling for services
-                        oldValueTooltip = entries.map(([key, val]) => {
-                            if (key.toLowerCase().includes('service')) {
-                                // Split services by comma and put each on new line
-                                const services = val.split(',').map(s => s.trim()).join('\n• ');
-                                return `${key}:\n• ${services}`;
-                            }
-                            return `${key}: ${val}`;
-                        }).join('\n\n');
+                // Generate oldValueDisplay & tooltip
+                const oldEntries = Object.entries(oldObj);
+                if (oldEntries.length > 0) {
+                    const fullText = oldEntries.map(([key, val]) => val).join(' | ');
+                    oldValueDisplay = fullText.length > 50 ? fullText.substring(0, 50) + '...' : fullText;
 
-                        // Truncate if too long
-                        if (fullText.length > 50) {
-                            oldValueDisplay = fullText.substring(0, 50) + '...';
-                        } else {
-                            oldValueDisplay = fullText;
+                    oldValueTooltip = oldEntries.map(([key, val]) => {
+                        if (key.toLowerCase().includes('service')) {
+                            const services = val.split(',').map(s => s.trim()).join('\n• ');
+                            return `${key}:\n• ${services}`;
                         }
-                    }
+                        return `${key}: ${val}`;
+                    }).join('\n\n');
                 }
 
-                if (log.newValue && log.newValue !== '--') {
-                    const newObj = JSON.parse(log.newValue);
-                    const entries = Object.entries(newObj);
+                // Generate newValueDisplay & tooltip
+                const newEntries = Object.entries(newObj);
+                if (newEntries.length > 0) {
+                    const fullText = newEntries.map(([key, val]) => val).join(' | ');
+                    newValueDisplay = fullText.length > 50 ? fullText.substring(0, 50) + '...' : fullText;
 
-                    if (entries.length > 0) {
-                        // Create display text (show all values separated by " | ")
-                        const fullText = entries.map(([key, val]) => val).join(' | ');
-
-                        // Format tooltip - special handling for services
-                        newValueTooltip = entries.map(([key, val]) => {
-                            if (key.toLowerCase().includes('service')) {
-                                // Split services by comma and put each on new line
-                                const services = val.split(',').map(s => s.trim()).join('\n• ');
-                                return `${key}:\n• ${services}`;
-                            }
-                            return `${key}: ${val}`;
-                        }).join('\n\n');
-
-                        // Truncate if too long
-                        if (fullText.length > 50) {
-                            newValueDisplay = fullText.substring(0, 50) + '...';
-                        } else {
-                            newValueDisplay = fullText;
+                    newValueTooltip = newEntries.map(([key, val]) => {
+                        if (key.toLowerCase().includes('service')) {
+                            const services = val.split(',').map(s => s.trim()).join('\n• ');
+                            return `${key}:\n• ${services}`;
                         }
-                    }
+                        return `${key}: ${val}`;
+                    }).join('\n\n');
                 }
+
             } catch (e) {
                 oldValueDisplay = log.oldValue || '--';
                 newValueDisplay = log.newValue || '--';
             }
 
             return `
-        <tr class="audit-row" data-log-id="${log.id}">
-            <td class="profile-column" style="cursor: pointer;">
-                <div class="profile-name">${log.profileAffected || 'Unknown'}</div>
-            </td>
-            <td class="action-column">
-                <div class="action-text" title="${actionTooltip}">${displayAction}</div>
-            </td>
-            <td class="category-column">
-                <span class="category-badge ${log.category?.toLowerCase().replace(' ', '-')}">${log.category || 'Unknown'}</span>
-            </td>
-            <td class="modified-by-column">
-                <div class="modifier-name">${log.modifiedByName || log.modifiedBy || 'Unknown'}</div>
-                <div class="modifier-role">${log.modifiedByRole || ''}</div>
-            </td>
-            <td class="old-value-column">
-                <div class="value-text hoverable-value" data-tooltip="${oldValueTooltip || oldValueDisplay}">${oldValueDisplay}</div>
-            </td>
-            <td class="new-value-column">
-                <div class="value-text hoverable-value" data-tooltip="${newValueTooltip || newValueDisplay}">${newValueDisplay}</div>
-            </td>
-            <td class="timestamp-column">
-                <div class="timestamp-date">${date}</div>
-                <div class="timestamp-time">${time}</div>
-            </td>
-        </tr>
-    `;
+                <tr class="audit-row" data-log-id="${log.id}">
+                    <td class="profile-column" style="cursor: pointer;">
+                        <div class="profile-name">${log.profileAffected || 'Unknown'}</div>
+                    </td>
+                    <td class="action-column">
+                        <div class="action-text" title="${actionTooltip}">${displayAction}</div>
+                    </td>
+                    <td class="category-column">
+                        <span class="category-badge ${log.category?.toLowerCase().replace(' ', '-')}">${log.category || 'Unknown'}</span>
+                    </td>
+                    <td class="modified-by-column">
+                        <div class="modifier-name">${log.modifiedByName || log.modifiedBy || 'Unknown'}</div>
+                        <div class="modifier-role">${log.modifiedByRole || ''}</div>
+                    </td>
+                    <td class="old-value-column">
+                        <div class="value-text hoverable-value" data-tooltip="${oldValueTooltip || oldValueDisplay || 'None'}">
+                            ${oldValueDisplay || 'None'}
+                        </div>
+                    </td>
+                    <td class="new-value-column">
+                        <div class="value-text hoverable-value" data-tooltip="${newValueTooltip || newValueDisplay || 'None'}">
+                            ${newValueDisplay || 'None'}
+                        </div>
+                    </td>
+                    <td class="timestamp-column">
+                        <div class="timestamp-date">${date}</div>
+                        <div class="timestamp-time">${time}</div>
+                    </td>
+                </tr>
+            `;
+
         }).join('');
 
         const paginationHTML = this.generatePaginationControls(totalPages, 'auditlogs');

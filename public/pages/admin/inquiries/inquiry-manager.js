@@ -868,6 +868,7 @@ class InquiryManager {
         const currentServices = this.getSelectedServices();
 
         const statusUnchanged = currentStatus === inquiry.status;
+        const prevStatus = inquiry.status === 'Reviewing' ? 'Pending' : inquiry.status;
         const remarksUnchanged = currentRemarks === (inquiry.remarks || '');
         const servicesUnchanged = JSON.stringify(currentServices.sort()) === JSON.stringify((inquiry.selectedServices || []).sort());
 
@@ -894,15 +895,15 @@ class InquiryManager {
 
                 auditLogger.startBatch(this.parent.currentInquiryId, 'Inquiries', clientName);
 
-                // Check what changed
-                if (status !== inquiry.status) {
+                if (status !== prevStatus) {
                     auditLogger.addChange(
-                        status, // Action type is the new status
-                        inquiry.status || 'Not set',
+                        "Status Changed",          // New status
+                        prevStatus || 'None', // Old status
                         status
                     );
                 }
 
+                // Only log remarks if changed
                 if (remarks !== (inquiry.remarks || '')) {
                     auditLogger.addChange(
                         'Updated Remarks',
@@ -910,6 +911,7 @@ class InquiryManager {
                         remarks
                     );
                 }
+
 
                 // Check services changes
                 const oldServices = inquiry.selectedServices || [];
@@ -989,6 +991,9 @@ class InquiryManager {
 
                     await setDoc(doc(db, 'inquiries_archive', this.parent.currentInquiryId), archiveData);
                     await deleteDoc(doc(db, 'inquiries', this.parent.currentInquiryId));
+
+                    inquiry.status = 'In Progress';    // <--- added
+                    inquiry.remarks = remarks;         // <--- added
 
                     setTimeout(() => {
                         this.parent.showInquiriesSection();
@@ -1073,7 +1078,7 @@ class InquiryManager {
 
             switch (status) {
                 case 'Approved':
-                    notifData.message = `Your inquiry "${inquiry.requestDescription}" has been approved. Wait for further updates.`;
+                    notifData.message = `Your inquiry "${inquiry.requestDescription}" has been approved. Your Inquiry will now be in progress.`;
                     break;
                 case 'Rejected':
                     notifData.message = `Your inquiry "${inquiry.requestDescription}" was rejected. Remarks: ${remarks || 'Please contact Rafallo office for details.'}`;
@@ -1266,7 +1271,7 @@ class InquiryManager {
                     console.error('Error updating status to Reviewing:', error);
                 }
             } else {
-                
+
                 console.log('User is not Super Admin — viewing only, no status change.');
             }
         }

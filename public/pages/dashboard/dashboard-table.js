@@ -131,8 +131,9 @@ function renderTable(inquiries) {
     // Separate inquiries by status
     const pendingInquiries = inquiries.filter(inq =>
         inq.status === 'pending' ||
-        inq.status === 'Reviewing'||
-        inq.status === 'Update Documents'
+        inq.status === 'Reviewing' ||
+        inq.status === 'Update Documents' ||
+        inq.status === 'Approved'
     );
     const completedInquiries = inquiries.filter(inq =>
         inq.status === 'Completed' || inq.status === 'completed'
@@ -176,24 +177,25 @@ function createTableRow(inquiry) {
     const dateSubmitted = formatDate(inquiry.dateSubmitted);
     const lastUpdated = formatDate(inquiry.lastUpdated);
     const requestTitle = truncateText(inquiry.requestDescription, 50);
-    const statusClass = inquiry.status.toLowerCase();
+
+    // Assign special class for "In Progress"
+    const statusClass = inquiry.status === 'In Progress' ? 'status-in-progress' : inquiry.status.toLowerCase();
 
     const buttons = inquiry.status === 'Update Documents' ?
         `<button class="edit-btn" data-inquiry-id="${inquiry.id}">Update</button>
-            <button class="view-btn" data-inquiry-id="${inquiry.id}">View</button>` :
+         <button class="view-btn" data-inquiry-id="${inquiry.id}">View</button>` :
         `<button class="view-btn" data-inquiry-id="${inquiry.id}">View</button>`;
 
     const row = $(`
-            <tr>
-                <td title="${inquiry.requestDescription || ''}">${requestTitle}</td>
-                <td>${dateSubmitted}</td>
-                <td><span class="${statusClass}">${formatStatus(inquiry.status)}</span></td>
-                <td>${lastUpdated}</td>
-                <td>${inquiry.remarks || 'No remarks'}</td>
-                <td>${buttons}
-                </td>
-            </tr>
-        `);
+        <tr>
+            <td title="${inquiry.requestDescription || ''}">${requestTitle}</td>
+            <td>${dateSubmitted}</td>
+            <td><span class="${statusClass}">${formatStatus(inquiry.status)}</span></td>
+            <td>${lastUpdated}</td>
+            <td>${inquiry.remarks || 'No remarks'}</td>
+            <td>${buttons}</td>
+        </tr>
+    `);
 
     return row;
 }
