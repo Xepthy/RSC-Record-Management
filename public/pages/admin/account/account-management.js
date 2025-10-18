@@ -1,7 +1,6 @@
 import {
     auth,
     db,
-    firebaseConfig,
     collection,
     getDocs,
     doc,
@@ -10,13 +9,11 @@ import {
     deleteDoc,
     serverTimestamp,
     sendPasswordResetEmail,
-    getAuth,
-    createUserWithEmailAndPassword,
-    signOut,
-    functions
+    functions,
+    query,
+    where
 } from '../../../firebase-config.js';
 import auditLogger from '../audit-logs/audit-logger.js';
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-functions.js";
 
 export default class AccountManager {
@@ -25,9 +22,6 @@ export default class AccountManager {
         this.accounts = [];
         this.collectionName = 'accounts';
         this.functions = functions;
-
-        this.secondaryApp = initializeApp(firebaseConfig, "Secondary");
-        this.secondaryAuth = getAuth(this.secondaryApp);
     }
 
     async loadAccounts() {
@@ -118,37 +112,40 @@ export default class AccountManager {
         try {
             $('#createAccountForm button[type="submit"]').text('Creating...').prop('disabled', true);
 
-            const tempPassword = this.generateTemporaryPassword();
-
-            const staffCredential = await createUserWithEmailAndPassword(
-                this.secondaryAuth,
-                email,
-                tempPassword
+            const accountsSnapshot = await getDocs(
+                query(collection(db, 'accounts'), where('email', '==', email))
             );
-            const uid = staffCredential.user.uid;
 
-            const accountData = {
-                firstName,
-                lastName,
-                email,
-                role,
-                uid,
-                isDisabled: false,
-                createdAt: serverTimestamp(),
-                createdBy: this.parent.currentUser?.uid || 'system'
-            };
-            await setDoc(doc(db, this.collectionName, uid), accountData);
+            if (!accountsSnapshot.empty) {
+                this.parent.inquiryManager.showToast('An account with this email already exists in the system.', 'warning');
+                $('#createAccountForm button[type="submit"]').text('Create Account').prop('disabled', false);
+                return;
+            }
 
-            // ADD AUDIT LOG HERE
+            const clientSnapshot = await getDocs(
+                query(collection(db, 'client'), where('email', '==', email))
+            );
+
+            if (!clientSnapshot.empty) {
+                this.parent.inquiryManager.showToast('This email is already registered as a client account.', 'warning');
+                $('#createAccountForm button[type="submit"]').text('Create Account').prop('disabled', false);
+                return;
+            }
+
+            $('#createAccountForm button[type="submit"]').text('Creating...');
+
+            // Call Cloud Function to create user
+            const createUserFunction = httpsCallable(this.functions, 'createStaffAccount');
+            const result = await createUserFunction({ email, firstName, lastName, role });
+
             await auditLogger.logSimpleAction(
-                uid,
+                result.data.uid,
                 'Account Management',
                 `${firstName} ${lastName}`,
                 'Account Created'
-            )
+            );
 
-            await sendPasswordResetEmail(this.secondaryAuth, email);
-            await signOut(this.secondaryAuth);
+            await sendPasswordResetEmail(auth, email);
 
             this.parent.inquiryManager.showToast(
                 `✅ Account created! Password setup email sent to ${email}`,
@@ -156,34 +153,22 @@ export default class AccountManager {
             );
 
             $('#createAccountModal').remove();
-
             await this.loadAccounts();
             this.parent.uiRenderer.showAccountManagement(this.accounts);
 
         } catch (error) {
             console.error('Error creating account:', error);
-
             $('#createAccountForm button[type="submit"]').text('Create Account').prop('disabled', false);
 
-            if (error.code === 'auth/email-already-in-use') {
-                alert('This email is already registered. Please use a different email.');
-            } else if (error.code === 'auth/invalid-email') {
-                alert('Invalid email address. Please check and try again.');
+            if (error.message.includes('email-already-in-use')) {
+                alert('This email is already registered.');
             } else {
                 alert('Failed to create account: ' + error.message);
             }
         }
     }
 
-    generateTemporaryPassword() {
-        const length = 16;
-        const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
-        let password = "";
-        for (let i = 0; i < length; i++) {
-            password += charset.charAt(Math.floor(Math.random() * charset.length));
-        }
-        return password;
-    }
+
 
     openActionsMenu(account, buttonElement) {
         // Close any existing menu
@@ -285,42 +270,107 @@ export default class AccountManager {
     }
 
     async deleteAccount(account) {
+        // Create a proper confirmation modal
+        const modalHTML = `
+        <div class="modal-overlay" id="deleteConfirmModal">
+            <div class="modal-content delete-confirm-modal">
+                <div class="modal-header danger-header">
+                    <h2>⚠️ Delete Account</h2>
+                    <button class="close-modal" id="closeDeleteModal">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="warning-box">
+                        <p class="warning-text">
+                            <strong>This action cannot be undone!</strong><br>
+                            You are about to permanently delete:
+                        </p>
+                        <div class="account-info-box">
+                            <p><strong>Name:</strong> ${account.firstName} ${account.lastName}</p>
+                            <p><strong>Email:</strong> ${account.email}</p>
+                            <p><strong>Role:</strong> ${account.role}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="confirmation-input">
+                        <label>Type <code>DELETE ${account.email}</code> to confirm:</label>
+                        <input type="text" id="deleteConfirmInput" placeholder="Type here..." autocomplete="off">
+                        <small class="error-text" id="deleteError" style="display: none;">Text does not match. Please try again.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="cancelDelete">Cancel</button>
+                    <button type="button" class="btn-danger" id="confirmDelete" disabled>Delete Account</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+        $('body').append(modalHTML);
+
         const confirmText = `DELETE ${account.email}`;
-        const userInput = prompt(
-            `⚠️ WARNING: This will permanently delete the account.\n\n` +
-            `Type "${confirmText}" to confirm deletion:`
-        );
 
-        if (userInput !== confirmText) {
-            if (userInput !== null) {
-                alert('Deletion cancelled - text did not match.');
+        // Enable/disable delete button based on input
+        $('#deleteConfirmInput').on('input', function () {
+            const inputValue = $(this).val();
+            const $deleteBtn = $('#confirmDelete');
+            const $error = $('#deleteError');
+
+            if (inputValue === confirmText) {
+                $deleteBtn.prop('disabled', false);
+                $error.hide();
+                $(this).css('border-color', '#27ae60');
+            } else {
+                $deleteBtn.prop('disabled', true);
+                $(this).css('border-color', '');
             }
-            return;
-        }
+        });
 
-        try {
-            const deleteUserFunction = httpsCallable(this.functions, 'deleteUserAccount');
-            await deleteUserFunction({ uid: account.id });
+        // Close modal handlers
+        $('#closeDeleteModal, #cancelDelete').on('click', () => {
+            $('#deleteConfirmModal').remove();
+        });
 
-            await auditLogger.logSimpleAction(
-                account.id,
-                'Account Management',
-                `${account.firstName} ${account.lastName}`,
-                'Account Deleted'
-            );
+        // Confirm delete
+        $('#confirmDelete').on('click', async () => {
+            const inputValue = $('#deleteConfirmInput').val();
 
-            this.parent.inquiryManager.showToast(
-                `✅ Account deleted successfully`,
-                'success'
-            );
+            if (inputValue !== confirmText) {
+                $('#deleteError').show();
+                $('#deleteConfirmInput').css('border-color', '#e74c3c');
+                return;
+            }
 
-            await this.loadAccounts();
-            this.parent.uiRenderer.showAccountManagement(this.accounts);
+            try {
+                $('#confirmDelete').text('Deleting...').prop('disabled', true);
 
-        } catch (error) {
-            console.error('Error deleting account:', error);
-            alert('Failed to delete account: ' + error.message);
-        }
+                const deleteUserFunction = httpsCallable(this.functions, 'deleteUserAccount');
+                await deleteUserFunction({ uid: account.id });
+
+                await auditLogger.logSimpleAction(
+                    account.id,
+                    'Account Management',
+                    `${account.firstName} ${account.lastName}`,
+                    'Account Deleted'
+                );
+
+                this.parent.inquiryManager.showToast(
+                    `✅ Account deleted successfully`,
+                    'success'
+                );
+
+                $('#deleteConfirmModal').remove();
+                await this.loadAccounts();
+                this.parent.uiRenderer.showAccountManagement(this.accounts);
+
+            } catch (error) {
+                console.error('Error deleting account:', error);
+                alert('Failed to delete account: ' + error.message);
+                $('#confirmDelete').text('Delete Account').prop('disabled', false);
+            }
+        });
+
+        // Focus input for better UX
+        setTimeout(() => $('#deleteConfirmInput').focus(), 100);
     }
 
     async resetPassword(email) {

@@ -68,13 +68,13 @@ class InquiriesPage {
 
     async initializeAdminPanel() {
         try {
-            this.updateUserInfo();
-
             // Get user role and set permissions
             this.userRole = await this.authManager.getUserRole(this.currentUser.uid);
             this.isSuperAdmin = this.userRole === 'super_admin';
             this.isAdmin = this.userRole === 'admin';
             this.isStaff = this.userRole === 'staff';
+
+            this.updateUserInfo();
 
             // ✅ Account Management setup (only for super admin)
             if (this.isSuperAdmin) {
@@ -101,11 +101,39 @@ class InquiriesPage {
     }
 
 
-    updateUserInfo() {
+    async updateUserInfo() {
         if (this.currentUser) {
-            $('#userName').text(this.currentUser.displayName || 'Admin User');
-            $('#userEmail').text(this.currentUser.email);
+            try {
+                // Get user data from Firestore
+                const { doc, getDoc } = await import('../../../firebase-config.js');
+                const userDoc = await getDoc(doc(db, 'accounts', this.currentUser.uid));
+
+                let displayName = 'User';
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    displayName = `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'User';
+                }
+
+                const roleText = this.formatRoleText(this.userRole);
+
+                $('#userName').text(`${displayName} (${roleText})`);
+                $('#userEmail').text(this.currentUser.email);
+            } catch (error) {
+                console.error('Error getting user info:', error);
+                $('#userName').text(`User (${this.formatRoleText(this.userRole)})`);
+                $('#userEmail').text(this.currentUser.email);
+            }
         }
+    }
+
+    formatRoleText(role) {
+        const roleMap = {
+            'super_admin': 'Super Admin',
+            'admin': 'Admin',
+            'staff': 'Staff'
+        };
+
+        return roleMap[role] || 'User';
     }
 
     showInProgressSection() {
