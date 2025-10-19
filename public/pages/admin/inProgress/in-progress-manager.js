@@ -733,8 +733,8 @@ class InProgressManager {
             const currentItem = this.parent.inProgressItems.find(item => item.id === this.currentItemId);
 
             // Check if someone else is editing
-            if (currentItem.beingEditedBy && currentItem.beingEditedBy !== auth.currentUser.email) {
-                this.parent.inquiryManager.showToast(`Being processed by ${currentItem.beingEditedBy}`, 'warning');
+            if (currentItem.beingEditedBy && currentItem.beingEditedBy !== auth.currentUser.uid) {
+                this.parent.inquiryManager.showToast(`Being processed by ${currentItem.beingEditedByName || 'Another User'}`, 'warning');
                 return;
             }
 
@@ -760,9 +760,15 @@ class InProgressManager {
                     'Started editing'
                 );
 
-
-
                 this.toggleEditMode(true);
+
+                $('#scheduleCheckbox').on('change', function () {
+                    if ($(this).is(':checked')) {
+                        $('#scheduleEdit').prop('disabled', true);
+                    } else {
+                        $('#scheduleEdit').prop('disabled', false);
+                    }
+                });
 
                 this.lockHeartbeat = setInterval(async () => {
                     await updateDoc(doc(db, 'inProgress', this.currentItemId), {

@@ -1,0 +1,85 @@
+/* Toast Overlay - Centered like alert */
+.auth-toast-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.auth-toast-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Toast Box - Centered */
+.auth-toast {
+    background: white;
+    padding: 24px 32px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+    border-left: 5px solid;
+}
+
+.auth-toast-overlay.show .auth-toast {
+    transform: scale(1);
+}
+
+.auth-toast.error {
+    border-left-color: #e74c3c;
+    color: #e74c3c;
+}
+
+.auth-toast.success {
+    border-left-color: #27ae60;
+    color: #27ae60;
+}
+
+.auth-toast.warning {
+    border-left-color: #f39c12;
+    color: #f39c12;
+}
+
+.auth-toast.info {
+    border-left-color: #3498db;
+    color: #3498db;
+}
+
+.auth-toast-message {
+    font-size: 15px;
+    color: #2c3e50;
+    line-height: 1.5;
+}
+
+/* Loading spinner */
+.auth-forgot-loading {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #007BFF;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: authForgotSpin 0.8s linear infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+@keyframes authForgotSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
