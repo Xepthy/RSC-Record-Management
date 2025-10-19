@@ -437,10 +437,22 @@ class InProgressManager {
 
         const documentsList = documents.map((doc, index) =>
             `<div class="document-item" data-index="${index}">
-            <a href="${doc.url}" target="_blank">${doc.name}</a>
+            <a href="#" class="doc-link" data-url="${doc.url}" data-name="${doc.name}">
+                ${doc.name}
+            </a>
             ${editable ? `<button class="btn-small btn-danger delete-doc-btn" data-index="${index}" type="button">Remove</button>` : ''}
         </div>`
         ).join('');
+
+        // Add event listener for document links
+        setTimeout(() => {
+            $('.doc-link').off('click').on('click', function (e) {
+                e.preventDefault();
+                const url = $(this).data('url');
+                const name = $(this).data('name');
+                showDocumentViewer(url, name, { autoSize: true });
+            });
+        }, 0);
 
         return documentsList;
     }
@@ -457,9 +469,6 @@ class InProgressManager {
                     const storageRef = ref(storage, storagePath);
                     fileUrl = await getDownloadURL(storageRef);
                 } catch (err) {
-                    // Could not resolve via Firebase Storage (maybe it's not a Firebase path).
-                    // As a graceful fallback, try building a URL relative to current origin (/uploads/...)
-                    // (Keep this fallback only if you sometimes store local paths).
                     console.warn('getDownloadURL failed for', storagePath, err);
                     const baseUrl = window.location.origin;
                     fileUrl = `${baseUrl}/uploads/${storagePath}`;
@@ -471,16 +480,30 @@ class InProgressManager {
                 return;
             }
 
-            // Ensure URL is safe/normalized
-            // (no modifications to remove #toolbar etc. — viewer will append if necessary)
-            const fileName = decodeURIComponent(fileUrl.split('/').pop().split('?')[0]);
+            // EXTRACT THE ACTUAL FILENAME FROM STORAGE PATH OR URL
+            let fileName;
+            if (storagePath) {
+                // Extract from storagePath: "super_admin_projectFiles/.../1760856328202.2212_Food.pdf"
+                const pathParts = storagePath.split('/');
+                const fullFileName = pathParts[pathParts.length - 1]; // "1760856328202.2212_Food.pdf"
+
+                // Remove timestamp prefix: "1760856328202.2212_Food.pdf" → "Food.pdf"
+                if (fullFileName.includes('_')) {
+                    fileName = fullFileName.split('_').slice(1).join('_'); // Remove first part before _
+                } else {
+                    fileName = fullFileName;
+                }
+            } else {
+                // Fallback: extract from URL
+                fileName = decodeURIComponent(fileUrl.split('/').pop().split('?')[0]);
+            }
+
             const fileExt = (fileName.split('.').pop() || '').toLowerCase();
 
             // Only allow PDF files (per your system requirement)
             if (fileExt === 'pdf') {
-                // Ensure iframe-friendly URL (optional: add viewer params)
                 const viewerUrl = fileUrl.includes('#') ? fileUrl : (fileUrl + '#toolbar=0&navpanes=0');
-                showDocumentViewer(viewerUrl, fileName);
+                showDocumentViewer(viewerUrl, fileName); // NOW PASSING CLEAN FILENAME
             } else {
                 alert("Unsupported file type. Only PDF files are allowed.");
             }
@@ -1067,7 +1090,11 @@ class InProgressManager {
             // Enable checkboxes
             $('#is40Edit, #is60Edit, #scheduleCheckbox, #encroachmentEdit, #needResearchEdit, #doneLayoutEdit').prop('disabled', false);
             // Enable service checkboxes
-            $('#servicesContainer input[type="checkbox"]').prop('disabled', false);
+            if (this.parent.isSuperAdmin) {
+                $('#servicesContainer input[type="checkbox"]').prop('disabled', false);
+            } else {
+                $('#servicesContainer input[type="checkbox"]').prop('disabled', true);
+            }
 
         } else {
             // Hide edit elements
