@@ -444,27 +444,53 @@ class InProgressManager {
 
         return documentsList;
     }
-    async handleViewFile(storagePath, legacyUrl) {
-        try {
-            let downloadURL;
 
-            if (legacyUrl) {
-                // Use existing URL for backward compatibility
-                downloadURL = legacyUrl;
-            } else if (storagePath) {
-                // Generate URL on demand
-                const fileRef = ref(storage, storagePath);
-                downloadURL = await getDownloadURL(fileRef);
-            } else {
-                throw new Error('No file path or URL available');
+    // Replace the existing handleViewFile with this async version:
+    async handleViewFile(storagePath, url) {
+        try {
+            let fileUrl = url;
+
+            // If no direct URL was stored, but we have a Firebase storagePath,
+            // resolve it to a download URL using Firebase Storage's getDownloadURL.
+            if (!fileUrl && storagePath) {
+                try {
+                    const storageRef = ref(storage, storagePath);
+                    fileUrl = await getDownloadURL(storageRef);
+                } catch (err) {
+                    // Could not resolve via Firebase Storage (maybe it's not a Firebase path).
+                    // As a graceful fallback, try building a URL relative to current origin (/uploads/...)
+                    // (Keep this fallback only if you sometimes store local paths).
+                    console.warn('getDownloadURL failed for', storagePath, err);
+                    const baseUrl = window.location.origin;
+                    fileUrl = `${baseUrl}/uploads/${storagePath}`;
+                }
             }
 
-            window.open(downloadURL, '_blank');
+            if (!fileUrl) {
+                alert("File URL not found.");
+                return;
+            }
+
+            // Ensure URL is safe/normalized
+            // (no modifications to remove #toolbar etc. — viewer will append if necessary)
+            const fileName = decodeURIComponent(fileUrl.split('/').pop().split('?')[0]);
+            const fileExt = (fileName.split('.').pop() || '').toLowerCase();
+
+            // Only allow PDF files (per your system requirement)
+            if (fileExt === 'pdf') {
+                // Ensure iframe-friendly URL (optional: add viewer params)
+                const viewerUrl = fileUrl.includes('#') ? fileUrl : (fileUrl + '#toolbar=0&navpanes=0');
+                showDocumentViewer(viewerUrl, fileName);
+            } else {
+                alert("Unsupported file type. Only PDF files are allowed.");
+            }
         } catch (error) {
-            console.error('Error opening file:', error);
-            alert('Unable to open file');
+            console.error('Error opening document:', error);
+            alert('Failed to open document. Please try again.');
         }
     }
+
+
 
     buildProjectFilesHTML(projectFiles, editable = false) {
         if (!projectFiles || (Array.isArray(projectFiles) && projectFiles.length === 0)) {
@@ -733,8 +759,8 @@ class InProgressManager {
             const currentItem = this.parent.inProgressItems.find(item => item.id === this.currentItemId);
 
             // Check if someone else is editing
-            if (currentItem.beingEditedBy && currentItem.beingEditedBy !== auth.currentUser.email) {
-                this.parent.inquiryManager.showToast(`Being processed by ${currentItem.beingEditedBy}`, 'warning');
+            if (currentItem.beingEditedBy && currentItem.beingEditedBy !== auth.currentUser.uid) {
+                this.parent.inquiryManager.showToast(`Being processed by ${currentItem.beingEditedByName || 'Another User'}`, 'warning');
                 return;
             }
 
@@ -760,9 +786,15 @@ class InProgressManager {
                     'Started editing'
                 );
 
-
-
                 this.toggleEditMode(true);
+
+                $('#scheduleCheckbox').on('change', function () {
+                    if ($(this).is(':checked')) {
+                        $('#scheduleEdit').prop('disabled', true);
+                    } else {
+                        $('#scheduleEdit').prop('disabled', false);
+                    }
+                });
 
                 this.lockHeartbeat = setInterval(async () => {
                     await updateDoc(doc(db, 'inProgress', this.currentItemId), {
@@ -1464,6 +1496,7 @@ class InProgressManager {
 
             const inProgressQuery = query(
                 collection(db, 'inProgress'),
+                orderBy('read', 'asc'),
                 orderBy('createdAt', 'desc')
             );
 
@@ -1494,7 +1527,39 @@ class InProgressManager {
                     .map(doc => ({
                         id: doc.id,
                         ...doc.data()
-                    }));
+                    }))
+                    .sort((a, b) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+
+                        const getSchedulePriority = (item) => {
+                            if (item.isScheduleDone || !item.schedule) return 3; // No priority
+
+                            const scheduleParts = item.schedule.split('/');
+                            if (scheduleParts.length !== 3) return 3;
+
+                            const scheduleDate = new Date(scheduleParts[2], scheduleParts[1] - 1, scheduleParts[0]);
+                            scheduleDate.setHours(0, 0, 0, 0);
+
+                            if (scheduleDate < today) return 0; // Gray (overdue) - FIRST
+                            if (scheduleDate.getTime() === today.getTime()) return 1; // Red (today) - SECOND
+                            return 3; // No urgency
+                        };
+
+                        const priorityA = getSchedulePriority(a);
+                        const priorityB = getSchedulePriority(b);
+
+                        // Sort by schedule priority first
+                        if (priorityA !== priorityB) return priorityA - priorityB;
+
+                        // Then by read status
+                        if (a.read !== b.read) return a.read ? 1 : -1;
+
+                        // Finally by createdAt
+                        const dateA = a.createdAt?.toDate?.() || new Date(0);
+                        const dateB = b.createdAt?.toDate?.() || new Date(0);
+                        return dateB - dateA;
+                    });
 
                 console.log('Processed in-progress items:', this.parent.inProgressItems.length);
 

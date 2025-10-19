@@ -1639,17 +1639,14 @@ class InquiryManager {
     }
 }
 
-function showDocumentViewer(docUrl, docName, options = {}) {
+window.showDocumentViewer = function (docUrl, docName, options = {}) {
     const defaults = {
         autoSize: true,
         downloadUrl: null // Custom download URL, if null uses docUrl
     };
     const settings = { ...defaults, ...options };
 
-    // Use custom download URL if provided, otherwise use the original docUrl
     const downloadLink = settings.downloadUrl || docUrl;
-
-    // Clean URL for iframe display (remove toolbar/navpanes)
     const cleanUrl = docUrl.includes('#') ? docUrl : docUrl + '#toolbar=0&navpanes=0';
 
     const documentModalHtml = `
@@ -1677,7 +1674,6 @@ function showDocumentViewer(docUrl, docName, options = {}) {
     </div>
     `;
 
-    // Remove any existing modal and append new one
     $('#documentViewerModal').remove();
     $('body').append(documentModalHtml);
     $('#documentViewerModal').show();
@@ -1686,13 +1682,11 @@ function showDocumentViewer(docUrl, docName, options = {}) {
     const iframe = $('#documentIframe');
     const loader = $('#documentLoader');
 
-    // Simulate loading
     setTimeout(() => {
         loader.hide();
         iframe.show();
     }, 1500);
 
-    // Close modal handlers
     $('.document-close').on('click', function () {
         $('#documentViewerModal').hide().remove();
         $('body').removeClass('modal-open');
@@ -1704,10 +1698,7 @@ function showDocumentViewer(docUrl, docName, options = {}) {
             $('body').removeClass('modal-open');
         }
     });
-}
-
-
-
+};
 
 
 
