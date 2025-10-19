@@ -342,6 +342,13 @@ class CompletedManager {
                 throw new Error('Storage path not available');
             }
 
+            // Get the current completed item to get client info
+            const currentItem = this.parent.completedItems.find(item => {
+                if (!item.projectFiles) return false;
+                const files = Array.isArray(item.projectFiles) ? item.projectFiles : [item.projectFiles];
+                return files.some(f => f.storagePath === storagePath || f.name === fileName);
+            });
+
             // Call Cloud Function to download with proper headers
             const functionUrl = `https://asia-southeast1-rsc-2025.cloudfunctions.net/downloadFile?storagePath=${encodeURIComponent(storagePath)}&fileName=${encodeURIComponent(fileName)}`;
 
@@ -354,6 +361,19 @@ class CompletedManager {
             document.body.removeChild(link);
 
             console.log('File download initiated:', fileName);
+
+            // Log to audit after successful download initiation
+            if (currentItem) {
+                const auditLogger = (await import('../audit-logs/audit-logger.js')).default;
+                const clientName = currentItem.clientInfo?.clientName || 'Unknown Client';
+                await auditLogger.logSimpleAction(
+                    currentItem.id,
+                    'Completed',
+                    clientName,
+                    `Downloaded file: ${fileName}`
+                );
+            }
+
         } catch (error) {
             console.error('Error downloading file:', error);
             alert('Failed to download file. Please try again.');
