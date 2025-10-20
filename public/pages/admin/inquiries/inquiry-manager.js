@@ -15,7 +15,10 @@ import {
     auth,
     EmailAuthProvider,
     reauthenticateWithCredential,
+    getDocs,           // Add this (you're using it on line 1332)
+    functions
 } from '../../../firebase-config.js';
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-functions.js";
 import auditLogger from '../audit-logs/audit-logger.js';
 
 
@@ -1044,8 +1047,19 @@ class InquiryManager {
                     this.lockHeartbeat = null;
                 }
 
+                await updateDoc(doc(db, 'inquiries', this.parent.currentInquiryId), {
+                    beingEditedBy: null,
+                    editingStartedAt: null
+                });
+
                 console.log('Updates completed successfully');
                 this.showToast('Applied successfully!', 'success');
+
+                if (status === 'Update Documents') {
+                    setTimeout(() => {
+                        this.parent.showInquiriesSection();
+                    }, 1500);
+                }
 
             } catch (error) {
                 console.error('Error updating:', error);
@@ -1230,8 +1244,7 @@ class InquiryManager {
     }
 
 
-
-    async showInquiryDetails(inquiryId) {
+    async showInquiryDetails(inquiryId, readOnly = false) {
         const inquiry = this.parent.inquiries.find(inq => inq.id === inquiryId);
         if (!inquiry) return;
 
@@ -1306,6 +1319,8 @@ class InquiryManager {
                     </div>
                     <button class="back-btn" onclick="window.inquiriesPage.inquiryManager.closeInquiryAndReleaseLock()">← Back to List</button>
                 </div>
+                
+
                 
                 <div class="details-content">
                     <div class="details-grid">
@@ -1427,7 +1442,7 @@ class InquiryManager {
     
                     <textarea id="remarksInput" placeholder="Enter your remarks here..." rows="4" readonly>${inquiry.remarks || ''}</textarea>
                             
-                        ${this.parent.isSuperAdmin ? `
+                        ${this.parent.isSuperAdmin && !readOnly ? `
                         <label style="display: block; margin-top: 15px; margin-bottom: 5px;">Status:</label>
                         <select id="statusDropdown" disabled>
                             <option value="">Select Status</option>
@@ -1489,7 +1504,7 @@ class InquiryManager {
                         `}
                     </div>
 
-                    ${this.parent.isSuperAdmin ? `
+                    ${this.parent.isSuperAdmin && !readOnly ? `
                         <div style="text-align: left;">
                             <button id="editInquiryBtn" class="btn-secondary" style="margin: 0 16px 16px; padding: 10px 20px;">Edit</button>
                         </div>
@@ -1502,7 +1517,7 @@ class InquiryManager {
         // Load any saved progress
         $('#inquiryContent').html(detailsHTML);
 
-
+       
         // Edit button handler
         $('#editInquiryBtn').on('click', async () => {
             const currentInquiry = this.parent.inquiries.find(inq => inq.id === inquiryId);
