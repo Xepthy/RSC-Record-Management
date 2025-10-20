@@ -11,3 +11,20 @@
 .mark-read-btn:hover {
     background: #218838;
 }
+
+/* View File Button */
+.view-file-btn {
+    background-color: #3b82f6;
+    color: white;
+    border: 1px solid #3b82f6;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-file-btn:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}

@@ -223,16 +223,31 @@ class CompletedManager {
             projectFiles = [projectFiles];
         }
 
-        const isSuperAdmin = this.parent.isSuperAdmin;
+        // Allow both admin and super_admin to download
+        const canDownload = this.parent.isAdmin || this.parent.isSuperAdmin;
 
-        return projectFiles.map((file, index) => `
-        <div class="project-file-item">
-            <span>📄 ${file.name}</span>
-            <div class="file-actions">
-                ${isSuperAdmin ? `<button class="download-btn" onclick="window.completedManager.handleDownloadFile('${file.storagePath || ''}', '${file.url || ''}', '${file.name}')">Download</button>` : ''}
+        const filesHTML = projectFiles.map((file, index) => `
+            <div class="project-file-item">
+                <span>📄 ${file.name}</span>
+                <div class="file-actions">
+                    <button class="view-file-btn" data-storage="${file.storagePath || ''}" data-url="${file.url || ''}" data-name="${file.name}">View File</button>
+                    ${canDownload ? `<button class="download-btn" onclick="window.completedManager.handleDownloadFile('${file.storagePath || ''}', '${file.url || ''}', '${file.name}')">Download</button>` : ''}
+                </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
+
+        // Add event listener for view buttons
+        setTimeout(() => {
+            $('.view-file-btn').off('click').on('click', async function (e) {
+                e.preventDefault();
+                const storagePath = $(this).data('storage');
+                const url = $(this).data('url');
+                const name = $(this).data('name');
+                await window.completedManager.handleViewFileModal(storagePath, url, name);
+            });
+        }, 0);
+
+        return filesHTML;
     }
 
     setupCompletedModalEventListeners() {
@@ -243,6 +258,60 @@ class CompletedManager {
             $('#completedModal').remove();
             delete window.completedManager; // Clean up
         });
+    }
+
+    async handleViewFileModal(storagePath, url, fileName) {
+        try {
+            let fileUrl = url;
+
+            // If no direct URL, get it from storage path
+            if (!fileUrl && storagePath) {
+                try {
+                    const { ref, getDownloadURL, storage } = await import('../../../firebase-config.js');
+                    const storageRef = ref(storage, storagePath);
+                    fileUrl = await getDownloadURL(storageRef);
+                } catch (err) {
+                    console.warn('getDownloadURL failed for', storagePath, err);
+                    alert('Failed to load file URL');
+                    return;
+                }
+            }
+
+            if (!fileUrl) {
+                alert("File URL not found.");
+                return;
+            }
+
+            // Extract clean filename (remove timestamp prefix if exists)
+            let cleanFileName = fileName;
+            if (fileName.includes('_')) {
+                const parts = fileName.split('_');
+                // Check if first part is timestamp (numbers and dots)
+                if (/^[\d.]+$/.test(parts[0])) {
+                    cleanFileName = parts.slice(1).join('_');
+                }
+            }
+
+            const fileExt = (cleanFileName.split('.').pop() || '').toLowerCase();
+
+            // Only allow PDF files
+            if (fileExt === 'pdf') {
+                const viewerUrl = fileUrl.includes('#') ? fileUrl : (fileUrl + '#toolbar=0&navpanes=0');
+
+                // Use window.showDocumentViewer if available
+                if (typeof window.showDocumentViewer === 'function') {
+                    window.showDocumentViewer(viewerUrl, cleanFileName, { autoSize: true });
+                } else {
+                    // Fallback: open in new tab
+                    window.open(viewerUrl, '_blank');
+                }
+            } else {
+                alert("Unsupported file type. Only PDF files are allowed.");
+            }
+        } catch (error) {
+            console.error('Error opening document:', error);
+            alert('Failed to open document. Please try again.');
+        }
     }
 
     async handleViewFile(storagePath, legacyUrl) {
@@ -269,29 +338,42 @@ class CompletedManager {
 
     async handleDownloadFile(storagePath, legacyUrl, fileName) {
         try {
-            let downloadURL;
-
-            if (legacyUrl) {
-                downloadURL = legacyUrl;
-            } else if (storagePath) {
-                const { ref, getDownloadURL } = await import('../../../firebase-config.js');
-                const { storage } = await import('../../../firebase-config.js');
-                const fileRef = ref(storage, storagePath);
-                downloadURL = await getDownloadURL(fileRef);
-            } else {
-                throw new Error('No file path or URL available');
+            if (!storagePath) {
+                throw new Error('Storage path not available');
             }
 
-            // Create temporary link and trigger download
+            // Get the current completed item to get client info
+            const currentItem = this.parent.completedItems.find(item => {
+                if (!item.projectFiles) return false;
+                const files = Array.isArray(item.projectFiles) ? item.projectFiles : [item.projectFiles];
+                return files.some(f => f.storagePath === storagePath || f.name === fileName);
+            });
+
+            // Call Cloud Function to download with proper headers
+            const functionUrl = `https://asia-southeast1-rsc-2025.cloudfunctions.net/downloadFile?storagePath=${encodeURIComponent(storagePath)}&fileName=${encodeURIComponent(fileName)}`;
+
+            // Create link and trigger download
             const link = document.createElement('a');
-            link.href = downloadURL;
+            link.href = functionUrl;
             link.download = fileName;
-            link.target = '_blank';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            console.log('File downloaded:', fileName);
+            console.log('File download initiated:', fileName);
+
+            // Log to audit after successful download initiation
+            if (currentItem) {
+                const auditLogger = (await import('../audit-logs/audit-logger.js')).default;
+                const clientName = currentItem.clientInfo?.clientName || 'Unknown Client';
+                await auditLogger.logSimpleAction(
+                    currentItem.id,
+                    'Completed',
+                    clientName,
+                    `Downloaded file: ${fileName}`
+                );
+            }
+
         } catch (error) {
             console.error('Error downloading file:', error);
             alert('Failed to download file. Please try again.');
