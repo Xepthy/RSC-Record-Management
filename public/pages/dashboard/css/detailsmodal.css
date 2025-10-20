@@ -68,6 +68,42 @@
   backdrop-filter: blur(6px);
 }
 
+.document-link {
+  display: inline-block;
+  color: #0066cc;
+  text-decoration: underline;
+  font-weight: 500;
+  transition: color 0.2s ease, text-decoration-thickness 0.2s ease;
+}
+
+.document-link i {
+  margin-right: 6px;
+  color: #e63946; /* PDF icon color */
+}
+
+.document-link:hover {
+  color: #004999;
+  text-decoration-thickness: 2px;
+}
+
+.project-file-link {
+  display: inline-block;
+  color: #0066cc;
+  text-decoration: underline;
+  font-weight: 500;
+  transition: color 0.2s ease, text-decoration-thickness 0.2s ease;
+}
+
+.project-file-link i {
+  margin-right: 6px;
+  color: #e63946; /* red for PDF */
+}
+
+.project-file-link:hover {
+  color: #004999;
+  text-decoration-thickness: 2px;
+}
+
 /* --- Notes --- */
 .inquiry-note {
   background: rgba(240, 248, 255, 0.6);

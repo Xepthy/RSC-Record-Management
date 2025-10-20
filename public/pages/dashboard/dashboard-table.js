@@ -282,23 +282,28 @@ function showInquiryModal(inquiry, accountData) {
     const servicesText = inquiry.selectedServices ? inquiry.selectedServices.join(', ') : 'None';
     const documentsText = inquiry.documents && inquiry.documents.length > 0
         ? inquiry.documents.map((doc, index) =>
-            `<button class="view-project-file-btn"
-            data-storage-path="${doc.storagePath || ''}"
-            data-file-url="${doc.url || ''}"
-            data-file-name="${doc.name}">
-            ${doc.name}
-        </button>`
+            `<a href="#" 
+            class="document-link" 
+            data-doc-url="${doc.url}" 
+            data-doc-name="${doc.name}" 
+            data-doc-index="${index}">
+            <i class="fas fa-file-pdf"></i> ${doc.name}
+        </a>`
         ).join('<br>')
         : 'No documents';
 
     const projectFiles = (inquiry.status === 'Completed' || inquiry.status === 'completed') && inquiry.projectFiles && inquiry.projectFiles.length > 0
-        ? inquiry.projectFiles.map(file => {
-            return `<button class="view-project-file-btn" 
-                        data-storage-path="${file.storagePath || ''}" 
-                        data-file-url="${file.url || ''}" 
-                        data-file-name="${file.name}">${file.name}</button>`;
-        }).join('<br>')
-        : (inquiry.status === 'Completed' ? 'No Project Files Yet' : ''); // empty for non-completed
+        ? inquiry.projectFiles.map((file, index) =>
+            `<a href="#" 
+        class="project-file-link" 
+        data-storage-path="${file.storagePath || ''}" 
+        data-file-url="${file.url || ''}" 
+        data-file-name="${file.name}"
+        data-file-index="${index}">
+        <i class="fas fa-file-pdf"></i> ${file.fileName || file.name}
+    </a>`
+        ).join('<br>')
+        : (inquiry.status === 'Completed' ? 'No Project Files Yet' : '');
 
     // Format account data with fallbacks
     const firstName = accountData?.firstName || 'N/A';
@@ -381,7 +386,7 @@ function showInquiryModal(inquiry, accountData) {
     $('body').append(modalHtml);
 
     // Handle project file viewing
-    $(document).on('click', '.view-project-file-btn', async function () {
+    $(document).on('click', '.project-file-link', async function () {
         const storagePath = $(this).data('storage-path');
         const legacyUrl = $(this).data('file-url');
         const fileName = $(this).data('file-name');

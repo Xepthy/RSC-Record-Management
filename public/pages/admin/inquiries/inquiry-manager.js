@@ -832,116 +832,104 @@ class InquiryManager {
     }
 
     async handleRemarksApply() {
-        // Quick validation checks
-        if (!$('#remarksInput').val().trim()) return this.showToast('Remarks is required', 'warning');
-        if (!$('#statusDropdown').val()) return this.showToast('Please select a status before applying', 'warning');
+    // Quick validation checks
+    const remarks = $('#remarksInput').val().trim();
+    const status = $('#statusDropdown').val();
+    const selectedServices = this.getSelectedServices();
 
-        if ($('#statusDropdown').val() === 'Approved') {
-            if (!$('#totalAmountInput').val().trim()) {
-                return this.showToast('Total amount is required when status is Approved', 'warning');
+    if (!remarks) return this.showToast('Remarks is required', 'warning');
+    if (!status) return this.showToast('Please select a status before applying', 'warning');
+
+    // --- APPROVED VALIDATIONS ---
+    if (status === 'Approved') {
+        if (!$('#totalAmountInput').val().trim())
+            return this.showToast('Total amount is required when status is Approved', 'warning');
+
+        if (!$('#downPaymentCheck').is(':checked') && !$('#remainingCheck').is(':checked'))
+            return this.showToast('Please select at least one payment option (Down Payment or Remaining)', 'warning');
+
+        if (!$('#teamSelect').val())
+            return this.showToast('Team selection is required when status is Approved', 'warning');
+
+        if (!$('#scheduleInput').val())
+            return this.showToast('Schedule is required when status is Approved', 'warning');
+
+        if (!$('#planNameInput').val().trim())
+            return this.showToast('Plan name is required when status is Approved', 'warning');
+    }
+
+    if ($('#applyRemarksBtn').prop('disabled')) return;
+
+    const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
+    const prevStatus = inquiry.status === 'Reviewing' ? 'Pending' : inquiry.status;
+    const currentServices = selectedServices;
+
+    const noChanges =
+        status === inquiry.status &&
+        remarks === (inquiry.remarks || '') &&
+        JSON.stringify(currentServices.sort()) === JSON.stringify((inquiry.selectedServices || []).sort());
+
+    if (noChanges) {
+        return this.showToast('No changes detected. Please modify status, remarks, or services before applying.', 'warning');
+    }
+
+    $('#applyRemarksBtn').prop('disabled', true).text('Confirming...');
+
+    this.showPasswordModal(async () => {
+        console.log('Password confirmed, starting update...');
+        try {
+            $('#applyRemarksBtn').text('Applying...');
+
+            const clientName = inquiry.clientInfo?.clientName || inquiry.clientName || 'Unknown';
+            auditLogger.startBatch(this.parent.currentInquiryId, 'Inquiries', clientName);
+
+            
+            if (status !== prevStatus) {
+                auditLogger.addChange('Status Changed', prevStatus || 'None', status);
             }
 
-            const hasDownPayment = $('#downPaymentCheck').is(':checked');
-            const hasRemaining = $('#remainingCheck').is(':checked');
-
-            if (!hasDownPayment && !hasRemaining) {
-                return this.showToast('Please select at least one payment option (Down Payment or Remaining)', 'warning');
+            
+            if (remarks !== (inquiry.remarks || '')) {
+                auditLogger.addChange('Updated Remarks', inquiry.remarks || 'None', remarks);
             }
 
-            if (!$('#teamSelect').val()) {
-                return this.showToast('Team selection is required when status is Approved', 'warning');
+            
+            const oldServices = inquiry.selectedServices || [];
+            const added = currentServices.filter(s => !oldServices.includes(s));
+            const removed = oldServices.filter(s => !currentServices.includes(s));
+            if (added.length || removed.length) {
+                auditLogger.addChange('Changed Services', auditLogger.formatServices(oldServices), auditLogger.formatServices(currentServices));
             }
 
-            if (!$('#scheduleInput').val()) {
-                return this.showToast('Schedule is required when status is Approved', 'warning');
-            }
+            await auditLogger.commitBatch();
 
-            if (!$('#planNameInput').val().trim()) {
-                return this.showToast('Plan name is required when status is Approved', 'warning');
-            }
-        }
+            const isOngoingReview = status === 'Reviewing';
+            await this.batchUpdateInquiryAndPending({
+                remarks,
+                status,
+                selectedServices: currentServices,
+                lastUpdated: serverTimestamp(),
+                processed: isOngoingReview ? false : inquiry.processed || false,
+            });
 
-        if ($('#applyRemarksBtn').prop('disabled')) return;
+            await this.sendNotifClient(inquiry, status, remarks);
 
-        const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
-        const currentStatus = $('#statusDropdown').val();
-        const currentRemarks = $('#remarksInput').val().trim();
-        const currentServices = this.getSelectedServices();
+            
+            if (['Approved', 'Rejected'].includes(status)) {
+                const archiveData = {
+                    ...inquiry,
+                    remarks,
+                    status,
+                    selectedServices: currentServices,
+                    processed: true,
+                    archivedAt: serverTimestamp(),
+                    archivedBy: auth.currentUser.email,
+                };
 
-        const statusUnchanged = currentStatus === inquiry.status;
-        const prevStatus = inquiry.status === 'Reviewing' ? 'Pending' : inquiry.status;
-        const remarksUnchanged = currentRemarks === (inquiry.remarks || '');
-        const servicesUnchanged = JSON.stringify(currentServices.sort()) === JSON.stringify((inquiry.selectedServices || []).sort());
+                
+                await setDoc(doc(db, 'inquiries_archive', this.parent.currentInquiryId), archiveData);
 
-        if (statusUnchanged && remarksUnchanged && servicesUnchanged) {
-            this.showToast('No changes detected. Please modify status, remarks, or services before applying.', 'warning');
-            return;
-        }
-
-
-
-        $('#applyRemarksBtn').prop('disabled', true).text('Confirming...');
-
-        this.showPasswordModal(async () => {
-            console.log('Password confirmed, starting update...');
-            try {
-                $('#applyRemarksBtn').text('Applying...');
-
-                const remarks = $('#remarksInput').val().trim();
-                const status = $('#statusDropdown').val();
-                const selectedServices = this.getSelectedServices();
-
-                const inquiry = this.parent.inquiries.find(inq => inq.id === this.parent.currentInquiryId);
-                const clientName = inquiry.clientInfo?.clientName || inquiry.clientName || 'Unknown';
-
-                auditLogger.startBatch(this.parent.currentInquiryId, 'Inquiries', clientName);
-
-                if (status !== prevStatus) {
-                    auditLogger.addChange(
-                        "Status Changed",          // New status
-                        prevStatus || 'None', // Old status
-                        status
-                    );
-                }
-
-                // Only log remarks if changed
-                if (remarks !== (inquiry.remarks || '')) {
-                    auditLogger.addChange(
-                        'Updated Remarks',
-                        inquiry.remarks || 'None',
-                        remarks
-                    );
-                }
-
-
-                // Check services changes
-                const oldServices = inquiry.selectedServices || [];
-                const addedServices = selectedServices.filter(s => !oldServices.includes(s));
-                const removedServices = oldServices.filter(s => !selectedServices.includes(s));
-
-                if (addedServices.length > 0 || removedServices.length > 0) {
-                    auditLogger.addChange(
-                        'Changed Services',
-                        auditLogger.formatServices(oldServices),
-                        auditLogger.formatServices(selectedServices)
-                    );
-                }
-
-                // Commit all changes as one entry
-                await auditLogger.commitBatch();
-
-                const isOngoingReview = status === 'Reviewing';
-                await this.batchUpdateInquiryAndPending({
-                    remarks: remarks,
-                    status: status,
-                    selectedServices: selectedServices,
-                    lastUpdated: serverTimestamp(),
-                    processed: isOngoingReview ? false : inquiry.processed || false,
-                });
-
-                await this.sendNotifClient(inquiry, status, remarks);
-
-                // If Approved
+                
                 if (status === 'Approved') {
                     const progressData = {
                         totalAmount: parseFloat($('#totalAmountInput').val().replace(/[^\d.]/g, '')),
@@ -965,112 +953,69 @@ class InquiryManager {
                             contact: inquiry.contact,
                             location: inquiry.location,
                             contractorName: inquiry.contractorName || 'None',
-                            companyName: inquiry.companyName || 'None'
+                            companyName: inquiry.companyName || 'None',
                         },
                         createdAt: serverTimestamp(),
                         remarks: null,
                         adminNotes: null,
                         documents: inquiry.documents || [],
-                        selectedServices: selectedServices,
+                        selectedServices: currentServices,
                         projectFiles: null,
                         planName: $('#planNameInput').val().trim(),
                         read: false,
                     };
 
-                    const progressRef = doc(collection(db, 'inProgress'));
-                    await setDoc(progressRef, progressData);
-
-                    const archiveData = {
-                        ...inquiry,
-                        remarks: remarks,
-                        status: status,
-                        selectedServices: selectedServices,
-                        processed: true,
-                        archivedAt: serverTimestamp(),
-                        archivedBy: auth.currentUser.email
-                    };
-
-                    await setDoc(doc(db, 'inquiries_archive', this.parent.currentInquiryId), archiveData);
-                    await deleteDoc(doc(db, 'inquiries', this.parent.currentInquiryId));
-
-                    inquiry.status = 'In Progress';    // <--- added
-                    inquiry.remarks = remarks;         // <--- added
-
-                    setTimeout(() => {
-                        this.parent.showInquiriesSection();
-                    }, 1500);
-
-                    inquiry.processed = true;
-                    inquiry.status = status;
-                    inquiry.remarks = remarks;
-
-                    $('#applyRemarksBtn').prop('disabled', true).text('Already Processed');
+                    await setDoc(doc(collection(db, 'inProgress')), progressData);
                 }
 
-                // If Rejected
-                if (status === 'Rejected') {
-                    const archiveData = {
-                        ...inquiry,
-                        remarks: remarks,
-                        status: status,
-                        selectedServices: selectedServices,
-                        processed: true,
-                        archivedAt: serverTimestamp(),
-                        archivedBy: auth.currentUser.email
-                    };
+                
+                await deleteDoc(doc(db, 'inquiries', this.parent.currentInquiryId));
 
-                    await setDoc(doc(db, 'inquiries_archive', this.parent.currentInquiryId), archiveData);
-                    await deleteDoc(doc(db, 'inquiries', this.parent.currentInquiryId));
+                inquiry.status = status;
+                inquiry.remarks = remarks;
+                inquiry.processed = true;
 
-                    setTimeout(() => {
-                        this.parent.showInquiriesSection();
-                    }, 1500);
+                setTimeout(() => this.parent.showInquiriesSection(), 1500);
+                $('#applyRemarksBtn').prop('disabled', true).text('Already Processed');
+            }
 
-                    inquiry.processed = true;
-                    inquiry.status = status;
-                    inquiry.remarks = remarks;
-                }
+            
+            this.originalValues = { remarks, status, selectedServices: [...currentServices] };
+            this.checkForChanges();
+            this.clearSavedProgress();
 
-                this.originalValues = {
-                    remarks: remarks,
-                    status: status,
-                    selectedServices: [...selectedServices]
-                };
+            if (this.lockHeartbeat) {
+                clearInterval(this.lockHeartbeat);
+                this.lockHeartbeat = null;
+            }
 
-                this.checkForChanges();
-                this.clearSavedProgress();
-
-                if (this.lockHeartbeat) {
-                    clearInterval(this.lockHeartbeat);
-                    this.lockHeartbeat = null;
-                }
-
+            if (status !== 'Approved' && status !== 'Rejected') {
                 await updateDoc(doc(db, 'inquiries', this.parent.currentInquiryId), {
                     beingEditedBy: null,
-                    editingStartedAt: null
+                    editingStartedAt: null,
                 });
-
-                console.log('Updates completed successfully');
-                this.showToast('Applied successfully!', 'success');
-
-                if (status === 'Update Documents') {
-                    setTimeout(() => {
-                        this.parent.showInquiriesSection();
-                    }, 1500);
-                }
-
-            } catch (error) {
-                console.error('Error updating:', error);
-                this.showToast('Failed to apply changes. Please try again.', 'error');
-            } finally {
-                if (!inquiry.processed) {
-                    setTimeout(() => {
-                        $('#applyRemarksBtn').prop('disabled', false).text('Apply');
-                    }, 500);
-                }
             }
-        });
-    }
+
+            console.log('Updates completed successfully');
+            this.showToast('Applied successfully!', 'success');
+
+            if (status === 'Update Documents') {
+                setTimeout(() => this.parent.showInquiriesSection(), 1500);
+            }
+
+        } catch (error) {
+            console.error('Error updating:', error);
+            this.showToast('Failed to apply changes. Please try again.', 'error');
+        } finally {
+            if (!inquiry.processed) {
+                setTimeout(() => {
+                    $('#applyRemarksBtn').prop('disabled', false).text('Apply');
+                }, 500);
+            }
+        }
+    });
+}
+
 
     async sendNotifClient(inquiry, status, remarks) {
         try {
