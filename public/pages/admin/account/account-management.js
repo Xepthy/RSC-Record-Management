@@ -378,6 +378,17 @@ export default class AccountManager {
 
         try {
             await sendPasswordResetEmail(auth, email);
+
+            const account = this.accounts.find(acc => acc.email === email);
+            if (account) {
+                await auditLogger.logSimpleAction(
+                    account.id,
+                    'Account Management',
+                    `${account.firstName} ${account.lastName}`,
+                    'Password Reset Email Sent'
+                );
+            }
+
             this.parent.inquiryManager.showToast(
                 `✅ Password reset email sent to ${email}`,
                 'success'
