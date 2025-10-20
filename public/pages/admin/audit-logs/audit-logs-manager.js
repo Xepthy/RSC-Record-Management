@@ -141,7 +141,12 @@ class AuditLogsManager {
                     if (existingIndex === -1) {
                         this.parent.inquiries.unshift(documentData);
                     }
-                    this.parent.inquiryManager.showInquiryDetails(documentData.id);
+                    // Check if the AUDIT LOG is about "Update Documents" status - make it read-only
+                    const isUpdateDocumentsLog = log.actionType.includes('Update Documents') ||
+                        (log.oldValue && log.oldValue.includes('Update Documents')) ||
+                        (log.newValue && log.newValue.includes('Update Documents'));
+
+                    this.parent.inquiryManager.showInquiryDetails(documentData.id, isUpdateDocumentsLog);
                 }
             } else if (actualCategory === 'Account Management') {
                 const account = documentData;
