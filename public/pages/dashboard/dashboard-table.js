@@ -593,6 +593,38 @@ async function saveChanges(inquiry, newFiles, removedIndices) {
 
         let docs = [...(inquiry.documents || [])];
 
+        // Check for files that will be overwritten
+        const filesToOverwrite = [];
+        for (const file of newFiles) {
+            const baseName = normalizeFileName(file.name);
+            const existingIndex = docs.findIndex(d => normalizeFileName(d.name) === baseName);
+            if (existingIndex !== -1) {
+                filesToOverwrite.push({
+                    newName: file.name,
+                    oldName: docs[existingIndex].name
+                });
+            }
+        }
+
+        // If there are files to overwrite, show confirmation toast
+        if (filesToOverwrite.length > 0) {
+            const fileList = filesToOverwrite
+                .map(f => `• ${f.oldName} → ${f.newName}`)
+                .join('\n');
+
+            const confirmed = await showConfirmToast(
+                'Overwrite Existing Documents?',
+                fileList,
+                'Save',
+                'Cancel'
+            );
+
+            if (!confirmed) {
+                $('#saveEdit').prop('disabled', false).text('Save');
+                return;
+            }
+        }
+
         // STEP 1: Handle deletions
         for (const i of removedIndices.sort((a, b) => b - a)) {
             const removedDoc = docs[i];
@@ -658,19 +690,18 @@ async function saveChanges(inquiry, newFiles, removedIndices) {
             await updateDoc(doc(db, 'inquiries', inquiry.pendingDocId), updates);
         }
 
-        alert('Updated successfully!');
+        showToast('success', 'Success', 'Documents updated successfully!');
         $('#editInquiryModal').remove();
         $('body').removeClass('modal-open');
         if (typeof refreshTable === 'function') refreshTable();
 
     } catch (error) {
         console.error('Save error:', error);
-        alert('Failed to save changes');
+        showToast('error', 'Error', 'Failed to save changes');
     } finally {
         $('#saveEdit').prop('disabled', false).text('Save');
     }
 }
-
 
 // Helper: extract path from Firebase Storage URL
 function getStoragePathFromUrl(url) {
@@ -683,8 +714,6 @@ function getStoragePathFromUrl(url) {
         return match ? decodeURIComponent(match[1]) : '';
     }
 }
-
-
 
 // Document viewer function
 function showDocumentViewer(docUrl, options = {}) {
