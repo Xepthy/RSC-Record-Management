@@ -282,9 +282,12 @@ function showInquiryModal(inquiry, accountData) {
     const servicesText = inquiry.selectedServices ? inquiry.selectedServices.join(', ') : 'None';
     const documentsText = inquiry.documents && inquiry.documents.length > 0
         ? inquiry.documents.map((doc, index) =>
-            `<a href="#" class="document-link" data-doc-url="${doc.url}" data-doc-name="${doc.name}" data-doc-index="${index}">
-                <i class="fas fa-file-pdf"></i> ${doc.name}
-            </a>`
+            `<button class="view-project-file-btn"
+            data-storage-path="${doc.storagePath || ''}"
+            data-file-url="${doc.url || ''}"
+            data-file-name="${doc.name}">
+            ${doc.name}
+        </button>`
         ).join('<br>')
         : 'No documents';
 
@@ -358,11 +361,11 @@ function showInquiryModal(inquiry, accountData) {
         <h3>Remarks</h3>
         <p class="inquiry-note">${inquiry.remarks || 'No remarks'}</p>
 
-        <h3>Documents</h3>
+       ${documentsText ? `<h3>Documents</h3>
         <div class="inquiry-box documents-list">
             ${documentsText}
-        </div>
-    
+        </div>` : ''}
+
         ${projectFiles ? `<h3>Project Files</h3>
         <div class="inquiry-box documents-list">
             ${projectFiles}
