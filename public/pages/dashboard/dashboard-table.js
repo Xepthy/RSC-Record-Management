@@ -412,39 +412,46 @@ function showInquiryModal(inquiry, accountData) {
     $('body').addClass('modal-open');
 }
 
-// Corrected version without description field
-
 async function editInquiry(inquiryId) {
     try {
         const userDocRef = doc(db, 'client', currentUser.uid);
         const pendingCollectionRef = collection(userDocRef, 'pending');
-        const inquiryDoc = await getDocs(query(pendingCollectionRef));
+        const inquiryDocs = await getDocs(query(pendingCollectionRef));
 
         let inquiry = null;
-        inquiryDoc.forEach(doc => {
-            if (doc.id === inquiryId) inquiry = { id: doc.id, ...doc.data() };
+        inquiryDocs.forEach(docSnap => {
+            if (docSnap.id === inquiryId) inquiry = { id: docSnap.id, ...docSnap.data() };
         });
 
-        if (!inquiry) return alert('Inquiry not found');
-        if (inquiry.status !== 'Update Documents') return alert('This inquiry cannot be edited');
+        if (!inquiry) {
+            showToast('error', 'Not Found', 'Inquiry not found.');
+            return;
+        }
+        if (inquiry.status !== 'Update Documents') {
+            showToast('warning', 'Not Editable', 'This inquiry cannot be edited.');
+            return;
+        }
 
         showEditModal(inquiry);
     } catch (error) {
         console.error('Edit error:', error);
-        alert('Failed to load inquiry');
+        showToast('error', 'Error', 'Failed to load inquiry.');
     }
 }
 
+// 🔹 Show modal and initialize handlers
 function showEditModal(inquiry, isAdmin = false) {
     const docs = inquiry.documents || [];
 
-    const docsHtml = docs.length ? docs.map((doc, i) =>
-        `<div class="existing-document" data-doc-index="${i}">
-            <span class="doc-name">${doc.name}</span>
-            ${isAdmin
-            ? `<button type="button" class="remove-existing-doc" data-doc-index="${i}">×</button>`
-            : ''}
-        </div>`).join('') : '<p class="no-docs">No existing documents</p>';
+    const docsHtml = docs.length
+        ? docs.map((doc, i) => `
+            <div class="existing-document" data-doc-index="${i}">
+                <span class="doc-name">${doc.name}</span>
+                ${isAdmin
+                ? `<button type="button" class="remove-existing-doc" data-doc-index="${i}">×</button>`
+                : ''}
+            </div>`).join('')
+        : '<p class="no-docs">No existing documents</p>';
 
     const modalHtml = `
     <div class="modal edit-modal" id="editInquiryModal">
@@ -478,37 +485,32 @@ function showEditModal(inquiry, isAdmin = false) {
     initEditHandlers(inquiry, isAdmin);
 }
 
+// 🔹 Handle edit actions and uploads
 function initEditHandlers(inquiry, isAdmin = false) {
     let newFiles = [], removedIndices = [];
 
-    // Upload button triggers hidden file input
     $('#editUploadBtn').click(() => $('#editDocUpload').click());
 
-    // Handle newly selected files
     $('#editDocUpload').change((e) => {
         const files = Array.from(e.target.files);
-
-        // FIXED: For edit mode, only check new files count (reset to 3 max for new uploads)
         const newFilesCount = newFiles.length + files.length;
 
         if (newFilesCount > 3) {
-            alert('Maximum 3 new documents allowed for update');
+            showToast('warning', 'Limit Exceeded', 'Maximum 3 new documents allowed for update.');
             return;
         }
 
         files.forEach(file => {
             if (file.type !== 'application/pdf') {
-                alert(`${file.name} is not a PDF file`);
+                showToast('error', 'Invalid File', `${file.name} is not a PDF file.`);
                 return;
             }
             if (file.size > 5242880) {
-                alert(`${file.name} exceeds 5MB limit`);
+                showToast('error', 'File Too Large', `${file.name} exceeds 5MB limit.`);
                 return;
             }
-
-            // Check for duplicate names in new files
             if (newFiles.find(f => f.name === file.name)) {
-                alert(`${file.name} is already selected`);
+                showToast('warning', 'Duplicate File', `${file.name} is already selected.`);
                 return;
             }
 
@@ -549,28 +551,19 @@ function initEditHandlers(inquiry, isAdmin = false) {
                     <span class="doc-name">${f.name}</span>
                     <span class="doc-size">(${(f.size / 1048576).toFixed(2)}MB)</span>
                     <button type="button" class="remove-new-doc" data-file-id="${f.id}">×</button>
-                </div>`
-            ).join('');
-
+                </div>`).join('');
         $('#newDocsList').html(listHtml);
     }
 
-    // Save handler with double lock
     $('#saveEdit').click(() => {
-        if (!isAdmin) {
-            // Remove any attempted deletions for non-admin users
-            removedIndices = [];
-            $('#existingDocuments .remove-existing-doc').remove();
-        }
+        if (!isAdmin) removedIndices = [];
 
         if (newFiles.length === 0 && removedIndices.length === 0) {
-            alert('No changes made. Please add new documents to save.');
+            showToast('info', 'No Changes', 'Please add new documents to save.');
             return;
         }
 
-        // No additional validation needed - users can upload up to 3 new docs
-
-        saveChanges(inquiry, newFiles, removedIndices);
+        saveChanges(inquiry, newFiles);
     });
 
     $('#cancelEdit, .edit-close').click(() => {
@@ -578,93 +571,60 @@ function initEditHandlers(inquiry, isAdmin = false) {
         $('body').removeClass('modal-open');
     });
 
-    // Initialize the display
     updateNewDocsList();
 }
 
-async function saveChanges(inquiry, newFiles, removedIndices) {
-
+// 🔹 Save changes with confirmation and overwrite logic
+async function saveChanges(inquiry, newFiles) {
     function normalizeFileName(name) {
-        return name.replace(/\(\d+\)/, ''); // "food(1).pdf" -> "food.pdf"
+        return name.replace(/\(\d+\)/, ''); // normalize: "food(1).pdf" -> "food.pdf"
     }
 
     try {
         $('#saveEdit').prop('disabled', true).text('Saving...');
 
-        let docs = [...(inquiry.documents || [])];
+        const userDocRef = doc(db, 'client', currentUser.uid);
+        const inquiryDocRef = doc(collection(userDocRef, 'pending'), inquiry.id);
 
-        // Check for files that will be overwritten
-        const filesToOverwrite = [];
-        for (const file of newFiles) {
-            const baseName = normalizeFileName(file.name);
-            const existingIndex = docs.findIndex(d => normalizeFileName(d.name) === baseName);
-            if (existingIndex !== -1) {
-                filesToOverwrite.push({
-                    newName: file.name,
-                    oldName: docs[existingIndex].name
-                });
-            }
-        }
-
-        // If there are files to overwrite, show confirmation toast
-        if (filesToOverwrite.length > 0) {
-            const fileList = filesToOverwrite
-                .map(f => `• ${f.oldName} → ${f.newName}`)
-                .join('\n');
-
+        // Step 1: Confirm full overwrite if existing docs are present
+        if (inquiry.documents?.length) {
             const confirmed = await showConfirmToast(
-                'Overwrite Existing Documents?',
-                fileList,
-                'Save',
+                'Replace All Documents?',
+                'This will remove all existing documents and replace them with new uploads.',
+                'Proceed',
                 'Cancel'
             );
 
             if (!confirmed) {
                 $('#saveEdit').prop('disabled', false).text('Save');
+                showToast('info', 'Cancelled', 'Document update cancelled.');
                 return;
             }
-        }
 
-        // STEP 1: Handle deletions
-        for (const i of removedIndices.sort((a, b) => b - a)) {
-            const removedDoc = docs[i];
-            if (removedDoc && removedDoc.url) {
-                try {
-                    const oldPath = getStoragePathFromUrl(removedDoc.url);
-                    await deleteObject(ref(storage, oldPath));
-                    // console.log(`Deleted from storage: ${removedDoc.name}`);
-                } catch (err) {
-                    console.warn(`Failed to delete ${removedDoc?.name} from storage:`, err);
-                }
-            }
-            docs.splice(i, 1);
-        }
-
-        // STEP 2: Handle new uploads (replace if same *base* name)
-        for (const file of newFiles) {
-            const baseName = normalizeFileName(file.name);
-
-            const existingIndex = docs.findIndex(d => normalizeFileName(d.name) === baseName);
-            if (existingIndex !== -1) {
-                const oldDoc = docs[existingIndex];
-                if (oldDoc && oldDoc.url) {
+            // Delete existing files in Firebase Storage
+            for (const oldDoc of inquiry.documents) {
+                if (oldDoc.url) {
                     try {
                         const oldPath = getStoragePathFromUrl(oldDoc.url);
                         await deleteObject(ref(storage, oldPath));
-                        // console.log(`Replaced old file in storage: ${oldDoc.name}`);
+                        console.log(`Deleted: ${oldDoc.name}`);
                     } catch (err) {
-                        console.warn(`Failed to delete old file ${oldDoc?.name}:`, err);
+                        console.warn(`Failed to delete ${oldDoc?.name}:`, err);
                     }
                 }
-                docs.splice(existingIndex, 1);
             }
+        }
 
-            // Upload new file
-            const fileRef = ref(storage, `documents/${currentUser.uid}/${Date.now()}_${file.name}`);
+        // Step 2: Upload new files
+        const uploadedDocs = [];
+        for (const file of newFiles) {
+            const baseName = normalizeFileName(file.name);
+            const fileRef = ref(storage, `documents/${currentUser.uid}/${Date.now()}_${baseName}`);
+
             await uploadBytes(fileRef, file.file);
             const url = await getDownloadURL(fileRef);
 
-            docs.push({
+            uploadedDocs.push({
                 name: file.name,
                 size: file.size,
                 url,
@@ -672,38 +632,35 @@ async function saveChanges(inquiry, newFiles, removedIndices) {
             });
         }
 
-        // STEP 3: Update Firestore
+        // Step 3: Overwrite Firestore data
         const updates = {
-            documents: docs,
-            documentCount: docs.length,
+            documents: uploadedDocs,
+            documentCount: uploadedDocs.length,
             lastUpdated: new Date().toISOString(),
             status: 'pending',
             userId: currentUser.uid,
             read: false
         };
 
-        const userDocRef = doc(db, 'client', currentUser.uid);
-        const inquiryDocRef = doc(collection(userDocRef, 'pending'), inquiry.id);
         await updateDoc(inquiryDocRef, updates);
-
         if (inquiry.pendingDocId) {
             await updateDoc(doc(db, 'inquiries', inquiry.pendingDocId), updates);
         }
 
-        showToast('success', 'Success', 'Documents updated successfully!');
+        showToast('success', 'Success', 'Documents replaced successfully!');
         $('#editInquiryModal').remove();
         $('body').removeClass('modal-open');
         if (typeof refreshTable === 'function') refreshTable();
 
     } catch (error) {
         console.error('Save error:', error);
-        showToast('error', 'Error', 'Failed to save changes');
+        showToast('error', 'Error', 'Failed to save changes.');
     } finally {
         $('#saveEdit').prop('disabled', false).text('Save');
     }
 }
 
-// Helper: extract path from Firebase Storage URL
+// 🔹 Helper: Extract Firebase path from file URL
 function getStoragePathFromUrl(url) {
     try {
         const urlObj = new URL(url);
@@ -714,6 +671,7 @@ function getStoragePathFromUrl(url) {
         return match ? decodeURIComponent(match[1]) : '';
     }
 }
+
 
 // Document viewer function
 function showDocumentViewer(docUrl, options = {}) {
