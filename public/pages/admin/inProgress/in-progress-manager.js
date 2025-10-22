@@ -300,7 +300,7 @@ class InProgressManager {
                                     <label class="checkbox-row">
                                         <input type="checkbox" id="scheduleCheckbox" ${item.isScheduleDone ? 'checked' : ''} disabled>
                                         <span>Schedule: ${item.isScheduleDone ? '--' : (this.formatDateForDisplay(item.schedule) || 'Not scheduled')}</span>
-                                        <input type="date" id="scheduleEdit" value="" style="display: none; margin-left: 10px;">
+                                        <input type="date" id="scheduleEdit" value="" min="${new Date().toISOString().split('T')[0]}" style="display: none; margin-left: 10px;">
                                     </label>
                                 </div>
                             </div>
@@ -565,21 +565,6 @@ class InProgressManager {
             return;
         }
 
-        // Check business logic conditions
-        if (!item.is40 || !item.is60) {
-            errorDiv.text('Both down payment (40%) and upon delivery (60%) must be completed').show();
-            return;
-        }
-
-        if (!item.projectFiles || (Array.isArray(item.projectFiles) && item.projectFiles.length === 0)) {
-            errorDiv.text('Project files are required before completion').show();
-            return;
-        }
-
-        if (!item.isScheduleDone) {
-            errorDiv.text('Schedule must be marked as done before completion').show();
-            return;
-        }
 
         try {
             const completedQuery = query(
@@ -754,6 +739,27 @@ class InProgressManager {
         this.setupCompletionModalEventListeners(item);
     }
 
+    showValidationToast(message) {
+        const toast = $(`
+        <div class="toast validation-toast error" style="
+            min-width: 350px;
+            max-width: 500px;
+            padding: 16px 20px;
+            line-height: 1.6;
+        ">
+            ${message}
+        </div>
+    `);
+
+        $('body').append(toast);
+
+        setTimeout(() => toast.addClass('show'), 100);
+        setTimeout(() => {
+            toast.removeClass('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 6000); // Show for 6 seconds (longer since there's more to read)
+    }
+
 
     setupModalEventListeners(item) {
 
@@ -867,6 +873,46 @@ class InProgressManager {
         });
 
         $('#moveToCompletedBtn').on('click', () => {
+            // Validate all requirements BEFORE showing modal
+            const validationErrors = [];
+
+            if (!item.is40 || !item.is60) {
+                validationErrors.push('• Both payments must be completed (40% + 60%)');
+            }
+
+            if (!item.projectFiles || (Array.isArray(item.projectFiles) && item.projectFiles.length === 0)) {
+                validationErrors.push('• Project files are required');
+            }
+
+            if (!item.isScheduleDone) {
+                validationErrors.push('• Schedule must be marked as done');
+            }
+
+            if (!item.isEncroachment) {
+                validationErrors.push('• Encroachment must be checked');
+            }
+
+            if (!item.isNeedResearch) {
+                validationErrors.push('• Need Research must be checked');
+            }
+
+            if (!item.isDoneLayout) {
+                validationErrors.push('• Done Layout must be checked');
+            }
+
+            // If there are validation errors, show them in a toast
+            if (validationErrors.length > 0) {
+                const errorMessage = `
+            <div style="text-align: left;">
+                <strong>Requirements not met:</strong><br>
+                ${validationErrors.join('<br>')}
+            </div>
+        `;
+                this.showValidationToast(errorMessage);
+                return;
+            }
+
+            // All validations passed, show the modal
             this.showMoveToCompletedModal(item);
         });
 
