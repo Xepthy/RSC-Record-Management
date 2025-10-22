@@ -5,14 +5,36 @@ class DashboardManager {
         this.parent = parentInstance;
     }
 
-    async loadDashboardData() {
+    // ADD this method after loadDashboardData
+    getAvailableMonths() {
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth(); // 0-11
+
+        const months = [];
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        // Generate months from January to current month
+        for (let i = 0; i <= currentMonth; i++) {
+            months.push({
+                value: `${currentYear}-${String(i + 1).padStart(2, '0')}`,
+                label: `${monthNames[i]} ${currentYear}`
+            });
+        }
+
+        return months.reverse(); // Most recent first
+    }
+
+    async loadDashboardData(viewType = 'yearly', selectedMonth = null) {
         try {
             const completed = await getDocs(collection(db, 'completed'));
             const inquiries = this.parent.inquiries.length;
             const inProgress = this.parent.inProgressItems.length;
             const completedCount = completed.size;
 
-            // Count services from completed items
             const serviceCounts = {};
             const allServices = [
                 'Relocation Survey',
@@ -28,8 +50,26 @@ class DashboardManager {
 
             allServices.forEach(service => serviceCounts[service] = 0);
 
+            const currentYear = new Date().getFullYear();
+
             completed.forEach(doc => {
                 const data = doc.data();
+
+                // Filter by year first
+                if (data.completedDate) {
+                    const [year] = data.completedDate.split('-');
+                    if (parseInt(year) !== currentYear) return;
+                }
+
+                // If monthly view, filter by selected month
+                if (viewType === 'monthly' && selectedMonth) {
+                    if (data.completedDate) {
+                        const [year, month] = data.completedDate.split('-');
+                        if (`${year}-${month}` !== selectedMonth) return;
+                    }
+                }
+
+                // Count services
                 if (data.selectedServices) {
                     data.selectedServices.forEach(service => {
                         if (serviceCounts[service] !== undefined) {
@@ -38,8 +78,6 @@ class DashboardManager {
                     });
                 }
             });
-
-            console.log('Service counts:', serviceCounts); // DEBUG LINE
 
             return {
                 inquiries,
