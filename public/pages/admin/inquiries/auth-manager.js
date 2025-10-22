@@ -51,12 +51,12 @@ class AuthManager {
         console.log('Setting up auth listener...');
         onAuthStateChanged(auth, async (user) => {
             console.log('Auth state changed:', user ? 'User logged in' : 'No user');
-            
+
             if (user) {
-                console.log('User details:', { 
-                    uid: user.uid, 
-                    email: user.email, 
-                    displayName: user.displayName 
+                console.log('User details:', {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName
                 });
 
                 // Check if account is disabled first
@@ -67,7 +67,7 @@ class AuthManager {
 
                 // Set current user
                 this.parent.currentUser = user;
-                
+
                 // Handle authenticated user with role check
                 await this.handleUserAuthenticated(user);
             } else {
@@ -85,7 +85,7 @@ class AuthManager {
                 this.parent.isAdmin = (userRole === 'admin');
                 this.parent.isSuperAdmin = (userRole === 'super_admin');
                 this.parent.isStaff = (userRole === 'staff');
-                
+
                 console.log('User role:', userRole);
                 window.currentUserRole = userRole;
                 await this.parent.initializeAdminPanel();
@@ -146,7 +146,7 @@ class AuthManager {
 
     redirectToLogin() {
         // Update the path to match your actual login page location
-        const loginPath = '../login/adminLogin.html'; // Adjust this path as needed
+        const loginPath = '/roles.html'; // Adjust this path as needed
 
         if ($('#inquiryContent').length) {
             $('#inquiryContent').html(`
@@ -164,7 +164,7 @@ class AuthManager {
 
     showDisabledAccountMessage() {
         // Update the path to match your actual login page location
-        const loginPath = '../login/adminLogin.html'; // Adjust this path as needed
+        const loginPath = '/roles.html'; // Adjust this path as needed
 
         $('body').html(`
         <div style="
