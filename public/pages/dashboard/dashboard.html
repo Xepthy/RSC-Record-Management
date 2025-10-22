@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="/pages/dashboard/css/hint.css">
   <link rel="stylesheet" href="/pages/dashboard/css/profile.css">
   <link rel="stylesheet" href="/pages/dashboard/css/notif.css">
+  <link rel="stylesheet" href="/pages/dashboard/css/submit-terms.css">
 
   <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -98,154 +99,154 @@
       </div>
     </div>
 
-          <!-- Main content (Table) - Priority on mobile -->
-      <main class="main-section">
-        <!-- Pending/Update Documents Table -->
-        <div class="table-wrapper">
-          <h3>Status Inquiry</h3>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Request Title</th>
-                  <th>Date Submitted</th>
-                  <th>Current Status</th>
-                  <th>Last Updated</th>
-                  <th>Remarks</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="pendingTableBody"></tbody>
-            </table>
+    <!-- Main content (Table) - Priority on mobile -->
+    <main class="main-section">
+      <!-- Pending/Update Documents Table -->
+      <div class="table-wrapper">
+        <h3>Status Inquiry</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Request Title</th>
+                <th>Date Submitted</th>
+                <th>Current Status</th>
+                <th>Last Updated</th>
+                <th>Remarks</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="pendingTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Completed Table -->
+      <div class="table-wrapper">
+        <h3>Completed</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Request Title</th>
+                <th>Date Submitted</th>
+                <th>Current Status</th>
+                <th>Last Updated</th>
+                <th>Remarks</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="completedTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Rejected Table -->
+      <div class="table-wrapper">
+        <h3>Rejected</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Request Title</th>
+                <th>Date Submitted</th>
+                <th>Current Status</th>
+                <th>Last Updated</th>
+                <th>Remarks</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="rejectedTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="openModalBtn" class="btn-inquire">Submit Inquiry</button>
+      </div>
+    </main>
+    <!-- Sidebar - Secondary on mobile -->
+    <aside class="sidebar">
+      <div class="sidebar-cards">
+        <!-- Our Services -->
+        <div class="glass-card services-card">
+          <h3 class="card-title"><i class="fas fa-tools"></i> Our Services</h3>
+          <ul class="service-list">
+            <li class="hover-tooltip">
+              <i class="fas fa-arrows-alt service-icon"></i> Relocation Survey
+              <span class="tooltip">Determines new positions for buildings or structures.</span>
+            </li>
+            <li class="hover-tooltip">
+              <i class="fas fa-map-marked-alt service-icon"></i> Boundary Survey
+              <span class="tooltip">Establishes the exact legal boundaries of a property.</span>
+            </li>
+            <li class="hover-tooltip">
+              <i class="fas fa-home service-icon"></i> Subdivision Survey
+              <span class="tooltip">Involves dividing land into plots for development or
+                sale.</span>
+            </li>
+            <li class="hover-tooltip">
+              <i class="fas fa-mountain service-icon"></i> Topographic Survey
+              <span class="tooltip">Maps the contours, elevations, and features of land.</span>
+            </li>
+            <li class="hover-tooltip">
+              <i class="fas fa-object-group service-icon"></i> Consolidation Survey
+              <span class="tooltip">Merges multiple parcels of land into a single property
+                unit.</span>
+            </li>
+            <li class="hover-tooltip">
+              <i class="fas fa-cogs service-icon"></i> Engineering Services
+              <span class="tooltip">Includes construction planning, design, and technical support
+                for projects.</span>
+            </li>
+            <li class="hover-tooltip">
+              <i class="fas fa-project-diagram service-icon"></i> Parcellary Survey
+              <span class="tooltip">Divides land into parcels according to legal boundaries.</span>
+            </li>
+            <li class="hover-tooltip">
+              <i class="fas fa-ruler-combined service-icon"></i> As-Built Survey
+              <span class="tooltip">Documents the actual construction of a project compared to the
+                original plans.</span>
+            </li>
+            <li class="hover-tooltip">
+              <i class="fas fa-certificate service-icon"></i> Titling Assistance
+              <span class="tooltip">Helps clients secure legal ownership of land through proper
+                documentation.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Contact Us -->
+        <div class="glass-card contact-card">
+          <h3 class="card-title"><i class="fas fa-phone"></i> Contact Us</h3>
+          <div class="contact-list">
+            <p><i class="fas fa-phone contact-icon"></i> <span class="contact-text"> (02)8630-2444 | (02) 8289-9674
+              </span></p>
+            <p><i class="fas fa-mobile-alt contact-icon"></i> <span class="contact-text"> 0917-5047844 |
+                0922-8596601</span></p>
+            <p><i class="fas fa-envelope contact-icon"></i> <span class="contact-text">rafallosurveying@gmail.com</span>
+            </p>
+            <p><i class="fas fa-map-marker-alt contact-icon"></i> <span class="contact-text">RSC Building, 8 Marigman
+                Road, San Roque, Antipolo City</span></p>
+            <p><i class="fas fa-clock contact-icon"></i> <span class="contact-text">Mon-Fri: 9AM-5PM</span></p>
           </div>
         </div>
 
-        <!-- Completed Table -->
-        <div class="table-wrapper">
-          <h3>Completed</h3>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Request Title</th>
-                  <th>Date Submitted</th>
-                  <th>Current Status</th>
-                  <th>Last Updated</th>
-                  <th>Remarks</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="completedTableBody"></tbody>
-            </table>
-          </div>
+        <!-- About Us -->
+        <div class="glass-card about-card">
+          <h3 class="card-title"><i class="fas fa-info-circle"></i> About Us</h3>
+          <p class="about-text">We are a licensed surveying company established in 1994, providing accurate and
+            reliable survey services.</p>
+          <ul class="about-features">
+            <li><i class="fas fa-check feature-check"></i> Licensed Professionals</li>
+            <li><i class="fas fa-check feature-check"></i> Modern Equipment</li>
+            <li><i class="fas fa-check feature-check"></i> Fast Turnaround</li>
+            <li><i class="fas fa-check feature-check"></i> Competitive Pricing</li>
+          </ul>
         </div>
-
-        <!-- Rejected Table -->
-        <div class="table-wrapper">
-          <h3>Rejected</h3>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Request Title</th>
-                  <th>Date Submitted</th>
-                  <th>Current Status</th>
-                  <th>Last Updated</th>
-                  <th>Remarks</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="rejectedTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button id="openModalBtn" class="btn-inquire">Submit Inquiry</button>
-        </div>
-      </main>
-      <!-- Sidebar - Secondary on mobile -->
-      <aside class="sidebar">
-        <div class="sidebar-cards">
-          <!-- Our Services -->
-          <div class="glass-card services-card">
-            <h3 class="card-title"><i class="fas fa-tools"></i> Our Services</h3>
-            <ul class="service-list">
-              <li class="hover-tooltip">
-                <i class="fas fa-arrows-alt service-icon"></i> Relocation Survey
-                <span class="tooltip">Determines new positions for buildings or structures.</span>
-              </li>
-              <li class="hover-tooltip">
-                <i class="fas fa-map-marked-alt service-icon"></i> Boundary Survey
-                <span class="tooltip">Establishes the exact legal boundaries of a property.</span>
-              </li>
-              <li class="hover-tooltip">
-                <i class="fas fa-home service-icon"></i> Subdivision Survey
-                <span class="tooltip">Involves dividing land into plots for development or
-                  sale.</span>
-              </li>
-              <li class="hover-tooltip">
-                <i class="fas fa-mountain service-icon"></i> Topographic Survey
-                <span class="tooltip">Maps the contours, elevations, and features of land.</span>
-              </li>
-              <li class="hover-tooltip">
-                <i class="fas fa-object-group service-icon"></i> Consolidation Survey
-                <span class="tooltip">Merges multiple parcels of land into a single property
-                  unit.</span>
-              </li>
-              <li class="hover-tooltip">
-                <i class="fas fa-cogs service-icon"></i> Engineering Services
-                <span class="tooltip">Includes construction planning, design, and technical support
-                  for projects.</span>
-              </li>
-              <li class="hover-tooltip">
-                <i class="fas fa-project-diagram service-icon"></i> Parcellary Survey
-                <span class="tooltip">Divides land into parcels according to legal boundaries.</span>
-              </li>
-              <li class="hover-tooltip">
-                <i class="fas fa-ruler-combined service-icon"></i> As-Built Survey
-                <span class="tooltip">Documents the actual construction of a project compared to the
-                  original plans.</span>
-              </li>
-              <li class="hover-tooltip">
-                <i class="fas fa-certificate service-icon"></i> Titling Assistance
-                <span class="tooltip">Helps clients secure legal ownership of land through proper
-                  documentation.</span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Contact Us -->
-          <div class="glass-card contact-card">
-            <h3 class="card-title"><i class="fas fa-phone"></i> Contact Us</h3>
-            <div class="contact-list">
-              <p><i class="fas fa-phone contact-icon"></i> <span class="contact-text"> (02)8630-2444 | (02) 8289-9674
-                </span></p>
-              <p><i class="fas fa-mobile-alt contact-icon"></i> <span class="contact-text"> 0917-5047844 |
-                  0922-8596601</span></p>
-              <p><i class="fas fa-envelope contact-icon"></i> <span
-                  class="contact-text">rafallosurveying@gmail.com</span></p>
-              <p><i class="fas fa-map-marker-alt contact-icon"></i> <span class="contact-text">RSC Building, 8 Marigman
-                  Road, San Roque, Antipolo City</span></p>
-              <p><i class="fas fa-clock contact-icon"></i> <span class="contact-text">Mon-Fri: 9AM-5PM</span></p>
-            </div>
-          </div>
-
-          <!-- About Us -->
-          <div class="glass-card about-card">
-            <h3 class="card-title"><i class="fas fa-info-circle"></i> About Us</h3>
-            <p class="about-text">We are a licensed surveying company established in 1994, providing accurate and
-              reliable survey services.</p>
-            <ul class="about-features">
-              <li><i class="fas fa-check feature-check"></i> Licensed Professionals</li>
-              <li><i class="fas fa-check feature-check"></i> Modern Equipment</li>
-              <li><i class="fas fa-check feature-check"></i> Fast Turnaround</li>
-              <li><i class="fas fa-check feature-check"></i> Competitive Pricing</li>
-            </ul>
-          </div>
-        </div>
-      </aside>
-    </div>
+      </div>
+    </aside>
+  </div>
   </div>
 
   <!-- Submit Inquiry Modal -->
@@ -370,7 +371,7 @@
         <!-- Services Section -->
         <div class="form-group form-full-width">
           <div class="services-box">
-            <h3>Types of Service</h3>
+            <h3>Types of Service <span class="required">*</span></h3>
             <div class="checkbox-grid">
               <label><input type="checkbox" value="Relocation Survey"> Relocation Survey</label>
               <label><input type="checkbox" value="Boundary Survey"> Boundary Survey</label>
@@ -444,6 +445,31 @@
 
         <button type="submit" class="submit-btn">Update Password</button>
       </form>
+
+    </div>
+  </div>
+
+  <div id="termsModal" class="terms-modal hidden">
+    <div class="terms-modal-content">
+      <h2>Terms and Acknowledgment</h2>
+      <p>
+        By submitting this inquiry, you acknowledge that all information and documents you provided are true and
+        correct to the best of your knowledge.
+        You understand that once submitted, your inquiry cannot be edited or withdrawn.
+      </p>
+      <p>
+        You willingly and knowingly submit these documents for official processing.
+        The organization shall handle your data responsibly and use it only for legitimate business purposes.
+        You also agree that the company and its representatives shall not be held liable for any loss, delay, or
+        error caused by incorrect or falsified information provided on your part.
+      </p>
+      <p>
+        Please review your submission carefully before proceeding.
+      </p>
+      <div class="terms-modal-actions">
+        <button id="agreeButton" class="agree-btn">Yes, I Agree</button>
+        <button id="cancelButton" class="cancel-btn">Cancel</button>
+      </div>
     </div>
   </div>
 

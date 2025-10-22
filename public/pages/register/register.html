@@ -28,6 +28,7 @@
 </head>
 
 <body>
+    <div id="toast-container" class="toast-container"></div>
     <div class="container-glass">
         <h2>Sign Up</h2>
         <div id="registerSection">
@@ -58,16 +59,16 @@
                 </select>
             </div>
 
-            <input type="email" id="email" placeholder="Email"><br>
+            <input type="email" id="email" placeholder="Email*" required><br>
 
             <div class="password-container">
-                <input type="password" id="password" placeholder="Enter your password">
+                <input type="password" id="password" placeholder="Enter your password*" required>
                 <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
             </div>
 
             <div class="checkbox-group">
                 <label class="checkbox-label">
-                    <input type="checkbox" class="policy-required" id="privacyCheckbox" required>
+                    <input type="checkbox" class="policy-required" id="privacyCheckbox">
                     <span class="policy-inline">
                         I agree to
                         <a href="#" id="showPrivacy" class="policy-link">Data Policy</a>
@@ -342,6 +343,8 @@
             </div>
         </div>
     </div>
+     <script src="../dashboard/toast.js"></script>
+     <link rel="stylesheet" href="../dashboard/css/toast.css">
 </body>
 
 </html>

@@ -14,27 +14,52 @@ import {
 
 import { SecurityUtils, RateLimiter, ErrorHandler, InputUtils, ValidationHandlers } from '../register/registerUtils.js';
 
+// --- TOAST HELPER ---
+let toastTimeout;
+function showToast(message, type = 'success', duration = 3000) {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    // Remove existing toast to prevent overlap
+    const existingToast = container.querySelector('.toast');
+    if (existingToast) {
+        existingToast.remove();
+        clearTimeout(toastTimeout);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type} show`;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+// --- Main Logic ---
 $(document).ready(function () {
-    // Initialize real-time validation
     ValidationHandlers.initializeValidation();
 
-    // Registration button handler
     $('#registerBtn').on('click', async function (e) {
         e.preventDefault();
 
         if ($('.policy-required:checked').length < 2) {
             $('#checkboxError').show();
-            return; // stop here, do not clear inputs
-        } else {
-            $('#checkboxError').hide();
-        }
+            return;
+        } else { $('#checkboxError').hide(); }
 
-        // If checkboxes are okay, continue with your existing Firebase code
         if (RateLimiter.isLimited()) {
-            alert("Please wait a moment before trying again.");
+            showToast("Please wait a moment before trying again.", "warning");
             return;
         }
-        // Get all form data - HTML required will handle basic validation
+
         const firstName = SecurityUtils.sanitizeInput($('#firstName').val());
         const middleName = SecurityUtils.sanitizeInput($('#middleName').val());
         const lastName = SecurityUtils.sanitizeInput($('#lastName').val());
@@ -44,23 +69,28 @@ $(document).ready(function () {
         const email = SecurityUtils.sanitizeInput($('#email').val());
         const password = $('#password').val();
 
-        if (!firstName || !lastName || !classification) {
-            alert('Incomplete Form: Please fill out all required fields.');
+        if (!firstName || !lastName ) {
+            showToast('Incomplete Form: Please fill out all required fields.', 'warning');
             return;
         }
-        // Custom validation for things HTML can't handle well
+
+        if (!classification) {
+            showToast('Please select a classification.', 'warning');
+            return;
+        }
+
         if (!SecurityUtils.validateEmail(email)) {
-            alert("Please enter a valid email address.");
+            showToast("Please enter a valid email address.", "warning");
             return;
         }
 
         if (!SecurityUtils.validatePassword(password)) {
-            alert(SecurityUtils.getPasswordRequirements());
+            showToast(SecurityUtils.getPasswordRequirements(), "warning");
             return;
         }
 
         if (!SecurityUtils.validateMobileNumber(mobileNumber)) {
-            alert("Please enter a valid 11-digit mobile number starting with 09.");
+            showToast("Please enter a valid 11-digit mobile number starting with 09.", "warning");
             return;
         }
 
@@ -72,13 +102,9 @@ $(document).ready(function () {
             const user = userCredential.user;
 
             await sendEmailVerification(user);
-            alert("Verification email sent. Please check your inbox or spam folder.");
+            showToast("Verification email sent. Please check your inbox or spam folder.", "success");
 
-            const tempUserData = {
-                firstName, middleName, lastName, suffix,
-                mobileNumber, classification, email
-            };
-
+            const tempUserData = { firstName, middleName, lastName, suffix, mobileNumber, classification, email };
             sessionStorage.setItem("emailForVerification", email);
             sessionStorage.setItem("tempUserData", JSON.stringify(tempUserData));
 
@@ -88,18 +114,16 @@ $(document).ready(function () {
             $('#registerBtn').hide();
             $('#togglePassword').hide();
 
-
         } catch (error) {
-            alert(ErrorHandler.getSecureMessage(error));
+            showToast(ErrorHandler.getSecureMessage(error), "error");
         } finally {
             $registerBtn.prop('disabled', false).text('Sign Up');
         }
     });
 
-    // Continue button handler
     $('#continueBtn').on('click', async function () {
         if (RateLimiter.isLimited()) {
-            alert("Please wait a moment before trying again.");
+            showToast("Please wait a moment before trying again.", "warning");
             return;
         }
 
@@ -107,12 +131,12 @@ $(document).ready(function () {
         const password = $('#verifyPassword').val();
 
         if (!email || !password) {
-            alert("Please re-enter your password.");
+            showToast("Please re-enter your password.", "warning");
             return;
         }
 
         if (!SecurityUtils.validatePassword(password)) {
-            alert(SecurityUtils.getPasswordRequirements());
+            showToast(SecurityUtils.getPasswordRequirements(), "warning");
             return;
         }
 
@@ -126,146 +150,107 @@ $(document).ready(function () {
             await user.reload();
 
             if (user.emailVerified) {
-                alert("Email verified! Redirecting...");
+                showToast("Email verified! Redirecting...", "success");
                 await setupFirstTimeUser(user);
                 sessionStorage.clear();
                 InputUtils.clearSensitiveFields();
                 window.location.href = "../dashboard/dashboard.html";
             } else {
-                alert("Email not verified yet. Please check your inbox and click the verification link.");
+                showToast("Email not verified yet. Please check your inbox and click the verification link.", "warning");
             }
-
         } catch (error) {
-            alert(ErrorHandler.getSecureMessage(error));
+            showToast(ErrorHandler.getSecureMessage(error), "error");
         } finally {
             $continueBtn.prop('disabled', false).text('I have verified');
         }
     });
 
-    // Security event handlers
-    $(window).on('blur', () => InputUtils.clearSensitiveFields());
-    $(window).on('beforeunload', () => InputUtils.clearSensitiveFields());
+    $(window).on('blur beforeunload', () => InputUtils.clearSensitiveFields());
 
     $('input[type="password"]').on('contextmenu', (e) => e.preventDefault());
+    let passwordWarningShown = false;
     $('input[type="password"]').on('focus', function () {
-        console.clear();
-        console.warn('Security Warning: Do not paste or share passwords in console');
+        if (!passwordWarningShown) {
+            console.warn('Security Warning: Do not paste or share passwords in console');
+            passwordWarningShown = true;
+        }
     });
-});
 
-async function setupFirstTimeUser(user) {
-    try {
-        const userRef = doc(db, 'client', user.uid);
-        const docSnap = await getDoc(userRef);
+    async function setupFirstTimeUser(user) {
+        try {
+            const userRef = doc(db, 'client', user.uid);
+            const docSnap = await getDoc(userRef);
+            if (docSnap.exists()) return;
 
-        if (docSnap.exists()) {
-            console.log('User already exists, skipping setup');
-            return;
-        }
+            const tempUserDataString = sessionStorage.getItem("tempUserData");
+            if (!tempUserDataString) return;
 
-        const tempUserDataString = sessionStorage.getItem("tempUserData");
-        if (!tempUserDataString) {
-            console.error('No temporary user data found');
-            return;
-        }
-
-        const tempUserData = JSON.parse(tempUserDataString);
-
-        const userData = {
-            firstName: tempUserData.firstName,
-            middleName: tempUserData.middleName || '',
-            lastName: tempUserData.lastName,
-            suffix: tempUserData.suffix || '',
-            email: SecurityUtils.sanitizeInput(user.email),
-            mobileNumber: tempUserData.mobileNumber,
-            classification: tempUserData.classification,
-            uid: user.uid,
-            createdAt: new Date(),
-            emailVerified: user.emailVerified,
-            lastLoginAt: new Date(),
-            profileComplete: true,
-            dailySubmissionCount: 0
-        };
-
-        await setDoc(userRef, userData);
-
-        const folders = ['pending', 'completed', 'rejected'];
-        for (const folder of folders) {
-            const colRef = collection(db, 'client', user.uid, folder);
-            await setDoc(doc(colRef, '_init'), {
-                placeholder: true,
+            const tempUserData = JSON.parse(tempUserDataString);
+            const userData = {
+                firstName: tempUserData.firstName,
+                middleName: tempUserData.middleName || '',
+                lastName: tempUserData.lastName,
+                suffix: tempUserData.suffix || '',
+                email: SecurityUtils.sanitizeInput(user.email),
+                mobileNumber: tempUserData.mobileNumber,
+                classification: tempUserData.classification,
+                uid: user.uid,
                 createdAt: new Date(),
-                folderName: folder
+                emailVerified: user.emailVerified,
+                lastLoginAt: new Date(),
+                profileComplete: true,
+                dailySubmissionCount: 0
+            };
+
+            await setDoc(userRef, userData);
+
+            const folders = ['pending', 'completed', 'rejected'];
+            for (const folder of folders) {
+                const colRef = collection(db, 'client', user.uid, folder);
+                await setDoc(doc(colRef, '_init'), { placeholder: true, createdAt: new Date(), folderName: folder });
+            }
+
+            sessionStorage.removeItem("tempUserData");
+        } catch (error) {
+            console.error('Error in setupFirstTimeUser:', error);
+            showToast('Account created successfully, but there was an issue setting up your profile. Please contact support.', "error");
+        }
+    }
+
+    // --- Password toggle and modal logic (unchanged) ---
+    $(document).ready(function () {
+        function setupPasswordToggle(toggleSelector, inputSelector) {
+            $(toggleSelector).on("click", function () {
+                const $password = $(inputSelector);
+                const isHidden = $password.attr("type") === "password";
+                $password.attr("type", isHidden ? "text" : "password");
+                $(this).toggleClass("fa-eye", isHidden).toggleClass("fa-eye-slash", !isHidden);
             });
         }
 
-        console.log('First-time user setup completed successfully');
-        sessionStorage.removeItem("tempUserData");
+        setupPasswordToggle("#togglePassword", "#password");
 
-    } catch (error) {
-        console.error('Error in setupFirstTimeUser:', error);
-        alert('Account created successfully, but there was an issue setting up your profile. Please contact support if you experience any problems.');
-    }
-}
+        $("#showPrivacy").on("click", e => { e.preventDefault(); e.stopPropagation(); $("#privacyModal").fadeIn(300); });
+        $("#showTerms").on("click", e => { e.preventDefault(); e.stopPropagation(); $("#termsModal").fadeIn(300); });
 
-// UI Interactions
-$(document).ready(function () {
-    // --- Password toggle setup ---
-    function setupPasswordToggle(toggleSelector, inputSelector) {
-        $(toggleSelector).on("click", function () {
-            const $password = $(inputSelector);
-            const isHidden = $password.attr("type") === "password";
-            $password.attr("type", isHidden ? "text" : "password");
-            $(this)
-                .toggleClass("fa-eye", isHidden)
-                .toggleClass("fa-eye-slash", !isHidden);
+        $(".close, .close-btn").on("click", function () {
+            const modalId = $(this).data("modal");
+            $("#" + modalId).fadeOut(300);
+            if (modalId === "termsModal") $("#termsCheckbox").prop("checked", true);
+            else if (modalId === "privacyModal") $("#privacyCheckbox").prop("checked", true);
         });
-    }
 
-    setupPasswordToggle("#togglePassword", "#password");
+        $(".modal").on("click", e => { if ($(e.target).hasClass("modal")) $(e.target).fadeOut(300); });
+        $(document).on("keydown", e => { if (e.key === "Escape") $(".modal").fadeOut(300); });
 
-    // --- Modal open/close handling ---
-    $("#showPrivacy").on("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        $("#privacyModal").fadeIn(300);
+        $(".checkbox-label").on("click", function (e) {
+            if (!$(e.target).is('a, .info-icon, .tooltip')) {
+                const checkbox = $(this).find('input[type="checkbox"]');
+                checkbox.prop('checked', !checkbox.prop('checked'));
+            }
+        });
+
+        $('input[type="checkbox"]').on("click", e => e.stopPropagation());
     });
 
-    $("#showTerms").on("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        $("#termsModal").fadeIn(300);
-    });
-
-    $(".close, .close-btn").on("click", function () {
-        const modalId = $(this).data("modal");
-        $("#" + modalId).fadeOut(300);
-
-        // Auto-check corresponding box
-        if (modalId === "termsModal") {
-            $("#termsCheckbox").prop("checked", true);
-        } else if (modalId === "privacyModal") {
-            $("#privacyCheckbox").prop("checked", true);
-        }
-    });
-
-    $(".modal").on("click", function (e) {
-        if ($(e.target).hasClass("modal")) $(this).fadeOut(300);
-    });
-
-    $(document).on("keydown", function (e) {
-        if (e.key === "Escape") $(".modal").fadeOut(300);
-    });
-
-    // --- Checkbox click fix ---
-    $(".checkbox-label").on("click", function (e) {
-        if (!$(e.target).is('a, .info-icon, .tooltip')) {
-            const checkbox = $(this).find('input[type="checkbox"]');
-            checkbox.prop('checked', !checkbox.prop('checked'));
-        }
-    });
-
-    $('input[type="checkbox"]').on("click", function (e) {
-        e.stopPropagation();
-    });
 });

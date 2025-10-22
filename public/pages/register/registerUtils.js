@@ -1,5 +1,3 @@
-// Input sanitization and validation
-// Input sanitization and validation
 const SecurityUtils = {
     sanitizeInput: function (input) {
         return input.trim().replace(/[<>]/g, '');
@@ -13,7 +11,8 @@ const SecurityUtils = {
 
     validatePassword: function (password) {
         return password.length >= 8 && password.length <= 128 &&
-            /[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[_!@#$%^&*(),.?":{}|<>]/.test(password);
+            /[a-z]/.test(password) && /[A-Z]/.test(password) &&
+            /[0-9]/.test(password) && /[_!@#$%^&*(),.?":{}|<>]/.test(password);
     },
 
     getPasswordRequirements: function () {
@@ -28,13 +27,11 @@ const SecurityUtils = {
         return /^09[0-9]{9}$/.test(mobile);
     },
 
-    // Add classification validation
     validateClassification: function (classification) {
         return classification && classification !== "" && classification !== null;
     }
 };
 
-// Rate limiting
 const RateLimiter = {
     lastAttemptTime: 0,
     limitMs: 3000,
@@ -49,10 +46,9 @@ const RateLimiter = {
     }
 };
 
-// Secure error handling
 const ErrorHandler = {
     getSecureMessage: function (error) {
-        console.error('Authentication error:', error);
+        console.error("Authentication error:", error);
 
         const messages = {
             'auth/email-already-in-use': 'This email is already registered.',
@@ -69,22 +65,20 @@ const ErrorHandler = {
     }
 };
 
-// Input styling functions
 const InputUtils = {
     setValidationStyle: function (element, isValid) {
-        element.style.border = isValid ? '' : '2px solid red';
+        element.style.border = isValid ? "" : "2px solid red";
     },
 
     clearSensitiveFields: function () {
-        const passwordFields = document.querySelectorAll('input[type="password"]');
-        passwordFields.forEach(field => field.value = '');
+        const passwordFields = document.querySelectorAll("input[type='password']");
+        passwordFields.forEach(field => field.value = "");
     }
 };
 
-// Real-time validation handlers
 const ValidationHandlers = {
     initializeValidation: function () {
-        // Real-time email validation feedback
+        // Email validation - only visual feedback (red border), no toast
         $('#email').on('blur', function () {
             const email = $(this).val();
             if (email && !SecurityUtils.validateEmail(email)) {
@@ -94,7 +88,7 @@ const ValidationHandlers = {
             }
         });
 
-        // Real-time password validation feedback  
+        // Password validation - only visual feedback, no toast on input
         $('#password, #verifyPassword').on('input', function () {
             const password = $(this).val();
             if (password && !SecurityUtils.validatePassword(password)) {
@@ -104,36 +98,34 @@ const ValidationHandlers = {
             }
         });
 
-        // Format mobile number as user types
+        // Mobile number input & formatting only - no validation toast
         $('#mobileNumber').on('input', function () {
             let mobile = $(this).val().replace(/[^0-9]/g, '');
-            if (mobile.length > 11) {
-                mobile = mobile.substring(0, 11);
-            }
+            if (mobile.length > 11) mobile = mobile.substring(0, 11);
             $(this).val(mobile);
         });
 
-        // Real-time validation for name fields
+        // Name validation - only visual feedback, no toast
         $('#firstName, #lastName').on('blur', function () {
             const name = $(this).val();
             if (name && !SecurityUtils.validateName(name)) {
-                $(this)[0].setCustomValidity('Name should contain only letters, spaces, hyphens, dots, and apostrophes');
+                $(this)[0].setCustomValidity('Name should contain only letters, spaces, hyphens, dots, and apostrophes.');
             } else {
                 $(this)[0].setCustomValidity('');
             }
         });
 
-        // Optional: Middle name and suffix validation (less strict since they're optional)
+        // Optional fields: middleName, suffix - only visual feedback
         $('#middleName, #suffix').on('blur', function () {
             const value = $(this).val();
-            if (value && value.length > 0 && !SecurityUtils.validateName(value)) {
-                $(this)[0].setCustomValidity('Should contain only letters, spaces, hyphens, dots, and apostrophes');
+            if (value && !SecurityUtils.validateName(value)) {
+                $(this)[0].setCustomValidity('Should contain only letters, spaces, hyphens, dots, and apostrophes.');
             } else {
                 $(this)[0].setCustomValidity('');
             }
         });
 
-        // Classification dropdown validation
+        // Classification dropdown - only visual feedback
         $('#classification').on('change', function () {
             if (!$(this).val()) {
                 $(this)[0].setCustomValidity('Please select a classification');
@@ -144,5 +136,4 @@ const ValidationHandlers = {
     }
 };
 
-// Export as ES6 modules
 export { SecurityUtils, RateLimiter, ErrorHandler, InputUtils, ValidationHandlers };

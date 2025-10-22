@@ -1,3 +1,5 @@
+/* --- Existing Toast Styles --- */
+
 /* Toast Container */
 .toast-container {
     position: fixed;
@@ -27,6 +29,7 @@
     position: relative;
 }
 
+/* Toast show/hide */
 .toast.show {
     opacity: 1;
     transform: translateX(0);
@@ -37,34 +40,18 @@
     transform: translateX(100%);
 }
 
+/* Toast types */
 .toast.success { background: linear-gradient(135deg, #4CAF50, #45a049); }
 .toast.error { background: linear-gradient(135deg, #f44336, #d32f2f); }
 .toast.warning { background: linear-gradient(135deg, #ff9800, #f57c00); }
 .toast.confirm { background: linear-gradient(135deg, #ff9800, #f57c00); }
 .toast.info { background: linear-gradient(135deg, #2196F3, #1976D2); }
 
-.toast-icon {
-    margin-right: 12px;
-    font-size: 20px;
-    flex-shrink: 0;
-}
-
-.toast-content {
-    flex: 1;
-}
-
-.toast-title {
-    font-weight: 600;
-    margin-bottom: 4px;
-    font-size: 14px;
-}
-
-.toast-message {
-    font-size: 13px;
-    opacity: 0.9;
-    line-height: 1.4;
-}
-
+/* Toast inner content */
+.toast-icon { margin-right: 12px; font-size: 20px; flex-shrink: 0; }
+.toast-content { flex: 1; }
+.toast-title { font-weight: 600; margin-bottom: 4px; font-size: 14px; }
+.toast-message { font-size: 13px; opacity: 0.9; line-height: 1.4; }
 .toast-close {
     background: none;
     border: none;
@@ -77,11 +64,7 @@
     transition: opacity 0.3s;
     flex-shrink: 0;
 }
-
-.toast-close:hover {
-    opacity: 1;
-}
-
+.toast-close:hover { opacity: 1; }
 .toast-progress {
     position: absolute;
     bottom: 0;
@@ -91,43 +74,19 @@
     border-radius: 0 0 12px 12px;
     animation: progress 4s linear forwards;
 }
+@keyframes progress { from { width: 100%; } to { width: 0%; } }
 
-@keyframes progress {
-    from { width: 100%; }
-    to { width: 0%; }
-}
-
-/* Confirmation toast specific styles */
 /* Confirmation Toast */
-
-.toast.confirm{
+.toast.confirm {
     background: linear-gradient(135deg,#ff9800, #f57c00);
     min-height: 80px;
     max-width: 450px;
     flex-direction: column;
     align-items: stretch;
 }
-
-/* Header + Message */
-.confirm-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.confirm-message {
-    margin-bottom: 16px;
-    line-height: 1.4;
-}
-
-/* Buttons Layout */
-.confirm-buttons {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-}
-
-/* Buttons Base */
+.confirm-header { display: flex; align-items: center; margin-bottom: 12px; }
+.confirm-message { margin-bottom: 16px; line-height: 1.4; }
+.confirm-buttons { display: flex; gap: 8px; justify-content: flex-end; }
 .confirm-btn {
     padding: 8px 16px;
     border: none;
@@ -138,25 +97,55 @@
     transition: all 0.3s;
     min-width: 70px;
 }
-
-/* Primary (Confirm) Button */
 .confirm-btn.primary {
     background: rgba(255, 255, 255, 0.9);
     color: #1976D2;
 }
-
-.confirm-btn.primary:hover {
-    background: #ffffff;
-    transform: translateY(-1px);
-}
-
-/* Secondary (Cancel) Button */
+.confirm-btn.primary:hover { background: #ffffff; transform: translateY(-1px); }
 .confirm-btn.secondary {
     background: rgba(255, 255, 255, 0.2);
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
+.confirm-btn.secondary:hover { background: rgba(255, 255, 255, 0.3); }
 
-.confirm-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.3);
+/* --- MEDIA QUERIES --- */
+
+/* For tablets and smaller screens */
+@media (max-width: 768px) {
+    .toast-container {
+        top: 15px;
+        right: 15px;
+        max-width: 90%;
+    }
+    .toast {
+        padding: 12px 16px;
+        min-height: 50px;
+        font-size: 13px;
+    }
+    .toast-icon { font-size: 18px; margin-right: 8px; }
+    .toast-title { font-size: 13px; }
+    .toast-message { font-size: 12px; }
+    .toast.confirm { max-width: 90%; min-height: 70px; }
+    .confirm-buttons { flex-direction: column; gap: 6px; align-items: stretch; }
+    .confirm-btn { font-size: 12px; padding: 6px 12px; min-width: auto; width: 100%; }
+}
+
+/* For mobile screens */
+@media (max-width: 480px) {
+    .toast-container {
+        top: 10px;
+        right: 10px;
+        max-width: 95%;
+    }
+    .toast {
+        padding: 10px 14px;
+        min-height: 45px;
+    }
+    .toast-icon { font-size: 16px; margin-right: 6px; }
+    .toast-title { font-size: 12px; }
+    .toast-message { font-size: 11px; }
+    .toast.confirm { min-height: 60px; max-width: 95%; }
+    .confirm-buttons { gap: 4px; }
+    .confirm-btn { font-size: 11px; padding: 5px 10px; }
 }

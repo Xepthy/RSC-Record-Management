@@ -135,17 +135,8 @@ async function submitFormData() {
             return false;
         }
 
-        // ✅ Final confirmation
-        const confirmationMessage = `⚠️ CONFIRMATION REQUIRED ⚠️
-
-                                Are you sure all the details are correct?
-                                        📋 Once submitted:
-                                • Your inquiry cannot be edited or removed
-                            • Double-check all information before proceeding`;
-
-        let userConfirmed = window.showConfirmToast
-            ? await showConfirmToast('Confirm Submission', confirmationMessage, 'Submit', 'Cancel')
-            : confirm(confirmationMessage);
+        // ✅ Final confirmation modal (custom terms)
+        const userConfirmed = await showTermsModal();
         if (!userConfirmed) return false;
 
         // ✅ Show loading toast
@@ -180,14 +171,13 @@ async function submitFormData() {
         const userDoc = await getDoc(userDocRef);
         const userData = userDoc.exists() ? userDoc.data() : {};
 
-        // generate consistent ID
         const pendingDocRef = doc(pendingCollectionRef);
         const inquiryId = pendingDocRef.id;
 
         formData.pendingDocId = inquiryId;
         formData.accountInfo = {
             uid: currentUser.uid,
-            email: currentUser.email || "",
+            email: userData.email || currentUser.email || "",
             firstName: userData.firstName || "",
             middleName: userData.middleName || "",
             lastName: userData.lastName || "",
@@ -206,7 +196,7 @@ async function submitFormData() {
         const mainInquiryRef = doc(db, 'inquiries', inquiryId);
         await setDoc(mainInquiryRef, {
             ...formData,
-            id: inquiryId  // Make sure the document has its own ID
+            id: inquiryId
         });
 
         // ✅ Record in submission limits
@@ -253,6 +243,28 @@ async function submitFormData() {
     }
 }
 
+function showTermsModal() {
+  return new Promise(resolve => {
+    const modal = document.getElementById('termsModal');
+    const agreeBtn = document.getElementById('agreeButton');
+    const cancelBtn = document.getElementById('cancelButton');
+
+    modal.classList.remove('hidden');
+
+    const closeModal = (result) => {
+      modal.classList.add('hidden');
+      agreeBtn.removeEventListener('click', onAgree);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    };
+
+    const onAgree = () => closeModal(true);
+    const onCancel = () => closeModal(false);
+
+    agreeBtn.addEventListener('click', onAgree);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
 
 // NEW: Function to display current submission status
 async function displaySubmissionStatus() {
@@ -298,11 +310,13 @@ function resetForm() {
     $('#contractorName, #companyName').prop('disabled', true);
     $('#contractorName').attr('placeholder', 'For contractors only');
 
+    // afely clear uploaded files after form reset
     if (window.documentUpload) {
-        window.documentUpload.clearAllFiles();
+        window.documentUpload.uploadedFiles = [];
+        window.documentUpload.updateDisplay();
     }
 
-    // Update submission status after form reset (which happens after successful submission)
+    // Update submission status after successful submission
     if (window.displaySubmissionStatus) {
         displaySubmissionStatus();
     }

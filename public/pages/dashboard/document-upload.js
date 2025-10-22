@@ -1,5 +1,5 @@
 // document-upload.js
-// Enhanced PDF upload handling with raw file storage
+// Enhanced PDF upload handling with toast notifications
 
 class DocumentUpload {
     constructor() {
@@ -22,11 +22,12 @@ class DocumentUpload {
     handleFileSelection(files) {
         const newFiles = Array.from(files);
         const errors = [];
+        const warnings = [];
 
         // Check file count first
         if (this.uploadedFiles.length + newFiles.length > this.maxFiles) {
-            errors.push(`Maximum ${this.maxFiles} files allowed`);
-            return this.showErrors(errors);
+            window.showToast('error', 'Upload Limit', `Maximum ${this.maxFiles} files allowed`);
+            return;
         }
 
         // Validate and add files
@@ -39,7 +40,7 @@ class DocumentUpload {
 
             // Check for duplicates
             if (this.uploadedFiles.find(f => f.name === file.name && f.size === file.size)) {
-                errors.push(`${file.name} is already uploaded`);
+                warnings.push(`${file.name} is already uploaded`);
                 return;
             }
 
@@ -53,8 +54,24 @@ class DocumentUpload {
             });
         });
 
+        // Show errors first
         if (errors.length > 0) {
-            this.showErrors(errors);
+            errors.forEach(error => {
+                window.showToast('error', 'Upload Error', error, 5000);
+            });
+        }
+
+        // Show warnings
+        if (warnings.length > 0) {
+            warnings.forEach(warning => {
+                window.showToast('warning', 'Duplicate File', warning, 4000);
+            });
+        }
+
+        // Show success if files were added
+        if (newFiles.length > 0 && newFiles.length - errors.length - warnings.length > 0) {
+            const added = newFiles.length - errors.length - warnings.length;
+            window.showToast('success', 'Files Added', `${added} file${added > 1 ? 's' : ''} uploaded successfully`, 3000);
         }
 
         $('#documentUpload').val('');
@@ -70,8 +87,12 @@ class DocumentUpload {
     }
 
     removeFile(fileId) {
-        this.uploadedFiles = this.uploadedFiles.filter(f => f.id !== fileId);
-        this.updateDisplay();
+        const file = this.uploadedFiles.find(f => f.id === fileId);
+        if (file) {
+            this.uploadedFiles = this.uploadedFiles.filter(f => f.id !== fileId);
+            window.showToast('info', 'File Removed', `${file.name} has been removed`, 3000);
+            this.updateDisplay();
+        }
     }
 
     updateDisplay() {
@@ -96,10 +117,6 @@ class DocumentUpload {
     `);
     }
 
-    showErrors(errors) {
-        alert('Upload errors:\n• ' + errors.join('\n• '));
-    }
-
     getUploadedFiles() {
         return this.uploadedFiles;
     }
@@ -107,11 +124,6 @@ class DocumentUpload {
     // Get files count for validation
     getFileCount() {
         return this.uploadedFiles.length;
-    }
-
-    clearAllFiles() {
-        this.uploadedFiles = [];
-        this.updateDisplay();
     }
 
     // Check if any files are uploaded

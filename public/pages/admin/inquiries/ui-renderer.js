@@ -256,7 +256,7 @@ class UIRenderer {
             <div class="inquiries-table-container">
                 <div class="table-header">
                     <div class="search-bar">
-                        <input type="text" id="inProgressSearch" placeholder="🔍 Search by client, plan name, or services..." value="${searchQuery}" />
+                        <input type="text" id="inProgressSearch" placeholder="Search by client, plan name, or services..." value="${searchQuery}" />
                         <button class="search-clear-btn" id="clearInProgressSearch">×</button>
                     </div>
                 </div>
@@ -374,47 +374,88 @@ class UIRenderer {
         const paginationHTML = this.generatePaginationControls(totalPages, 'inprogress');
 
         const tableHTML = `
-        <div class="inquiries-table-container">
-            <div class="table-header">
-                <div class="search-bar">
-                    <input type="text" id="inProgressSearch" placeholder="Search by client, plan name, or services..." />
-                    <button class="search-clear-btn" id="clearInProgressSearch">×</button>
+            <div class="inquiries-table-container">
+                <div class="table-header">
+                    <div class="search-bar">
+                        <input type="text" id="inProgressSearch" placeholder="🔍 Search by client, plan name, or services..." />
+                        <button class="search-clear-btn" id="clearInProgressSearch">×</button>
+                    </div>
+                    <div class="table-stats">
+                        <span class="total-count">${this.parent.inProgressItems.length} In Progress</span>
+                        <span class="unread-count">${this.parent.inProgressItems.filter(item => !item.read).length} Unread</span>
+                        <span class="page-info">Page ${this.inProgressCurrentPage} of ${totalPages}</span>
+                    </div>
                 </div>
-                <div class="table-stats">
-                    <span class="total-count">${this.parent.inProgressItems.length} In Progress</span>
-                    <span class="unread-count">${this.parent.inProgressItems.filter(item => !item.read).length} Unread</span>
-                    <span class="page-info">Page ${this.inProgressCurrentPage} of ${totalPages}</span>
+
+                <!-- Legend -->
+                <div class="legend-wrapper">
+                    <div class="legend-horizontal">
+                        <div class="legend-group">
+                            <span class="legend-group-title">Payment Status:</span>
+                            <div class="legend-item-inline">
+                                <div class="legend-indicator" style="background-color: #bbdefb; --paid-bg: #bbdefb; --paid-border: #1976d2;"></div>
+                                <span>Down Payment (40%)</span>
+                            </div>
+                            <div class="legend-item-inline">
+                                <div class="legend-indicator" style="background-color: #FF8C42;"></div>
+                                <span>Fully Paid (60%)</span>
+                            </div>
+                            <div class="legend-item-inline">
+                                <div class="legend-indicator" style="background-color: #E5E7EB; --unpaid-bg: #e0e0e0; --unpaid-border: #757575;"></div>
+                                <span>Not Yet Paid</span>
+                            </div>
+                        </div>
+                        <div class="legend-divider"></div>
+                        <div class="legend-group">
+                            <span class="legend-group-title">Task Urgency:</span>
+                            <div class="legend-item-inline">
+                                <div class="legend-indicator" style="background-color: #EF4444;"></div>
+                                <span>Due Today</span>
+                            </div>
+                            <div class="legend-item-inline">
+                                <div class="legend-indicator" style="background-color: #FBBF24;"></div>
+                                <span>Due Soon</span>
+                            </div>
+                            <div class="legend-item-inline">
+                                <div class="legend-indicator" style="background-color: #22C55E;"></div>
+                                <span>Completed</span>
+                            </div>
+                            <div class="legend-item-inline">
+                                <div class="legend-indicator" style="background-color: #495057;"></div>
+                                <span>Pass Due Date</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="table-wrapper">
-                <table class="inquiries-table progress-table">
-                    <thead>
-                        <tr>
-                            <th class="client-header">Client</th>
-                            <th class="plan-header">Plan Name</th>
-                            <th class="services-header">Services</th>
-                            <th class="schedule-header">Schedule</th>
-                            <th class="team-header">Team</th>
 
-                            ${this.parent.isSuperAdmin ? `
-                            <th class="quotation-header">Quotation</th>
-                            <th class="payment-header">Downpayment (40%)</th>
-                            <th class="payment-header">Upon Delivery (60%)</th>
-                            ` : `
-                            <th class="payment-status-header">Payment Status</th>`}
+                <div class="table-wrapper">
+                    <table class="inquiries-table progress-table">
+                        <thead>
+                            <tr>
+                                <th class="client-header">Client</th>
+                                <th class="plan-header">Plan Name</th>
+                                <th class="services-header">Services</th>
+                                <th class="schedule-header">Schedule</th>
+                                <th class="team-header">Team</th>
 
-                            <th class="remarks-header">Remarks</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tableRows}
-                    </tbody>
-                </table>
+                                ${this.parent.isSuperAdmin ? `
+                                <th class="quotation-header">Quotation</th>
+                                <th class="payment-header">Downpayment (40%)</th>
+                                <th class="payment-header">Upon Delivery (60%)</th>
+                                ` : `
+                                <th class="payment-status-header">Payment Status</th>`}
+
+                                <th class="remarks-header">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                </div>
+                ${paginationHTML}
             </div>
-            ${paginationHTML}
-        </div>
-    `;
+        `;
 
         $('#inquiryContent').html(tableHTML);
         this.setupInProgressTableEventListeners();

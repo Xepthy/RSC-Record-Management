@@ -1,0 +1,84 @@
+.legend-wrapper {
+    padding: 32px 20px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.legend-horizontal {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    flex-wrap: wrap;
+}
+
+.legend-group {
+    display: flex;
+    align-items: center;
+    gap: 18px; /* smaller gap between title and first item */
+    flex-wrap: wrap;
+}
+
+.legend-group-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    min-width: 140px;
+    margin-right: 4px; /* keep the label near but readable */
+}
+
+.legend-item-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #555;
+    white-space: nowrap;
+    margin-right: 32px; /* adds more spacing between legend items */
+}
+
+.legend-item-inline:last-child {
+    margin-right: 0; /* no trailing gap at the end */
+}
+
+.legend-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.legend-divider {
+    width: 2px;
+    height: 40px;
+    background: #d1d5db;
+}
+
+@media (max-width: 768px) {
+    .legend-wrapper {
+        padding: 24px 20px;
+    }
+
+    .legend-horizontal {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 24px;
+    }
+
+    .legend-group {
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .legend-item-inline {
+        font-size: 12px;
+        margin-bottom: 8px;
+        margin-right: 16px; /* smaller gap on mobile */
+    }
+
+    .legend-divider {
+        display: none;
+    }
+}
