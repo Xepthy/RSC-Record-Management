@@ -1613,47 +1613,64 @@ class UIRenderer {
         });
     }
 
-    showDashboard(data) {
+    showDashboard(data, viewType = 'yearly', selectedMonth = null) {
         const maxValue = Math.max(...Object.values(data.serviceCounts));
-        const barHeightRatio = maxValue > 0 ? 240 / maxValue : 0; // 240px is the max bar height
+        const barHeightRatio = maxValue > 0 ? 240 / maxValue : 0;
 
         const barsHTML = Object.entries(data.serviceCounts)
             .map(([service, count]) => `
-            <div class="bar-container">
-                <div class="bar" style="height: ${count * barHeightRatio}px" title="${service}: ${count}">
-                    <span class="bar-value">${count}</span>
-                </div>
-                <div class="bar-label">${service.split(',')}</div>
+        <div class="bar-container">
+            <div class="bar" style="height: ${count * barHeightRatio}px" title="${service}: ${count}">
+                <span class="bar-value">${count}</span>
             </div>
-            `).join('');
+            <div class="bar-label">${service}</div>
+        </div>
+        `).join('');
 
         const resetDate = this.parent.dashboardManager.getResetDate();
 
+        // Generate month options
+        const months = this.parent.dashboardManager.getAvailableMonths();
+        const monthOptionsHTML = months.map(m =>
+            `<option value="${m.value}" ${selectedMonth === m.value ? 'selected' : ''}>${m.label}</option>`
+        ).join('');
+
         const dashboardHTML = `
-        <div class="dashboard-container">
-            <div class="dashboard-graph">
+    <div class="dashboard-container">
+        <div class="dashboard-graph">
+            <div class="graph-header">
                 <h3>Services Availed (Completed Projects)</h3>
-                <p class="reset-info">Statistics reset on: ${resetDate}</p>
-                <div class="bar-chart">
-                    ${barsHTML}
+                <div class="view-controls">
+                    <div class="tab-buttons">
+                        <button class="tab-btn ${viewType === 'yearly' ? 'active' : ''}" data-view="yearly">Yearly</button>
+                        <button class="tab-btn ${viewType === 'monthly' ? 'active' : ''}" data-view="monthly">Monthly</button>
+                    </div>
+                    <select id="monthSelect" class="month-dropdown" style="display: ${viewType === 'monthly' ? 'block' : 'none'};">
+                        ${monthOptionsHTML}
+                    </select>
                 </div>
             </div>
-            
-            <div class="dashboard-stats">
-                <div class="stat-card" data-nav="inquiriesNav">
-                    <h4>Inquiries</h4>
-                    <div class="stat-number">${data.inquiries}</div>
-                </div>
-                <div class="stat-card" data-nav="inProgressNav">
-                    <h4>In Progress</h4>
-                    <div class="stat-number">${data.inProgress}</div>
-                </div>
-                <div class="stat-card" data-nav="completedNav">
-                    <h4>Completed</h4>
-                    <div class="stat-number">${data.completed}</div>
-                </div>
+            <p class="reset-info">Statistics reset on: ${resetDate}</p>
+            <div class="bar-chart">
+                ${barsHTML}
             </div>
         </div>
+        
+        <div class="dashboard-stats">
+            <div class="stat-card" data-nav="inquiriesNav">
+                <h4>Inquiries</h4>
+                <div class="stat-number">${data.inquiries}</div>
+            </div>
+            <div class="stat-card" data-nav="inProgressNav">
+                <h4>In Progress</h4>
+                <div class="stat-number">${data.inProgress}</div>
+            </div>
+            <div class="stat-card" data-nav="completedNav">
+                <h4>Completed</h4>
+                <div class="stat-number">${data.completed}</div>
+            </div>
+        </div>
+    </div>
     `;
 
         $('#inquiryContent').html(dashboardHTML);
@@ -1661,9 +1678,34 @@ class UIRenderer {
     }
 
     setupDashboardEventListeners() {
+        // Stat card clicks
         $('.stat-card').on('click', function () {
             const navId = $(this).data('nav');
             $(`#${navId}`).click();
+        });
+
+        // Tab switching
+        $('.tab-btn').on('click', async (e) => {
+            const view = $(e.target).data('view');
+
+            $('.tab-btn').removeClass('active');
+            $(e.target).addClass('active');
+
+            if (view === 'monthly') {
+                const selectedMonth = $('#monthSelect').val();
+                const data = await this.parent.dashboardManager.loadDashboardData('monthly', selectedMonth);
+                if (data) this.showDashboard(data, 'monthly', selectedMonth);
+            } else {
+                const data = await this.parent.dashboardManager.loadDashboardData('yearly');
+                if (data) this.showDashboard(data, 'yearly');
+            }
+        });
+
+        // Month selection
+        $('#monthSelect').on('change', async (e) => {
+            const selectedMonth = $(e.target).val();
+            const data = await this.parent.dashboardManager.loadDashboardData('monthly', selectedMonth);
+            if (data) this.showDashboard(data, 'monthly', selectedMonth);
         });
     }
 

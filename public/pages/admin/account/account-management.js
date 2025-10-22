@@ -188,10 +188,7 @@ export default class AccountManager {
                         <span class="menu-icon">${isDisabled ? '✅' : '🚫'}</span>
                         ${isDisabled ? 'Enable Account' : 'Disable Account'}
                     </button>
-                    <button class="menu-item danger" data-action="delete">
-                        <span class="menu-icon">🗑️</span>
-                        Delete Account
-                    </button>
+
                 ` : ''}
             </div>
         `;
@@ -219,10 +216,6 @@ export default class AccountManager {
             $('.account-actions-menu').remove();
         });
 
-        $menu.find('[data-action="delete"]').on('click', () => {
-            this.deleteAccount(account);
-            $('.account-actions-menu').remove();
-        });
 
         // Close menu when clicking outside
         setTimeout(() => {
@@ -269,109 +262,6 @@ export default class AccountManager {
         }
     }
 
-    async deleteAccount(account) {
-        // Create a proper confirmation modal
-        const modalHTML = `
-        <div class="modal-overlay" id="deleteConfirmModal">
-            <div class="modal-content delete-confirm-modal">
-                <div class="modal-header danger-header">
-                    <h2>⚠️ Delete Account</h2>
-                    <button class="close-modal" id="closeDeleteModal">×</button>
-                </div>
-                <div class="modal-body">
-                    <div class="warning-box">
-                        <p class="warning-text">
-                            <strong>This action cannot be undone!</strong><br>
-                            You are about to permanently delete:
-                        </p>
-                        <div class="account-info-box">
-                            <p><strong>Name:</strong> ${account.firstName} ${account.lastName}</p>
-                            <p><strong>Email:</strong> ${account.email}</p>
-                            <p><strong>Role:</strong> ${account.role}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="confirmation-input">
-                        <label>Type <code>DELETE ${account.email}</code> to confirm:</label>
-                        <input type="text" id="deleteConfirmInput" placeholder="Type here..." autocomplete="off">
-                        <small class="error-text" id="deleteError" style="display: none;">Text does not match. Please try again.</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-secondary" id="cancelDelete">Cancel</button>
-                    <button type="button" class="btn-danger" id="confirmDelete" disabled>Delete Account</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-        $('body').append(modalHTML);
-
-        const confirmText = `DELETE ${account.email}`;
-
-        // Enable/disable delete button based on input
-        $('#deleteConfirmInput').on('input', function () {
-            const inputValue = $(this).val();
-            const $deleteBtn = $('#confirmDelete');
-            const $error = $('#deleteError');
-
-            if (inputValue === confirmText) {
-                $deleteBtn.prop('disabled', false);
-                $error.hide();
-                $(this).css('border-color', '#27ae60');
-            } else {
-                $deleteBtn.prop('disabled', true);
-                $(this).css('border-color', '');
-            }
-        });
-
-        // Close modal handlers
-        $('#closeDeleteModal, #cancelDelete').on('click', () => {
-            $('#deleteConfirmModal').remove();
-        });
-
-        // Confirm delete
-        $('#confirmDelete').on('click', async () => {
-            const inputValue = $('#deleteConfirmInput').val();
-
-            if (inputValue !== confirmText) {
-                $('#deleteError').show();
-                $('#deleteConfirmInput').css('border-color', '#e74c3c');
-                return;
-            }
-
-            try {
-                $('#confirmDelete').text('Deleting...').prop('disabled', true);
-
-                const deleteUserFunction = httpsCallable(this.functions, 'deleteUserAccount');
-                await deleteUserFunction({ uid: account.id });
-
-                await auditLogger.logSimpleAction(
-                    account.id,
-                    'Account Management',
-                    `${account.firstName} ${account.lastName}`,
-                    'Account Deleted'
-                );
-
-                this.parent.inquiryManager.showToast(
-                    `✅ Account deleted successfully`,
-                    'success'
-                );
-
-                $('#deleteConfirmModal').remove();
-                await this.loadAccounts();
-                this.parent.uiRenderer.showAccountManagement(this.accounts);
-
-            } catch (error) {
-                console.error('Error deleting account:', error);
-                alert('Failed to delete account: ' + error.message);
-                $('#confirmDelete').text('Delete Account').prop('disabled', false);
-            }
-        });
-
-        // Focus input for better UX
-        setTimeout(() => $('#deleteConfirmInput').focus(), 100);
-    }
 
     async resetPassword(email) {
         if (!confirm(`Send password reset email to ${email}?`)) return;

@@ -10,12 +10,79 @@
     border: 1px solid #e5e5e5;
 }
 
+/* ADD THIS - Header with controls */
+.graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.graph-header h3 {
+    margin: 0;
+    color: #1a1a1a;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+/* ADD THIS - View controls */
+.view-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.tab-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.tab-btn {
+    padding: 6px 16px;
+    border: 1px solid #e5e5e5;
+    background: #ffffff;
+    color: #737373;
+    font-size: 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    border-color: #1a1a1a;
+    color: #1a1a1a;
+}
+
+.tab-btn.active {
+    background: #1a1a1a;
+    color: #ffffff;
+    border-color: #1a1a1a;
+}
+
+.month-dropdown {
+    padding: 6px 12px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #1a1a1a;
+    cursor: pointer;
+    background: #ffffff;
+}
+
+.month-dropdown:focus {
+    outline: none;
+    border-color: #1a1a1a;
+}
+/* END ADD */
+
+/* REMOVE THIS RULE - we moved h3 into .graph-header h3 above
 .dashboard-graph h3 {
     margin: 0 0 5px 0;
     color: #1a1a1a;
     font-size: 20px;
     font-weight: 500;
 }
+*/
 
 .reset-info {
     color: #737373;
@@ -39,8 +106,8 @@
     align-items: center;
     flex: 1;
     position: relative;
-    height: 280px; /* Fixed height for all containers */
-    justify-content: flex-end; /* Push bars to bottom */
+    height: 280px;
+    justify-content: flex-end;
 }
 
 .bar {
@@ -50,7 +117,7 @@
     position: relative;
     transition: background 0.2s ease;
     max-height: 240px;
-    min-height: 1px; /* Ensures bars with 0 value still show */
+    min-height: 1px;
 }
 
 .bar:hover {
