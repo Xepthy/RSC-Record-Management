@@ -1021,7 +1021,6 @@ class InProgressManager {
     }
 
     handleDeleteIndividualProjectFile(index) {
-        if (confirm('Are you sure you want to remove this file?')) {
             const currentItem = this.parent.inProgressItems.find(item => item.id === this.currentItemId);
             const displayFiles = this.getDisplayFiles();
 
@@ -1053,7 +1052,6 @@ class InProgressManager {
             $('#projectFilesContainer').html(projectFilesHTML);
 
             this.parent.inquiryManager.showToast('File will be removed when you save.', 'warning');
-        }
     }
 
     getDisplayFiles() {

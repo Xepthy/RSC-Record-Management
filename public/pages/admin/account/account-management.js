@@ -230,67 +230,121 @@ export default class AccountManager {
         const action = isCurrentlyDisabled ? 'enable' : 'disable';
         const actionVerb = isCurrentlyDisabled ? 'Enable' : 'Disable';
 
-        if (!confirm(`${actionVerb} account for ${account.firstName} ${account.lastName}?`)) {
-            return;
-        }
+        const modalHTML = `
+        <div class="modal-overlay" id="confirmActionModal">
+            <div class="modal-content" style="max-width: 350px;">
+                <div class="modal-body" style="padding: 30px; text-align: center;">
+                    <p style="margin-bottom: 30px; font-size: 16px;">${actionVerb} account for ${account.firstName} ${account.lastName}?</p>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button class="btn-secondary" id="cancelActionBtn">Cancel</button>
+                        <button class="btn-danger" id="confirmActionBtn">${actionVerb}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 
-        try {
-            const toggleDisableFunction = httpsCallable(this.functions, 'toggleDisableAccount');
-            await toggleDisableFunction({
-                uid: account.id,
-                disable: !isCurrentlyDisabled
-            });
+        $('body').append(modalHTML);
 
-            await auditLogger.logSimpleAction(
-                account.id,
-                'Account Management',
-                `${account.firstName} ${account.lastName}`,
-                isCurrentlyDisabled ? 'Account Enabled' : 'Account Disabled'
-            );
+        $('#confirmActionBtn').on('click', async () => {
+            $('#confirmActionModal').remove();
 
-            this.parent.inquiryManager.showToast(
-                `✅ Account ${action}d successfully`,
-                'success'
-            );
+            try {
+                const toggleDisableFunction = httpsCallable(this.functions, 'toggleDisableAccount');
+                await toggleDisableFunction({
+                    uid: account.id,
+                    disable: !isCurrentlyDisabled
+                });
 
-            await this.loadAccounts();
-            this.parent.uiRenderer.showAccountManagement(this.accounts);
-
-        } catch (error) {
-            console.error(`Error ${action}ing account:`, error);
-            alert(`Failed to ${action} account: ${error.message}`);
-        }
-    }
-
-
-    async resetPassword(email) {
-        if (!confirm(`Send password reset email to ${email}?`)) return;
-
-        try {
-            await sendPasswordResetEmail(auth, email);
-
-            const account = this.accounts.find(acc => acc.email === email);
-            if (account) {
                 await auditLogger.logSimpleAction(
                     account.id,
                     'Account Management',
                     `${account.firstName} ${account.lastName}`,
-                    'Password Reset Email Sent'
+                    isCurrentlyDisabled ? 'Account Enabled' : 'Account Disabled'
                 );
-            }
 
-            this.parent.inquiryManager.showToast(
-                `✅ Password reset email sent to ${email}`,
-                'success'
-            );
-        } catch (error) {
-            console.error('Error resetting password:', error);
+                this.parent.inquiryManager.showToast(
+                    `✅Account ${action}d successfully`,
+                    'success'
+                );
 
-            if (error.code === 'auth/user-not-found') {
-                alert('No user found with this email. They may need to set up their account first.');
-            } else {
-                alert('Failed to send password reset email: ' + error.message);
+                await this.loadAccounts();
+                this.parent.uiRenderer.showAccountManagement(this.accounts);
+
+            } catch (error) {
+                console.error(`Error ${action}ing account:`, error);
+                this.parent.inquiryManager.showToast(`Failed to ${action} account: ${error.message}`, 'error');
             }
-        }
+        });
+
+        $('#cancelActionBtn').on('click', () => {
+            $('#confirmActionModal').remove();
+        });
+
+        $('#confirmActionModal').on('click', function (e) {
+            if (e.target === this) {
+                $(this).remove();
+            }
+        });
+    }
+
+
+    async resetPassword(email) {
+        const modalHTML = `
+        <div class="modal-overlay" id="confirmResetModal">
+            <div class="modal-content" style="max-width: 350px;">
+                <div class="modal-body" style="padding: 30px; text-align: center;">
+                    <p style="margin-bottom: 30px; font-size: 16px;">Send password reset email to ${email}?</p>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button class="btn-secondary" id="cancelResetBtn">Cancel</button>
+                        <button class="btn-primary" id="confirmResetBtn">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+        $('body').append(modalHTML);
+
+        $('#confirmResetBtn').on('click', async () => {
+            $('#confirmResetModal').remove();
+
+            try {
+                await sendPasswordResetEmail(auth, email);
+
+                const account = this.accounts.find(acc => acc.email === email);
+                if (account) {
+                    await auditLogger.logSimpleAction(
+                        account.id,
+                        'Account Management',
+                        `${account.firstName} ${account.lastName}`,
+                        'Password Reset Email Sent'
+                    );
+                }
+
+                this.parent.inquiryManager.showToast(
+                    `✅Password reset email sent to ${email}`,
+                    'success'
+                );
+            } catch (error) {
+                console.error('Error resetting password:', error);
+
+                if (error.code === 'auth/user-not-found') {
+                    this.parent.inquiryManager.showToast('No user found with this email.', 'error');
+                } else {
+                    this.parent.inquiryManager.showToast(`Failed to send reset email: ${error.message}`, 'error');
+                }
+            }
+        });
+
+        $('#cancelResetBtn').on('click', () => {
+            $('#confirmResetModal').remove();
+        });
+
+        $('#confirmResetModal').on('click', function (e) {
+            if (e.target === this) {
+                $(this).remove();
+            }
+        });
     }
 }

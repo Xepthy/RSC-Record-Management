@@ -373,6 +373,49 @@ class UIRenderer {
 
         const paginationHTML = this.generatePaginationControls(totalPages, 'inprogress');
 
+        const legendHTML = this.parent.isSuperAdmin ? `
+                        <!-- Legend -->
+                        <div class="legend-wrapper">
+                            <div class="legend-horizontal">
+                                <div class="legend-group">
+                                    <span class="legend-group-title">Payment Status:</span>
+                                    <div class="legend-item-inline">
+                                        <div class="legend-indicator" style="background-color: #bbdefb; --paid-bg: #bbdefb; --paid-border: #1976d2;"></div>
+                                        <span>Down Payment (40%)</span>
+                                    </div>
+                                    <div class="legend-item-inline">
+                                        <div class="legend-indicator" style="background-color: #FF8C42;"></div>
+                                        <span>Fully Paid (60%)</span>
+                                    </div>
+                                    <div class="legend-item-inline">
+                                        <div class="legend-indicator" style="background-color: #E5E7EB; --unpaid-bg: #e0e0e0; --unpaid-border: #757575;"></div>
+                                        <span>Not Yet Paid</span>
+                                    </div>
+                                </div>
+                                <div class="legend-divider"></div>
+                                <div class="legend-group">
+                                    <span class="legend-group-title">Task Urgency:</span>
+                                    <div class="legend-item-inline">
+                                        <div class="legend-indicator" style="background-color: #EF4444;"></div>
+                                        <span>Due Today</span>
+                                    </div>
+                                    <div class="legend-item-inline">
+                                        <div class="legend-indicator" style="background-color: #FBBF24;"></div>
+                                        <span>Due Soon</span>
+                                    </div>
+                                    <div class="legend-item-inline">
+                                        <div class="legend-indicator" style="background-color: #22C55E;"></div>
+                                        <span>Completed</span>
+                                    </div>
+                                    <div class="legend-item-inline">
+                                        <div class="legend-indicator" style="background-color: #495057;"></div>
+                                        <span>Pass Due Date</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+        ` : '';
+
         const tableHTML = `
             <div class="inquiries-table-container">
                 <div class="table-header">
@@ -387,46 +430,7 @@ class UIRenderer {
                     </div>
                 </div>
 
-                <!-- Legend -->
-                <div class="legend-wrapper">
-                    <div class="legend-horizontal">
-                        <div class="legend-group">
-                            <span class="legend-group-title">Payment Status:</span>
-                            <div class="legend-item-inline">
-                                <div class="legend-indicator" style="background-color: #bbdefb; --paid-bg: #bbdefb; --paid-border: #1976d2;"></div>
-                                <span>Down Payment (40%)</span>
-                            </div>
-                            <div class="legend-item-inline">
-                                <div class="legend-indicator" style="background-color: #FF8C42;"></div>
-                                <span>Fully Paid (60%)</span>
-                            </div>
-                            <div class="legend-item-inline">
-                                <div class="legend-indicator" style="background-color: #E5E7EB; --unpaid-bg: #e0e0e0; --unpaid-border: #757575;"></div>
-                                <span>Not Yet Paid</span>
-                            </div>
-                        </div>
-                        <div class="legend-divider"></div>
-                        <div class="legend-group">
-                            <span class="legend-group-title">Task Urgency:</span>
-                            <div class="legend-item-inline">
-                                <div class="legend-indicator" style="background-color: #EF4444;"></div>
-                                <span>Due Today</span>
-                            </div>
-                            <div class="legend-item-inline">
-                                <div class="legend-indicator" style="background-color: #FBBF24;"></div>
-                                <span>Due Soon</span>
-                            </div>
-                            <div class="legend-item-inline">
-                                <div class="legend-indicator" style="background-color: #22C55E;"></div>
-                                <span>Completed</span>
-                            </div>
-                            <div class="legend-item-inline">
-                                <div class="legend-indicator" style="background-color: #495057;"></div>
-                                <span>Pass Due Date</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                ${legendHTML}
 
                 <div class="table-wrapper">
                     <table class="inquiries-table progress-table">
