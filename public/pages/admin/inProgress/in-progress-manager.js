@@ -920,11 +920,103 @@ class InProgressManager {
         $('#quotationEdit').on('input', () => {
             this.calculateModalPricing();
         });
+
+        // Handle payment checkboxes - once checked, disable them
+        $('#is40Edit').on('change', function () {
+            const $checkbox = $(this);
+            if ($checkbox.is(':checked')) {
+                // Show confirmation modal
+                window.inProgressManager.showPaymentConfirmModal(
+                    '40% Down Payment',
+                    'Are you sure the 40% down payment has been received? This cannot be undone after saving.',
+                    () => {
+                        // Confirmed - lock the checkbox
+                        $checkbox.prop('disabled', true);
+                    },
+                    () => {
+                        // Cancelled - uncheck it
+                        $checkbox.prop('checked', false);
+                    }
+                );
+            }
+        });
+
+        $('#is60Edit').on('change', function () {
+            const $checkbox = $(this);
+            if ($checkbox.is(':checked')) {
+                // Show confirmation modal
+                window.inProgressManager.showPaymentConfirmModal(
+                    '60% Upon Delivery',
+                    'Are you sure the 60% upon delivery payment has been received? This cannot be undone after saving.',
+                    () => {
+                        // Confirmed - lock both checkboxes
+                        $checkbox.prop('disabled', true);
+                        $('#is40Edit').prop('checked', true).prop('disabled', true);
+                    },
+                    () => {
+                        // Cancelled - uncheck it
+                        $checkbox.prop('checked', false);
+                    }
+                );
+            }
+        });
+
+
         // Project files management
         $('#addProjectFileBtn').on('click', () => this.handleAddProjectFile());
         $(document).on('click', '.delete-project-btn', (e) => {
             const index = parseInt($(e.target).data('index'));
             this.handleDeleteIndividualProjectFile(index);
+        });
+    }
+
+    showPaymentConfirmModal(title, message, onConfirm, onCancel) {
+        const modalHTML = `
+        <div id="paymentConfirmModal" class="modal-overlay">
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h3>${title}</h3>
+                </div>
+                <div class="modal-body">
+                    <p style="font-size: 15px; line-height: 1.6;">${message}</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="cancelPaymentBtn">Cancel</button>
+                    <button class="btn-primary" id="confirmPaymentBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+        $('body').append(modalHTML);
+
+        // Handle confirm
+        $('#confirmPaymentBtn').on('click', () => {
+            $('#paymentConfirmModal').remove();
+            if (onConfirm) onConfirm();
+        });
+
+        // Handle cancel
+        $('#cancelPaymentBtn').on('click', () => {
+            $('#paymentConfirmModal').remove();
+            if (onCancel) onCancel();
+        });
+
+        // Close on overlay click
+        $('#paymentConfirmModal').on('click', function (e) {
+            if (e.target === this) {
+                $(this).remove();
+                if (onCancel) onCancel();
+            }
+        });
+
+        // Close on Escape key
+        $(document).on('keydown.paymentConfirm', function (e) {
+            if (e.which === 27) { // Escape key
+                $('#paymentConfirmModal').remove();
+                $(document).off('keydown.paymentConfirm');
+                if (onCancel) onCancel();
+            }
         });
     }
 
@@ -1134,12 +1226,12 @@ class InProgressManager {
             // Hide view elements
             $('#quotationValue, #teamValue, #remarksValue, #editBtn').hide();
             // Enable checkboxes
-            $('#is40Edit, #is60Edit, #scheduleCheckbox, #encroachmentEdit, #needResearchEdit, #doneLayoutEdit').prop('disabled', false);
-            // Enable service checkboxes
+            $('#scheduleCheckbox, #encroachmentEdit, #needResearchEdit, #doneLayoutEdit').prop('disabled', false);
+
+            // Payment checkboxes logic: if already checked, keep disabled
             if (this.parent.isSuperAdmin) {
-                $('#servicesContainer input[type="checkbox"]').prop('disabled', false);
-            } else {
-                $('#servicesContainer input[type="checkbox"]').prop('disabled', true);
+                $('#is40Edit').prop('disabled', item.is40); // Disable if already paid
+                $('#is60Edit').prop('disabled', item.is60); // Disable if already paid
             }
 
         } else {
